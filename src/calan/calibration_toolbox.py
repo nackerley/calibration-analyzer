@@ -73,7 +73,9 @@ def make_random_signal_file_name(
     Generate a gaussian white noise calibration signal file name.
     '''
 
-    file_name = style + '_'
+    file_name = ''
+    if style != '':
+        file_name += style + '_'
     if rms_voltage != 0:
         file_name += '%srms' % pretty_voltage(rms_voltage)
     if pp_voltage != 0:
@@ -100,29 +102,30 @@ def parse_random_signal_file_name(file_name):
             t_on, t_off, sample_rate
     '''
 
-    parts = os.path.splitext(os.path.split(file_name)[1])[0].split('_')
+    file_name = file_name.replace('.wav', '').replace('.gz', '')
+    parts = os.path.split(file_name)[1].split('_')
 
     if not any(char.isdigit() for char in parts[0]):
         style = parts.pop(0)
-        duration_seconds = parse_duration(parts.pop(2))
     else:  # for backward compatibility
         style = ''
-        duration_seconds = parse_duration(parts.pop(1))
+    duration_seconds = float(parse_duration(parts.pop(1)))
 
     extras = []
-    for token, parser in zip(['pp', 'rms', 'mean', 'on', 'off', 'sps'],
-                             [parse_voltage, parse_voltage, parse_voltage,
-                              parse_duration, parse_duration,
-                              lambda value: '%g' % value]):
+    for token, parser, default in zip(
+            ['pp', 'rms', 'mean', 'on', 'off', 'sps'],
+            [parse_voltage, parse_voltage, parse_voltage,
+             parse_duration, parse_duration, float],
+            [0, 0, 0, 0, 0, CALIBRATION_SAMPLE_RATE]):
         index = next((i for i, part in enumerate(parts)
                       if token in part), None)
         if index is not None:
             extras.append(parser(parts.pop(index).replace(token, '')))
         else:
-            extras.append(0)
+            extras.append(default)
 
     if len(parts) != 0:
-        warn('Portions of file name not parsed:', '_'.join(parts))
+        warn('Not parsed: %s' % '_'.join(parts))
 
     (pp_voltage, rms_voltage, mean_voltage, t_on, t_off,
      sample_rate) = extras
