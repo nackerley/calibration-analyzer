@@ -3,33 +3,83 @@
 A collection of functions useful for seismograph calibration.
 """
 
+from __future__ import absolute_import, division, print_function
+
 import os
 import wave
 import gzip
 from warnings import warn
+from operator import mul
+from functools import reduce
 from struct import pack, unpack, calcsize
 from io import BytesIO
 
-
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.signal as sp
 from scipy import stats
-from scipy.signal import lfilter, lfilter_zi
+from scipy.linalg import lstsq
+from scipy.special import erfinv
 
+from obspy import UTCDateTime
 from obspy.core.inventory.response import CoefficientsTypeResponseStage
+from obspy.signal.invsim import simulate_seismometer
 
-from antelope_tools.utilities import (pretty_bytes, pretty_duration,
-                                      pretty_voltage,
-                                      parse_duration, parse_voltage)
+from antelope_tools.utilities import (
+    pretty_duration, pretty_voltage, pretty_bytes,
+    parse_duration, parse_voltage)
 
-# Centaur calibration setup
+from calan.noise_survey_toolbox import dataless2inventory
+from calan.core import StreamAnalyzer, factor_names, subplots_squeeze
+from calan.core import lti_from_zpsf, minreal, unwrap_mid
+from calan.core import (
+    len_fft_welch, num_windows_welch, fft_frequencies, logspace)
+
+# Nanometrics Centaur User Guide 17935R5, 2016-11-02
 CALIBRATION_SAMPLE_RATE = 30e3
 FULL_SCALE_VOLTAGE = 5
 DAC_BITS = 16
-NP_DTYPE = np.dtype('int%d' % DAC_BITS)
 DAC_GAIN = FULL_SCALE_VOLTAGE/(2**(DAC_BITS - 1) - 1)
 SAMPLE_FORMAT = '<h'  # little-endian short (16-bit) integer
-_ROOT = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+
+# Nanometrics Trillium 120Q/QA User Guide 17751R2, 2015-10-05
+CAL_ZEROS = []  # rad/s
+CAL_POLES = [-160, -3177]  # rad/s
+CAL_SENS = -0.009715  # m/s^2/V
+CAL_FREQ = 0.001  # Hz
+
+# other handy constants
+NP_DTYPE = np.dtype('int%d' % DAC_BITS)
+
+
+def seismometer_calibration_lti(zeros=CAL_ZEROS, poles=CAL_POLES,
+                                sensitivity=CAL_SENS, frequency=CAL_FREQ):
+    '''
+    Returns a seismometer calibration input transfer function
+    :class:`~scipy.signal.lti`. Default values are for Trillium 120Q.
+    Sensitivity is provided as [m/s^2/V] but lti returned is [(m/s)/V].
+    '''
+
+    cal_lti = lti_from_zpsf(zeros, poles, sensitivity, frequency)
+    cal_lti.poles = np.concatenate((cal_lti.poles, np.zeros(1)))
+    # cal_lti.gain = 2*np.pi*cal_lti.gain
+    cal_lti = minreal(cal_lti)
+    cal_lti.units = '(m/s)/V'
+    return cal_lti
+
+
+def accelerometer_calibration_lti(zeros=[], poles=[],
+                                  sensitivity=1, frequency=1):
+    '''
+    Returns a accelerometer calibration input transfer function
+    :class:`~scipy.signal.lti`. Default values are for a generic accelerometer
+    calibration circuit at 1 m/s^2/V.
+    '''
+
+    cal_lti = lti_from_zpsf(zeros, poles, sensitivity, frequency)
+    cal_lti = minreal(cal_lti)
+    cal_lti.units = '(m/s^2)/V'
+    return cal_lti
 
 
 def convert_volts_to_counts(signal):
@@ -39,8 +89,7 @@ def convert_volts_to_counts(signal):
     See also docstring for convert_counts_to_volts.
     '''
     signal = np.array(signal, dtype='float')
-    signal /= DAC_GAIN
-    return signal.astype(NP_DTYPE)
+    return signal.astype(np.dtype('int%d' % DAC_BITS))/DAC_GAIN
 
 
 def convert_counts_to_volts(signal):
@@ -52,9 +101,8 @@ def convert_counts_to_volts(signal):
     Guide 17935R5.pdf") and assumption that 0 counts gives 0 V. Thus the rest
     of table on p.97 of the user guide is in error.
     '''
-    signal = np.array(signal, dtype=NP_DTYPE).astype('float')
-    signal *= DAC_GAIN
-    return signal
+    signal = np.array(signal, dtype=np.dtype('int%d' % DAC_BITS))
+    return signal.astype('float')*DAC_GAIN
 
 
 def _print_expected_file_size(file_name, duration):
@@ -127,8 +175,8 @@ def parse_random_signal_file_name(file_name):
     if len(parts) != 0:
         warn('Not parsed: %s' % '_'.join(parts))
 
-    (pp_voltage, rms_voltage, mean_voltage, t_on, t_off,
-     sample_rate) = extras
+    # pylint:disable=unbalanced-tuple-unpacking
+    (pp_voltage, rms_voltage, mean_voltage, t_on, t_off, sample_rate) = extras
 
     return (style, duration_seconds, pp_voltage, rms_voltage, mean_voltage,
             t_on, t_off, sample_rate)
@@ -138,7 +186,7 @@ def _add_turn_on_off_times(signal, t_on, t_off):
     len_on = int(round(t_on*CALIBRATION_SAMPLE_RATE))
     len_off = int(round(t_off*CALIBRATION_SAMPLE_RATE))
     return np.concatenate(
-        (np.zeros((len_on,)), signal, np.zeros((len_off,))))
+        (np.zeros((len_on, )), signal, np.zeros((len_off, ))))
 
 
 def truncnorm_shape(mean, std, clip_a, clip_b=None):
@@ -150,9 +198,9 @@ def truncnorm_shape(mean, std, clip_a, clip_b=None):
     '''
     if clip_b is None:
         clip_b = - clip_a
-    a, b = (clip_a - mean) / std, (clip_b - mean) / std
+    shape_a, shape_b = (clip_a - mean) / std, (clip_b - mean) / std
 
-    return a, b
+    return shape_a, shape_b
 
 
 def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
@@ -177,9 +225,11 @@ def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
         _print_expected_file_size(file_name, duration_seconds + t_on + t_off)
 
     # generate random signal
-    a, b = truncnorm_shape(mean_voltage, rms_voltage, FULL_SCALE_VOLTAGE)
+    shape_a, shape_b = truncnorm_shape(mean_voltage, rms_voltage,
+                                       FULL_SCALE_VOLTAGE)
     length = int(round(duration_seconds*sample_rate))
-    signal_volts = stats.truncnorm.rvs(a, b, size=length, random_state=42)
+    signal_volts = stats.truncnorm.rvs(shape_a, shape_b,
+                                       size=length, random_state=42)
 
     # stretch signal to calibration circuit output sample rate
     signal_volts = np.repeat(signal_volts,
@@ -209,7 +259,7 @@ def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
 
     # generate random binary signal and scale it appropriately
     length = int(round(duration_seconds*sample_rate))
-    signal_volts = stats.randint.rvs(0, 2, size=(length,), random_state=42)
+    signal_volts = stats.randint.rvs(0, 2, size=(length, ), random_state=42)
     signal_volts = pp_voltage*(signal_volts.astype(float) - 0.5)
 
     # stretch signal to calibration circuit output sample rate
@@ -267,11 +317,13 @@ def _chunk_fmt(len_chunk):
     return '%s%d%s' % (SAMPLE_FORMAT[0], len_chunk, SAMPLE_FORMAT[1])
 
 
-def write_wav_gz(file_name, signal, verbose=True):
+def write_wav_gz(file_name, signal, verbose=True, compresslevel=6):
     '''
     Write a single-channel .wav.gz file with fixed encoding for Centaur
     calibration. Compression is performed in memory, not on disk. Signal must
     be in counts.
+
+    Default compression level of 6 set to match default behaviour of linux.
     '''
     if os.path.splitext(file_name)[1].lower() not in ['.gz', '.wav']:
         file_name += '.wav.gz'
@@ -302,7 +354,8 @@ def write_wav_gz(file_name, signal, verbose=True):
             with open(file_name, 'wb') as wav_file:
                 wav_file.write(stream.read())
         else:
-            with gzip.open(file_name, 'wb') as gz_file:
+            with gzip.open(file_name, 'wb',
+                           compresslevel=compresslevel) as gz_file:
                 gz_file.write(stream.read())
         wav_size = stream.tell()
 
@@ -373,8 +426,8 @@ def pad_for_decimation(signal, b_stages, factors):
     at the same time as the first sample before decimation.
     '''
     n_pad_upsample = compute_decim_delay(b_stages, factors)
-    signal_padded = np.hstack((np.zeros((int(n_pad_upsample/2),)), signal,
-                               np.zeros((int(n_pad_upsample/2),))))
+    signal_padded = np.hstack((np.zeros((int(n_pad_upsample/2), )), signal,
+                               np.zeros((int(n_pad_upsample/2), ))))
     t_start = -n_pad_upsample/2/CALIBRATION_SAMPLE_RATE
     return signal_padded, t_start
 
@@ -472,7 +525,7 @@ def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
     sig_unused = sig_in[len_input_required:]
 
     if isinstance(z_in, int) or isinstance(z_in, float):
-        z_in = [z_in*lfilter_zi(b_stage, 1) for b_stage in b_stages]
+        z_in = [z_in*sp.lfilter_zi(b_stage, 1) for b_stage in b_stages]
     else:
         assert len(z_in) == len(factors)
         assert all([len(z_stage) + 1 == len(b_stage)
@@ -486,8 +539,8 @@ def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
     # alternately filter and decimate according to stage specifications
     z_out = [None]*len(factors)
     for i, _ in enumerate(factors):
-        sig_stages[i], z_out[i] = lfilter(b_stages[i], 1,
-                                          sig_stages[i], zi=z_in[i])
+        sig_stages[i], z_out[i] = sp.lfilter(
+            b_stages[i], 1, sig_stages[i], zi=z_in[i])
         sig_stages[i + 1] = sig_stages[i][first_indices[i]::factors[i]]
 
     assert len(sig_stages[-1]) == len_output
@@ -541,6 +594,546 @@ def sample_hold_digitize(signal):
     '''
     Process signal as if sampled and held by a DAC, then digitized by an ADC.
     '''
-    signal = np.concatenate((np.zeros((1,)), signal, np.zeros((1,))))
+    signal = np.concatenate((np.zeros((1, )), signal, np.zeros((1, ))))
     signal = signal[:-1]/2 + signal[1:]/2
     return signal
+
+
+class CalibrationAnalyzer(StreamAnalyzer):
+    '''
+    A :class:`~obspy.Stream`-based calibration signal analyzer.
+    '''
+
+    def __init__(self, start_time, calibration_file, attenuation=1,
+                 fdsn_server='http://132.156.41.208:6062', verbose=True):
+        '''
+        Sets up start time and calibration details for later use.
+        '''
+
+        super(CalibrationAnalyzer, self).__init__(
+            fdsn_server=fdsn_server, verbose=verbose)
+
+        assert os.path.exists(calibration_file)
+
+        style, duration_seconds, pp_voltage, rms_voltage, mean_voltage, t_on, \
+            t_off, sample_rate = parse_random_signal_file_name(
+                calibration_file)
+
+        self.info = {
+            'start':  UTCDateTime(start_time),
+            'file': calibration_file,
+            'attenuation': attenuation,
+            'style': style,
+            'duration': duration_seconds,
+            'pp_voltage': pp_voltage,
+            'rms_voltage': rms_voltage,
+            'mean_voltage': mean_voltage,
+            't_on': t_on,
+            't_off': t_off,
+            'sample_rate': sample_rate}
+        self.lti = {'cal': None,
+                    'sensor': None,
+                    'system': None}
+        self.response = None
+        self.Pxx = None
+        self.Pyy = None
+        self.Pyx = None
+
+    def load_stream(self,
+                    input_file=None, inventory_dataless=None,
+                    networks=('CN'), stations=None, locations=(''),
+                    channels=('HHE', 'HHN', 'HHZ')):
+        # pylint:disable=arguments-differ
+        '''
+        Calls super-class method with appropriate start time and duration
+        '''
+        super(CalibrationAnalyzer, self).load_stream(
+            self.info['start'] - self.info['t_on'] - 60,
+            self.info['start'] +
+            self.info['duration'] + self.info['t_off'] + 60,
+            input_file=input_file, inventory_dataless=inventory_dataless,
+            networks=networks, stations=stations, locations=locations,
+            channels=channels)
+
+    def load_calibration(self, cal_dataless=None):
+        '''
+        Calls super-class constructor with calibration start time.
+
+        Optionally specify a dataless SEED file describing the system being
+        calibrated. This is critical when FDSN server response is incorrect.
+
+        No attempt is made to match the response to the exact channel used;
+        it is assumed that all traces in the calibation stream have the same
+        nominal response.
+        '''
+        if cal_dataless is None:
+            self.response = self.stream[0].stats.response
+        else:
+            inventory = dataless2inventory(cal_dataless)
+            channel = inventory.networks[0].stations[0].channels[0]
+            self.response = channel.response
+
+        b_stages, factors = extract_decimation_coefficients(
+            self.response.response_stages, verbose=self.verbose)
+
+        if self.verbose:
+            print('Reading calibration signal from WAV file: \n\t%s'
+                  % os.path.basename(self.info['file']))
+        signal = read_wav_gz(self.info['file'])
+        signal = sample_hold_digitize(signal)
+        signal = convert_counts_to_volts(signal)/self.info['attenuation']
+        signal = pad_for_decimation(signal, b_stages, factors)[0]
+        if self.verbose:
+            print('Decimating by %d ...' % reduce(mul, factors))
+        self.sig_in = multi_decim(signal, b_stages, factors)[0]
+
+    def setup_nominal_response(self, cal_lti=None, cal_units='(m/s)/V'):
+        '''
+        Set up nominal responses for the calibration input and sensor response.
+        For seismometers response units are [m/s/V] and [V/(m/s)] respectively.
+        For accelerometers response units are [m/s^2/V] and [V/(m/s^2)]
+        respectively.
+
+        The default value of 'None' results in the calibration response of the
+        Trillium 120Q being used. For other seismometers the simplest way to
+        specify the transfer function is to set cal_lti to a tuple of
+        (zeros, poles, gain). For most accelerometers cal_lti can simply
+        be set to the sensitivity of the calibration input circuit,
+        i.e. no zeros, no poles.
+
+        The sensor response is read from the dataless SEED provided to
+        :func:`~load_calibration` if given, otherwise from the response read
+        by :func:`~load_stream`.
+
+        The system transfer function is the product of the calibration and
+        sensor tranfer functions, and can be used, for example, to simulate
+        the response of the sensor to a calibration.
+        '''
+        if cal_lti is None:
+            self.lti['cal'] = seismometer_calibration_lti()
+        else:
+            self.lti['cal'] = sp.lti(cal_lti)
+
+        stage = self.response.response_stages[0]
+        self.lti['sensor'] = lti_from_zpsf(stage.zeros, stage.poles,
+                                           stage.stage_gain,
+                                           stage.normalization_frequency)
+
+        # nominal response is calibration response * sensor response
+        total_zeros = (self.lti['cal'].zeros.tolist() +
+                       self.lti['sensor'].zeros.tolist())
+        total_poles = (self.lti['cal'].poles.tolist() +
+                       self.lti['sensor'].poles.tolist())
+        total_gain = self.lti['cal'].gain*self.lti['sensor'].gain
+        nominal_lti = sp.lti(total_zeros, total_poles, total_gain)
+        self.lti['system'] = minreal(nominal_lti)
+
+    def output_trimmed(self, stream=False):
+        '''
+        Trim padding (including turn-on and turn-off times) from output signals
+        and convert from counts to volts.
+
+        Returns
+        -------
+        signal: :class:`numpy.ndarray`
+            output [V], one row per channel
+        '''
+        stream = self.stream.copy()
+        stream.trim(self.info['start'],
+                    self.info['start'] + self.info['duration'])
+        digitizer_sensitivity = (self.response.instrument_sensitivity.value /
+                                 self.response.response_stages[0].stage_gain)
+        return np.row_stack(
+            [trace.data[:-1]/digitizer_sensitivity for trace in stream])
+
+    def f_sample(self):
+        '''Return stream sampling rate'''
+        return self.stream[0].stats.sampling_rate
+
+    def input_trimmed(self):
+        '''
+        Trim padding (including turn-on and turn-off times) from input signal
+        and convert from counts to volts.
+
+        Returns
+        -------
+        signal: :class:`numpy.array`
+            input [V]
+        '''
+        return self.sig_in[int(self.info['t_on']*self.f_sample()):
+                           int(-self.info['t_off']*self.f_sample())]
+
+    def compute(self, len_fft=None, num_windows=30, fraction_overlap=0.5):
+        '''
+        Time-consuming part of calibration analysis is done here.
+
+        Each segment is detrended by removing a constant value before
+        application of a 'hanning' window.
+
+        The length of FFT segments can be specified directly, and is efficient
+        for any number with a large number of small factors (not just powers
+        of 2), but it is generally more convenient to specify a target number
+        of segments as it is the (actual) number of segments in Welch's method
+        which reduces the variance in the result.
+        '''
+
+        sig_in = self.input_trimmed()
+        sig_out = self.output_trimmed()
+        f_sample = self.f_sample()
+
+        if len_fft is None:
+            len_fft = len_fft_welch(len(sig_in), num_windows, fraction_overlap)
+        len_overlap = int(fraction_overlap*len_fft)
+        num_windows = num_windows_welch(len(sig_in), len_fft, len_overlap)
+
+        self.f = fft_frequencies(len_fft, f_sample)
+        if self.verbose:
+            print("Computing spectra using Welch's method on " +
+                  '%d segments ' % num_windows +
+                  'from %g to %g Hz' % (self.f[1], self.f[-1]))
+
+        self.f, self.t, self.Pyx = sp.spectral._spectral_helper(
+            sig_in, sig_out,
+            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')
+
+        self.Pxx = sp.spectral._spectral_helper(
+            sig_in, sig_in,
+            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
+
+        self.Pyy = sp.spectral._spectral_helper(
+            sig_out, sig_out,
+            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
+
+    @staticmethod
+    def _mean(Pxy):
+        '''Finishing touch on Welch's method.'''
+
+        if len(Pxy.shape) >= 2 and Pxy.size > 0:
+            if Pxy.shape[-1] > 1:
+                Pxy = Pxy.mean(axis=-1)
+            else:
+                Pxy = np.reshape(Pxy, Pxy.shape[:-1])
+        return Pxy
+
+    def simulate_response(self):
+        '''
+        Simulate nominal response of sensor to calibration signal
+        '''
+        nominal_paz = {
+            'zeros': self.lti['system'].zeros,
+            'poles': self.lti['system'].poles,
+            'sensitivity': abs(self.lti['system'].freqresp(w=2*np.pi)[1])}
+        nominal_paz['gain'] = (self.lti['system'].gain /
+                               nominal_paz['sensitivity'])
+
+        whole_sig_sim = simulate_seismometer(
+            self.sig_in, self.f_sample(),
+            paz_simulate=nominal_paz, simulate_sensitivity=True)
+
+        return whole_sig_sim[int(self.info['t_on']*self.f_sample()):
+                             int(-self.info['t_off']*self.f_sample())]
+
+    def estimate_errors(self, confidence=0.95):
+        '''
+        Least-squares estimation of gain and timing errors.
+
+        The optimal estimate of the error delta_gain is simply the average
+        over frequency weighted by the estimated variance at each frequency.
+        The random error in the estimated gain is
+        (Bendat & Piersol, 1993, eq. 11.55, p. 307):
+            gain_variance = (1/gamma^2 - 1)/(2*n)
+        Where gamma is the coherence and n is the number of statistically
+        independent windows.
+
+        A time delay between input and output of delta_t [s] results in an
+        apparent phase shift, delta_theta [radians] which varies linearly
+        with angular frequency w [radians/s]:
+            delta_theta = delta_t * w
+        We have m measurements of the phase shift B=delta_theta a=t [Mx1] at
+        each frequency A=w [Mx1], and we want to find the scalar x=delta_t
+        which minimizes the Euclidean 2-norm ||B - A*x||^2, a standard problem
+        of linear algebra.
+
+        When the gain variance is sufficiently small, the random error in the
+        expected phase, measured in radians, is actually the same as for the
+        gain_variance (Bendat & Piersol, 1993, eq. 11.58, p. 309)
+            phase_variance = (1/gamma^2 - 1)/(2*n) [radians]
+        This is the optimal weight for a least-squares solution.
+
+        Although this procedure could be modified to compute estimates of
+        errors on a per-channel basis, it instead treats the errors as common
+        to all channels.
+
+        Parameters
+        ----------
+        confidence: float, optional
+            confidence interval for estimates of error in results
+
+        Returns
+        -------
+        gain_error, gain_error_std, time_error, time_error_std: tuple of floats
+            least-squares estimate of the overall errors, and estimates of the
+            error in those estimates with the specified confidenc
+        '''
+        Txy = self._mean(self.Pyx)/self._mean(self.Pxx)
+        tf_system = sp.freqresp(self.lti['system'], 2*np.pi*self.f)[1]
+        Txy /= tf_system
+        Cxy = np.abs(self._mean(self.Pyx))**2/(
+            self._mean(self.Pxx)*self._mean(self.Pyy))
+        num_sigma = np.sqrt(2)*erfinv(confidence)
+
+        gain = np.abs(Txy)
+        phase = np.angle(Txy)  # unwrap_mid(np.angle(Txy), self.f)
+        variance = (1/Cxy - 1)/(2*len(self.t))
+
+        f = np.reshape(np.tile(self.f[1:], gain.shape[0]), (-1, 1))
+        gain = np.reshape(gain[:, 1:], (-1, 1))
+        phase = np.reshape(phase[:, 1:], (-1, 1))
+        variance = np.reshape(variance[:, 1:], (-1, 1))
+
+        gain_error = np.sum(gain/variance)/np.sum(1/variance)
+        gain_error_std = num_sigma/np.sum(1/variance)
+        # TODO fix gain error error estimate
+        # print(gain_error, gain_error_std)
+
+        weights = np.sqrt(1/variance)
+
+        # gain_error, _, _, gain_singular = \
+        #     np.linalg.lstsq(np.ones_like(f)*weights, phase*weights)
+        # gain_error = float(gain_error)
+        # gain_error_std = num_sigma/float(gain_singular)
+        # print(gain_error, gain_error_std)
+
+        time_error, _, _, time_singular = \
+            np.linalg.lstsq(2*np.pi*f*weights, phase*weights)
+        time_error = float(time_error)
+        time_error_std = num_sigma/float(time_singular)
+
+        message = ('Gain error %.2g%% ±%.1g%%\n' %
+                   (100*(gain_error - 1), 100*gain_error_std) +
+                   'Timing error %s ±%s\n' %
+                   (pretty_duration(time_error, fmt=2),
+                    pretty_duration(time_error_std, fmt=1)) +
+                   'with %.0f%% confidence' % (100*confidence))
+
+        return gain_error, gain_error_std, time_error, time_error_std, message
+
+    def plot_check(self, where='start', window_seconds=5, save=False):
+        '''
+        Spot check critical times in the calibration
+        '''
+        assert where in ['start', 'end', 'on', 'off']
+
+        target_time = self.info['start']
+        if where == 'end':
+            target_time += self.info['duration']
+        elif where == 'on':
+            target_time -= self.info['t_on']
+        elif where == 'off':
+            target_time += self.info['duration']
+            target_time += self.info['t_off']
+
+        stream = self.stream.copy().trim(target_time - window_seconds/2,
+                                         target_time + window_seconds/2)
+        stream[-1].plot(handle=True)
+
+        if save:
+            self.save_image(option_list=where)
+
+    def plot_stream_trimmed(self, save=False):
+        '''
+        Quick plot of active part of calibration
+        '''
+        stream = self.stream.copy()
+        stream.trim(self.info['start'],
+                    self.info['start'] + self.info['duration'])
+        stream.plot(handle=True)
+
+        if save:
+            self.save_image()
+
+    def plot_raw_and_simulated(self, save=False):
+
+        simulated = self.simulate_response()
+        t_out = np.arange(len(simulated))/self.f_sample()
+        labels = factor_names(self.stream)[1]
+
+        fig, ax = plt.subplots()
+        for output, label in zip(self.output_trimmed(), labels):
+            ax.plot(t_out, output, label=label)
+        ax.plot(t_out, simulated, label='simulated')
+        ax.set_ylabel('Voltage [V]')
+        ax.set_xlabel('Time [s]')
+        ax.legend()
+
+        if save:
+            self.save_image(fig)
+
+    def plot_signal_to_noise(self, save=False):
+
+        if self.f is None:
+            self.compute()
+
+        labels = factor_names(self.stream)[1]
+        Cxy = np.abs(self._mean(self.Pyx))**2/(
+            self._mean(self.Pxx)*self._mean(self.Pyy))
+
+        fig, ax = plt.subplots()
+        for snr, label in zip(20*np.log10(1/(1 - Cxy)), labels):
+            ax.semilogx(self.f, snr, label=label)
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel('SNR [dB]')
+        ax.legend(loc='upper left')
+
+        if save:
+            self.save_image(fig)
+
+    def plot_spectrogram(self, save=False):
+
+        if self.f is None:
+            self.compute()
+
+        labels = ['input'] + factor_names(self.stream)[1]
+
+        # convert to volts and make stackable
+        tf = sp.freqresp(self.lti['system'], 2*np.pi*self.f[1:])[1]
+        tf = tf.reshape((1, len(self.f[1:]), 1))
+        Pxx = self.Pxx[1:].reshape(-1, len(self.f[1:]), len(self.t))
+        Pyy = self.Pyy[:, 1:, :]/np.abs(tf)**2
+        data_db = 20*np.log10(np.abs(np.concatenate((Pxx, Pyy), axis=0)))
+        max_db = data_db.max()
+        min_db = max_db - 100
+
+        fig, axes = plt.subplots(len(labels), 1, sharex=True,
+                                 figsize=(6, len(labels)*2))
+        for datum_db, ax, label in zip(data_db, axes, labels):
+
+            im = ax.pcolormesh(self.t, self.f, datum_db,
+                               vmin=min_db, vmax=max_db)
+            ax.set_ylabel('Frequency [Hz]')
+            ax.text(0.95, 0.9, label, transform=ax.transAxes,
+                    horizontalalignment='right', verticalalignment='top',
+                    bbox=dict(facecolor='white'))
+
+        axes[-1].set_xlabel('Time [s]')
+        subplots_squeeze(fig, hspace=0)
+
+        fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.7,
+                     label='Power Spectral Density [dB wrt $V^2/Hz$]')
+
+        if save:
+            self.save_image(fig)
+
+    def plot_response(self, model='system', f_limits=None, save=False):
+
+        if model not in self.lti.keys():
+            print("'%s' not among supported models: %s." %
+                  (model, ', '.join("'%s'" % key for key in self.lti.keys())))
+            return
+
+        if f_limits is None:
+            f_limits = [self.f[1], self.f[-1]]
+        f_plot = logspace(f_limits[0], f_limits[1])
+        tf = sp.freqresp(self.lti[model], 2*np.pi*f_plot)[1]
+
+        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(6, 6))
+        axes[0].semilogx(f_plot, 20*np.log10(np.abs(tf)), label=model)
+        axes[1].semilogx(f_plot, np.angle(tf, deg=True), label=model)
+
+        axes[0].set_ylabel('Sensitivity [dB wrt ]')
+        axes[0].legend(loc='best')
+        axes[1].set_ylabel('Phase [°]')
+        axes[1].set_xlabel('Frequency [Hz]')
+        subplots_squeeze(fig, hspace=0)
+
+        if save:
+            self.save_image(fig, model)
+
+    def plot_transfer_function(self, scale='log', model='system',
+                               remove_nominal=True, treat_errors='correct',
+                               save=False, confidence=0.95):
+        '''
+        Plot calibration transfer function on log or linear scale.
+
+        Parameters
+        ----------
+        scale: str, optional
+            selects 'log' or 'linear' scaling for x-axis
+        '''
+
+        if model not in self.lti.keys():
+            print("'%s' not among supported models: %s." %
+                  (model, ', '.join("'%s'" % key for key in self.lti.keys())))
+            return
+
+        if self.f is None:
+            self.compute()
+
+        name, labels = factor_names(self.stream)
+        Txy = self._mean(self.Pyx)/self._mean(self.Pxx)
+
+        tf_system = sp.freqresp(self.lti['system'], 2*np.pi*self.f)[1]
+        if remove_nominal:
+            tf_remove = sp.freqresp(self.lti[model], 2*np.pi*self.f)[1]
+        else:
+            tf_remove = np.ones(tf_system.shape)
+        tf_nominal = tf_system/tf_remove
+
+        option_list = []
+        if remove_nominal:
+            Txy /= tf_remove
+            option_list += ['nominal_' + model + '_removed']
+
+        if treat_errors in ['estimate', 'correct']:
+            gain_error, gain_error_std, time_error, time_error_std, message = \
+                self.estimate_errors(confidence=confidence)
+            tf_error = tf_nominal*np.exp(1j*2*np.pi*self.f*time_error)
+            tf_error *= gain_error
+        if treat_errors == 'correct':
+            Txy /= gain_error
+            Txy /= np.exp(1j*2*np.pi*self.f*time_error)
+
+        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(7, 7))
+
+        for gain, label in zip(20*np.log10(np.abs(Txy)), labels):
+            axes[0].plot(self.f[1:], gain[1:], label=label)
+        axes[0].set_ylabel('Gain [dB]')
+        axes[0].set_xlim((self.f[1], self.f[-1]))
+        gain_nominal = 20*np.log10(np.abs(tf_nominal[1:]))
+        if np.allclose(gain_nominal, 0):
+            axes[0].set_ylim((-1, 1))
+        else:
+            axes[0].plot(self.f[1:], gain_nominal, label='nominal')
+            axes[0].set_ylim((gain_nominal.min(), gain_nominal.max()))
+        if treat_errors == 'estimate':
+            axes[0].plot(self.f[1:], 20*np.log10(np.abs(tf_error[1:])),
+                         label='error')
+
+        for phase, label in zip(np.angle(Txy, deg=True), labels):
+            axes[1].plot(self.f[1:], phase[1:], label=label)
+        axes[1].set_ylabel('Phase [°]')
+        axes[1].set_xlabel('Frequency [Hz]')
+        phase_nominal = np.angle(tf_nominal[1:], deg=True)
+        if np.allclose(phase_nominal, 0):
+            axes[1].set_ylim((-10, 10))
+        else:
+            axes[1].plot(self.f[1:], phase_nominal, label='nominal')
+            axes[1].set_ylim((phase_nominal.min(), phase_nominal.max()))
+        if treat_errors == 'estimate':
+            axes[1].plot(self.f[1:], np.angle(tf_error[1:], deg=True),
+                         label='error')
+
+        if treat_errors in ['estimate', 'correct']:
+            axes[1].text(0.05, 0.9, message, transform=axes[1].transAxes,
+                         horizontalalignment='left',
+                         verticalalignment='top')
+
+        axes[0].set_xscale(scale)
+        if scale != 'log':
+            option_list += [scale]
+
+        axes[0].legend(loc='upper left')
+        subplots_squeeze(fig, hspace=0)
+
+        if save:
+            self.save_image(fig, option_list)
