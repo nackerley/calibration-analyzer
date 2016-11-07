@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from obspy import read, UTCDateTime
 from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.client import FDSNException
+from obspy.core.inventory import CoefficientsTypeResponseStage
 
 from antelope_tools.utilities import DATETIME_FORMAT, pretty_duration
 from calan.noise_survey_toolbox import (
@@ -131,7 +132,7 @@ def flip(m, axis):
     return m[tuple(indexer)]
 
 
-def unwrap_mid(phase_in, f_in, f_mid=1, axis=-1):
+def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1):
     '''
     Unwraps phase data in the range starting at midband
 
@@ -144,7 +145,7 @@ def unwrap_mid(phase_in, f_in, f_mid=1, axis=-1):
         phase data
     f_in: :class:`~numpy.array` or list
         frequencies corresponding to phases
-    f_mid: float, optional
+    f_midband: float, optional
         midband frequency at which to start unwrapping
 
     Returns
@@ -155,11 +156,14 @@ def unwrap_mid(phase_in, f_in, f_mid=1, axis=-1):
 
     assert f_in.ndim == 1
 
-    i_mid = np.argmin(np.array(f_in) - f_mid)
+    i_mid = np.argmin(np.abs(np.array(f_in)/f_midband - 1))
+    phase_below = phase_in.take(np.arange(i_mid), axis)
+    phase_above = phase_in.take(np.arange(i_mid, phase_in.shape[axis]), axis)
 
-    return np.concatenate(
-        (flip(np.unwrap(flip(phase_in[np.arange(i_mid)], axis), axis), axis),
-         np.unwrap(phase_in[np.arange(i_mid, len(phase_in))], axis)))
+    phase_below = flip(np.unwrap(flip(phase_below, axis), axis), axis)
+    phase_above = np.unwrap(phase_above, axis)
+
+    return np.concatenate((phase_below, phase_above), axis)
 
 
 def lti_from_zpsf(zeros, poles, sensitivity, frequency):
@@ -253,6 +257,152 @@ def fft_frequencies(len_fft, f_sample, sides='onesided'):
         frequencies[-1] *= -1
 
     return frequencies
+
+
+def compute_decim_delay(b_stages, factors):
+    '''
+    Determine total filter delay for multi-stage decimation.
+
+    Each decimation filter must be odd-order so that the total filter delay
+    is an integer number of samples. The result is the total number of extra
+    samples required to load the multi decimation filters.  Actual
+    filter delay, in seconds, for a symmetric filter, is:
+        tDelay = n_pad_upsample/2/f_upsample
+    where the initial sample rate is f_upsample in Hz.
+
+        :param b_stages: decimation coefficients
+        :type b_stages: list of :class:`~numpy.array`
+        :list factors: integer decimation factors for each stage
+    :returns: integer number of samples needed to load filters
+
+    Example:
+        n_pad_upsample = compute_decim_delay(b_stages, factors)
+    '''
+
+    n_pad_upsample = 0
+    for i in reversed(range(len(factors))):
+        if len(b_stages[i]) % 2 == 0:
+            raise TypeError(
+                'Decimation filters must be odd-order:'
+                'stage %d has %d coefficients.' % i, len(b_stages[i]))
+        n_pad_upsample = n_pad_upsample*factors[i] + len(b_stages[i]) - 1
+
+    return n_pad_upsample
+
+
+# pylint: disable=too-many-arguments, too-many-locals
+def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
+                discard_initial=True):
+    '''
+    Applies cascaded FIR filter and decimation stages to a signal.
+
+    Example:
+
+    Chunked data is handled as follows:
+
+    ```python
+
+    for i, chunk in enumerate(chunks):
+        if i == 0:
+            sig_out, z_out, sig_unused = multi_decim(
+                chunk, b_stages, factors)
+        else:
+            chunk_out, z_out, sig_unused = multi_decim(
+                chunk, b_stages, factors,
+                z_in=z_out, sig_leftover=sig_unused, discard_initial=False)
+            sig_out = np.hstack((sig_out, chunk_out))
+    ```
+
+    Use :func:`compute_decim_delay` to determine the number of extra samples
+    to request in order to keep output samples aligned with input samples.
+
+    :param sig_in: input samples
+    :type sig_in: :class:`~numpy.array`
+    :param b_stages: decimation coefficients
+    :type b_stages: list of :class:`~numpy.array`
+    :list factors: integer decimation factors for each stage
+    :param z_in: filter delays
+    :type z_in: list of :class:`~numpy.array` or scalar numeric
+
+    :returns: output samples, filter delays and unused input samples
+    :rtype: (:class:`~numpy.array`,
+             list of :class:`~numpy.array`,
+             :class:`~numpy.array`)
+    '''
+    assert len(b_stages) == len(factors)
+
+    sig_in = np.hstack((sig_leftover, sig_in))
+
+    total_decimation = np.prod(factors)
+
+    if discard_initial:  # samples are consumed in loading of filters
+        n_pad_upsample = compute_decim_delay(b_stages, factors)
+        len_output = int((len(sig_in) - n_pad_upsample)/total_decimation)
+        len_input_required = int(len_output*total_decimation) + n_pad_upsample
+    else:
+        len_output = int(len(sig_in)/total_decimation)
+        len_input_required = int(len_output*total_decimation)
+
+    if len_output < 1:  # not enough input samples; just pass signal through
+        return np.array([]), z_in, sig_in
+
+    # initialize signals and pass unused signal through to output
+    sig_stages = [None]*(len(factors) + 1)
+    sig_stages[0] = sig_in[:len_input_required]
+    sig_unused = sig_in[len_input_required:]
+
+    if isinstance(z_in, int) or isinstance(z_in, float):
+        z_in = [z_in*sp.lfilter_zi(b_stage, 1) for b_stage in b_stages]
+    else:
+        assert len(z_in) == len(factors)
+        assert all([len(z_stage) + 1 == len(b_stage)
+                    for z_stage, b_stage in zip(z_in, b_stages)])
+
+    if discard_initial:
+        first_indices = [len(b_stage) - 1 for b_stage in b_stages]
+    else:
+        first_indices = [0]*len(b_stages)
+
+    # alternately filter and decimate according to stage specifications
+    z_out = [None]*len(factors)
+    for i, _ in enumerate(factors):
+        sig_stages[i], z_out[i] = sp.lfilter(
+            b_stages[i], 1, sig_stages[i], zi=z_in[i])
+        sig_stages[i + 1] = sig_stages[i][first_indices[i]::factors[i]]
+
+    assert len(sig_stages[-1]) == len_output
+
+    return sig_stages[-1], z_out, sig_unused
+
+
+def extract_decimation_coefficients(stages, verbose=False):
+    '''
+    Extract decimation factors and filter coefficients from a list of stages.
+    '''
+
+    b_stages = []
+    factors = []
+    for stage in stages:
+        if (isinstance(stage, CoefficientsTypeResponseStage) and
+                stage.decimation_factor > 1):
+            if len(factors) == 0 and verbose:
+                print('Input sample rate %g sps' %
+                      stage.decimation_input_sample_rate)
+
+            factors.append(stage.decimation_factor)
+            b_stages.append(stage.numerator)
+            if verbose:
+                print('Filter with %d coefficients '
+                      'and decimate by %d to %g sps'
+                      % (len(stage.numerator), stage.decimation_factor,
+                         stage.decimation_input_sample_rate /
+                         stage.decimation_factor))
+    if verbose:
+        n_pad_upsample = compute_decim_delay(b_stages, factors)
+        print('Filtering and decimation by %d consumes %d samples'
+              % (np.prod(factors), n_pad_upsample))
+
+    return b_stages, factors
 
 
 R_SERIES = {
@@ -446,6 +596,20 @@ def logspace(start, stop, num=12):
     return temp[np.bitwise_and(temp >= start, temp <= stop)]
 
 
+def truncnorm_shape(mean, std, clip_a, clip_b=None):
+    '''
+    Convert mean, standard deviation and clip levels to
+    :class:`~scipy.stats.truncnorm' shape parameters.
+
+    :returns: a, b
+    '''
+    if clip_b is None:
+        clip_b = - clip_a
+    shape_a, shape_b = (clip_a - mean) / std, (clip_b - mean) / std
+
+    return shape_a, shape_b
+
+
 def subplots_squeeze(fig, hspace=None, wspace=None):
     '''
     For now this just supports the case of multiple axes stacked vertically,
@@ -473,7 +637,7 @@ class StreamAnalyzer():
     '''
 
     def __init__(self, fdsn_server='http://132.156.41.208:6062',
-                 verbose=True):
+                 cache_format='MSEED', verbose=True):
         '''
         Sets up FDSN server for later use.
         '''
@@ -482,7 +646,9 @@ class StreamAnalyzer():
             print('You are working offline.')
         else:
             self.client = Client(fdsn_server)
+            print('FDSN server: \n\t%s' % self.client.base_url)
 
+        self.cache_format = cache_format
         self.verbose = verbose
         self.stream = None
 
@@ -534,13 +700,15 @@ class StreamAnalyzer():
                 print('End:    ', str(end))
                 raise ex
 
-            input_file = self.make_cache_name() + '.mseed'
+            input_file = '.'.join([self.make_cache_name(), self.cache_format])
             if self.verbose:
-                print('Caching miniSEED locally as: \n\t%s' % input_file)
-            self.stream.write(input_file, format='MSEED')
+                print('Caching %s locally as: \n\t%s' % (self.cache_format,
+                                                         input_file))
+            self.stream.write(input_file, format=self.cache_format)
         else:
             if self.verbose:
-                print('Reading data from miniSEED file: \n\t%s' % input_file)
+                print('Reading data from %s file: \n\t%s' % (self.cache_format,
+                                                             input_file))
             self.stream = read(input_file)
 
         if inventory_dataless is None:
@@ -567,6 +735,21 @@ class StreamAnalyzer():
         self.stream = self.stream.merge().split().sort()
         self.stream.attach_response(inventory)
 
+    def f_sample(self):
+        '''Return stream sampling rate'''
+        return self.stream[0].stats.sampling_rate
+
+    @staticmethod
+    def _mean(Pxy):
+        '''Finishing touch on Welch's method.'''
+
+        if len(Pxy.shape) >= 2 and Pxy.size > 0:
+            if Pxy.shape[-1] > 1:
+                Pxy = Pxy.mean(axis=-1)
+            else:
+                Pxy = np.reshape(Pxy, Pxy.shape[:-1])
+        return Pxy
+
     def save_image(self, fig=None, option_list=None):
         '''
         Save a figure with an automatically descriptive file name.
@@ -579,19 +762,31 @@ class StreamAnalyzer():
         if isinstance(option_list, str):
             option_list = option_list.split(',')
 
-        if hasattr(self, 'info'):
-            start_string = str(self.info['start'].date)
-        else:
-            start = np.max([trace.stats.starttime for trace in self.stream])
-            start_string = start.strftime(DATETIME_FORMAT)
-        common_name = factor_names(self.stream)[0]
-
         caller_name = sys._getframe(1).f_code.co_name
         plot_type = caller_name.replace('plot_', '')
-        file_parts = [plot_type, common_name, start_string]
+
+        file_parts = [plot_type]
+
         if (option_list is not None and len(option_list) > 0 and
                 option_list[0] != ''):
-            file_parts[1:1] = option_list
+            file_parts += option_list
+
+        if self.stream is not None:
+            if hasattr(self, 'info'):
+                start_string = str(self.info['start'].date)
+            else:
+                start = np.max([trace.stats.starttime
+                                for trace in self.stream])
+                start_string = start.strftime(DATETIME_FORMAT)
+            common_name = factor_names(self.stream)[0]
+
+            file_parts += [common_name, start_string]
+        else:
+            if hasattr(self, 'file'):
+                calibration_name = self.info['file'].replace('.gz', '')
+                calibration_name = calibration_name.replace('.wav', '')
+                file_parts += [calibration_name]
+
         file_name = '_'.join(file_parts) + '.png'
 
         if self.verbose:
