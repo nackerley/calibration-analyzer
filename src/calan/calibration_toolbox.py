@@ -27,11 +27,13 @@ from obspy.signal.invsim import simulate_seismometer
 
 from antelope_tools.utilities import (
     pretty_duration, pretty_voltage, pretty_bytes,
-    parse_duration, parse_voltage, round_sig)
+    parse_duration, parse_voltage, round_sig,
+    prepend_docstring)
 
 from calan.noise_survey_toolbox import dataless2inventory
 from calan.core import (
-    StreamAnalyzer, factor_names, subplots_squeeze,
+    StreamAnalyzer, Stft,
+    factor_names, subplots_squeeze,
     lti_from_zpsf, minreal, unwrap_mid, logspace, truncnorm_shape,
     len_fft_welch, num_windows_welch, fft_frequencies,
     extract_decimation_coefficients, compute_decim_delay, multi_decim)
@@ -44,8 +46,8 @@ DAC_GAIN = FULL_SCALE_VOLTAGE/(2**(DAC_BITS - 1) - 1)
 SAMPLE_FORMAT = '<h'  # little-endian short (16-bit) integer
 
 # Nanometrics Trillium 120Q/QA User Guide 17751R2, 2015-10-05
-CAL_ZEROS = []  # rad/s
-CAL_POLES = [-160, -3177]  # rad/s
+CAL_ZEROS = ()  # rad/s
+CAL_POLES = (-160, -3177)  # rad/s
 CAL_SENS = -0.009715  # m/s^2/V
 CAL_FREQ = 0.001  # Hz
 
@@ -69,7 +71,7 @@ def seismometer_calibration_lti(zeros=CAL_ZEROS, poles=CAL_POLES,
     return cal_lti
 
 
-def accelerometer_calibration_lti(zeros=[], poles=[],
+def accelerometer_calibration_lti(zeros=(), poles=(),
                                   sensitivity=1, frequency=1):
     '''
     Returns a accelerometer calibration input transfer function
@@ -106,7 +108,7 @@ def convert_counts_to_volts(signal):
     return signal.astype('float')*DAC_GAIN
 
 
-def _print_expected_file_size(file_name, duration):
+def _print_expected_wav_size(file_name, duration):
     '''
     Print file name and its expected size before compression.
     '''
@@ -209,7 +211,7 @@ def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
         sample_rate=sample_rate, mean_voltage=mean_voltage,
         t_on=t_on, t_off=t_off)
     if verbose:
-        _print_expected_file_size(file_name, duration_seconds + t_on + t_off)
+        _print_expected_wav_size(file_name, duration_seconds + t_on + t_off)
 
     # generate random signal
     shape_a, shape_b = truncnorm_shape(mean_voltage, rms_voltage,
@@ -242,7 +244,7 @@ def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
         'binary', duration_seconds, pp_voltage=pp_voltage,
         sample_rate=sample_rate, t_on=t_on, t_off=t_off)
     if verbose:
-        _print_expected_file_size(file_name, duration_seconds + t_on + t_off)
+        _print_expected_wav_size(file_name, duration_seconds + t_on + t_off)
 
     # generate random binary signal and scale it appropriately
     length = int(round(duration_seconds*sample_rate))
@@ -269,7 +271,7 @@ def generate_piecewise_constant(durations, voltages, verbose=False):
         ['%gV_%ss' % (voltage, duration)
          for voltage, duration in zip(voltages, durations)])
     if verbose:
-        _print_expected_file_size(file_name, durations.sum())
+        _print_expected_wav_size(file_name, durations.sum())
 
     times = durations.cumsum()
     t = np.arange(0, durations.sum(), 1/CALIBRATION_SAMPLE_RATE).reshape(-1, 1)
@@ -448,10 +450,11 @@ def plot_calibration_decimated(sig_in, sig_out, b_stages, factors,
 
 class CalibrationAnalyzer(StreamAnalyzer):
     '''
-    A :class:`obspy.Stream`-based calibration signal analyzer.
+    A calibration signal analyzer based on :class:`obspy.Stream`.
     '''
 
     def __init__(self, calibration_file, start_time=None, attenuation=1,
+                 duration=None, t_on=None, t_off=None,
                  fdsn_server='http://132.156.41.208:6062',
                  cache_format='MSEED', verbose=True):
         '''
@@ -460,15 +463,17 @@ class CalibrationAnalyzer(StreamAnalyzer):
         Arguments
         ---------
         calibration_file: string
-            must be parseable to extract the duration, on-time and off-time of
+            an attempt is made to parse for duration, on-time and off-time of
             calibration signal, for example: 'gaussian_2h_on5m_off5m.wav.gz'
         start_time: string, optional
             start time of calibration
         attenuation: float
             factor by which output calibration signal is attenuated
-        fdsn_server: string
+        duration, t_on, t_off: float, optional
+            calibration signal parameters
+        fdsn_server: string, optional
             `IRIS` or fully-specified URL of another FDSN server, or `None`
-            to work off-line
+            to work off-line, defaults to GSC FDSN server.
         cache_format: string, optional
             any format supported by :func:`obspy.read` and
             :func:`obspy.Stream.write`
@@ -480,38 +485,42 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         assert os.path.exists(calibration_file)
 
-        _, duration_seconds, _, _, _, t_on, t_off, _ = \
+        _, duration_seconds, _, _, _, t_on_seconds, t_off_seconds, _ = \
             parse_random_signal_file_name(calibration_file)
+        if duration is not None:
+            duration_seconds = duration
+        if t_on is not None:
+            t_on_seconds = duration
+        if t_off is not None:
+            t_off_seconds = duration
 
         self.info = {
             'file': calibration_file,
             'attenuation': attenuation,
             'duration': duration_seconds,
-            't_on': t_on,
-            't_off': t_off}
+            't_on': t_on_seconds,
+            't_off': t_off_seconds}
 
         if start_time is not None:
             self.info['start'] = UTCDateTime(start_time)
         else:
             self.info['start'] = None
 
+        self.input = None
+        self.response = None
         self.lti = {'cal': None,
                     'sensor': None,
                     'system': None}
+        self.stft = Stft()
 
-        self.response = None
-        self.input = None
-        self.Pxx = None
-        self.Pyy = None
-        self.Pyx = None
-
+    @prepend_docstring(StreamAnalyzer.load_stream.__doc__)
     def load_stream(self, stations,
                     input_file=None, inventory_dataless=None,
                     networks=('CN'), locations=(''),
                     channels=('HHE', 'HHN', 'HHZ')):
         # pylint:disable=arguments-differ
         '''
-        Calls super-class method with appropriate start time and duration
+        Start time and duration are selected to be appropriate for calibration.
         '''
         super(CalibrationAnalyzer, self).load_stream(
             self.info['start'] - self.info['t_on'] - 60,
@@ -583,7 +592,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
                      ' input sample rate %g sps.' % f_input)
         return f_input
 
-    def setup_nominal_response(self, cal_lti=None, cal_units='(m/s)/V'):
+    def setup_nominal_response(self, cal_lti=None):
         '''
         Set up nominal responses for the calibration input and sensor response.
         For seismometers response units are [m/s/V] and [V/(m/s)] respectively.
@@ -646,7 +655,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
             signal *= self.get_digitizer_sensitivity()
 
             stream = Stream([Trace(data=np.ascontiguousarray(signal),
-                            header={'sampling_rate': self.f_sample()})])
+                                   header={'sampling_rate': self.f_sample()})])
             start = stream[0].stats.starttime
             duration = stream[0].stats.npts*stream[0].stats.sampling_rate
 
@@ -717,32 +726,22 @@ class CalibrationAnalyzer(StreamAnalyzer):
         which reduces the variance in the result.
         '''
 
-        sig_in = self.input_voltage()
-        sig_out = self.output_voltage()
+        x = self.input_voltage()
+        y = self.output_voltage()
         f_sample = self.f_sample()
 
         if len_fft is None:
-            len_fft = len_fft_welch(len(sig_in), num_windows, fraction_overlap)
+            len_fft = len_fft_welch(len(x), num_windows, fraction_overlap)
         len_overlap = int(fraction_overlap*len_fft)
-        num_windows = num_windows_welch(len(sig_in), len_fft, len_overlap)
 
-        self.f = fft_frequencies(len_fft, f_sample)
+        num_windows = num_windows_welch(len(x), len_fft, len_overlap)
+        f_expected = fft_frequencies(len_fft, f_sample)
         if self.verbose:
             print("Computing spectra using Welch's method on " +
                   '%d segments ' % num_windows +
-                  'from %g to %g Hz' % (self.f[1], self.f[-1]))
+                  'from %g to %g Hz' % (f_expected[1], f_expected[-1]))
 
-        self.f, self.t, self.Pyx = sp.spectral._spectral_helper(
-            sig_in, sig_out,
-            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')
-
-        self.Pxx = sp.spectral._spectral_helper(
-            sig_in, sig_in,
-            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
-
-        self.Pyy = sp.spectral._spectral_helper(
-            sig_out, sig_out,
-            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
+        self.stft.compute(x, y, f_sample, len_fft, len_overlap)
 
     def simulate_response(self, trim=True):
         '''
@@ -815,44 +814,41 @@ class CalibrationAnalyzer(StreamAnalyzer):
         summary: string
             summary of fitting results
         '''
-        Txy = self._mean(self.Pyx)/self._mean(self.Pxx)
-        tf_system = sp.freqresp(self.lti['system'], 2*np.pi*self.f)[1]
-        Txy /= tf_system
-        Cxy = np.abs(self._mean(self.Pyx))**2/(
-            self._mean(self.Pxx)*self._mean(self.Pyy))
+        f = self.stft.f
+        tf_estimate = self._mean(self.stft.p_xy)/self._mean(self.stft.p_xx)
+        tf_estimate /= sp.freqresp(self.lti['system'], 2*np.pi*f)[1]
+        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
+            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
         num_sigma = np.sqrt(2)*erfinv(confidence)
 
-        gain = np.abs(Txy)
-        phase = unwrap_mid(np.angle(Txy), self.f, axis=1)
-        variance = (1/Cxy - 1)/(2*len(self.t))
+        magnitude = np.abs(tf_estimate)
+        phase = unwrap_mid(np.angle(tf_estimate), f, axis=1)
+        variance = (1/coherence_squared - 1)/(2*len(self.stft.t))
 
-        f = np.reshape(np.tile(self.f[1:], gain.shape[0]), (-1, 1))
-        gain = np.reshape(gain[:, 1:], (-1, 1))
+        f = np.reshape(np.tile(f[1:], magnitude.shape[0]), (-1, 1))
+        magnitude = np.reshape(magnitude[:, 1:], (-1, 1))
         phase = np.reshape(phase[:, 1:], (-1, 1))
         variance = np.reshape(variance[:, 1:], (-1, 1))
         weights = np.sqrt(1/variance)
 
-        gain_wls = sm.WLS(gain, np.ones_like(f), weights)
-        gain_results = gain_wls.fit(method='qr')
-        gain_error = gain_results.params
-        gain_error_std = num_sigma*gain_results.bse
+        gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
+        timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
 
-        time_wls = sm.WLS(phase, 2*np.pi*f, weights)
-        time_results = time_wls.fit(method='qr')
-        time_error = time_results.params
-        time_error_std = num_sigma*time_results.bse
+        gain_digits = round(log10(
+            abs(gain.params - 1)/(num_sigma*gain.bse))) + 1
+        timing_digits = round(log10(
+            abs(timing.params)/(num_sigma*timing.bse))) + 1
+        summary = (
+            'Gain error %g%% ±%g%%\n' %
+            (round_sig(100*(gain.params - 1), gain_digits),
+             round_sig(100*num_sigma*gain.bse, 1)) +
+            'Timing error %s ±%s\n' %
+            (pretty_duration(timing.params, fmt=timing_digits, thresh=0.05),
+             pretty_duration(num_sigma*timing.bse, fmt=1, thresh=0.05)) +
+            '(%.0f%% confidence)' % (100*confidence))
 
-        gain_digits = round(log10(abs(gain_error - 1)/gain_error_std)) + 1
-        time_digits = round(log10(abs(time_error)/time_error_std)) + 1
-        summary = ('Gain error %g%% ±%g%%\n' %
-                   (round_sig(100*(gain_error - 1), gain_digits),
-                    round_sig(100*gain_error_std, 1)) +
-                   'Timing error %s ±%s\n' %
-                   (pretty_duration(time_error, fmt=time_digits, thresh=0.05),
-                    pretty_duration(time_error_std, fmt=1, thresh=0.05)) +
-                   '(%.0f%% confidence)' % (100*confidence))
-
-        return gain_error, gain_error_std, time_error, time_error_std, summary
+        return (gain.params, num_sigma*gain.bse,
+                timing.params, num_sigma*timing.bse, summary)
 
     def plot_check(self, where='start', window_seconds=5, save=False):
         '''
@@ -876,6 +872,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         if save:
             self.save_image(option_list=where)
 
+    # pylint: disable=arguments-differ
     def plot_stream(self, which='output', trim=True, save=False):
         '''
         Quick plot of calibration input
@@ -885,8 +882,56 @@ class CalibrationAnalyzer(StreamAnalyzer):
         if save:
             self.save_image(option_list=[which, 'trimmed'*trim])
 
-    def plot_simulated(self, trim=True, save=False):
+    def plot_response(self, model='system', f_limits=None, save=False):
+        '''
+        Plot nominal transfer function between specified frequency limits.
 
+        Arguments
+        ---------
+        model: str, optional
+            'sensor' for the sensor itself,
+            'cal' for calibration input or
+            'system' for the combination of the two
+        f_limits: tuple, optional
+            minimum and maximum frequencies for plotting, defaults to range
+            set by :func:`self.compute`
+        save: bool, optional
+            whether to save plot as PNG
+        '''
+
+        if model not in self.lti.keys():
+            print("'%s' not among supported models: %s." %
+                  (model, ', '.join("'%s'" % key for key in self.lti.keys())))
+            return
+
+        if f_limits is None:
+            f_limits = [(self.stft.f)[1], (self.stft.f)[-1]]
+        f_plot = logspace(f_limits[0], f_limits[1])
+        tf_model = sp.freqresp(self.lti[model], 2*np.pi*f_plot)[1]
+
+        width = plt.rcParams['figure.figsize'][0]
+        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
+        axes[0].semilogx(f_plot, 20*np.log10(np.abs(tf_model)), label=model)
+        axes[1].semilogx(f_plot, np.angle(tf_model, deg=True), label=model)
+        axes[0].axvline(self.f_sample()/2, linestyle='--', color='0.5')
+        axes[1].axvline(self.f_sample()/2, linestyle='--', color='0.5')
+        if np.any(np.abs(axes[1].get_ylim()) > 180):
+            axes[1].set_ylim([-180, 180])
+            axes[1].set_yticks(np.arange(-180, 180 + 1, 45.))
+
+        axes[0].set_ylabel('Sensitivity [dB wrt ]')
+        axes[0].legend(loc='best')
+        axes[1].set_ylabel('Phase [°]')
+        axes[1].set_xlabel('Frequency [Hz]')
+        subplots_squeeze(fig, hspace=0)
+
+        if save:
+            self.save_image(fig, model)
+
+    def plot_simulated(self, trim=True, save=False):
+        '''
+        Plot simulated calibration response in time domain.
+        '''
         simulated = self.simulate_response(trim=trim)
         t_out = np.arange(len(simulated))/self.f_sample()
 
@@ -904,17 +949,19 @@ class CalibrationAnalyzer(StreamAnalyzer):
             self.save_image(fig)
 
     def plot_signal_to_noise(self, save=False):
-
-        if self.f is None:
+        '''
+        Plot estimated signal-to-noise ratio.
+        '''
+        if self.stft.f is None:
             self.compute()
 
         labels = factor_names(self.stream)[1]
-        Cxy = np.abs(self._mean(self.Pyx))**2/(
-            self._mean(self.Pxx)*self._mean(self.Pyy))
+        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
+            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
 
         fig, ax = plt.subplots()
-        for snr, label in zip(20*np.log10(1/(1 - Cxy)), labels):
-            ax.semilogx(self.f, snr, label=label)
+        for snr, label in zip(10*np.log10(1/(1 - coherence_squared)), labels):
+            ax.semilogx(self.stft.f, snr, label=label)
         ax.set_xlabel('Frequency [Hz]')
         ax.set_ylabel('SNR [dB]')
         ax.legend(loc='upper left')
@@ -923,28 +970,30 @@ class CalibrationAnalyzer(StreamAnalyzer):
             self.save_image(fig)
 
     def plot_spectrogram(self, save=False):
-
-        if self.f is None:
+        '''
+        Plot input and output spectrograms, referred to sensor input [V].
+        '''
+        if self.stft.f is None:
             self.compute()
 
         labels = ['input'] + factor_names(self.stream)[1]
 
         # convert to volts and make stackable
-        tf = sp.freqresp(self.lti['system'], 2*np.pi*self.f[1:])[1]
-        tf = tf.reshape((1, len(self.f[1:]), 1))
-        Pxx = self.Pxx[1:].reshape(-1, len(self.f[1:]), len(self.t))
-        Pyy = self.Pyy[:, 1:, :]/np.abs(tf)**2
-        data_db = 20*np.log10(np.abs(np.concatenate((Pxx, Pyy), axis=0)))
-        max_db = data_db.max()
-        min_db = max_db - 100
+        f = self.stft.f[1:]
+        t = self.stft.t
+        tf_system = sp.freqresp(self.lti['system'], 2*np.pi*f)[1]
+        tf_system = tf_system.reshape((1, -1, 1))
+        p_dbs = 10*np.log10(np.concatenate(
+            (self.stft.p_xx[1:].reshape(-1, len(f), len(t)),
+             self.stft.p_yy[:, 1:, :]/np.abs(tf_system)**2), axis=0))
+        max_db = p_dbs.max()
 
         width = plt.rcParams['figure.figsize'][0]
         fig, axes = plt.subplots(len(labels), 1, sharex=True,
                                  figsize=(width, len(labels)*width/3))
-        for datum_db, ax, label in zip(data_db, axes, labels):
+        for p_db, ax, label in zip(p_dbs, axes, labels):
 
-            im = ax.pcolormesh(self.t, self.f, datum_db,
-                               vmin=min_db, vmax=max_db)
+            image = ax.pcolormesh(t, f, p_db, vmin=max_db - 100, vmax=max_db)
             ax.set_ylabel('Frequency [Hz]')
             ax.text(0.95, 0.9, label, transform=ax.transAxes,
                     horizontalalignment='right', verticalalignment='top',
@@ -953,42 +1002,11 @@ class CalibrationAnalyzer(StreamAnalyzer):
         axes[-1].set_xlabel('Time [s]')
         subplots_squeeze(fig, hspace=0)
 
-        fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.7,
+        fig.colorbar(image, ax=axes.ravel().tolist(), shrink=0.7,
                      label='Power Spectral Density [dB wrt $V^2/Hz$]')
 
         if save:
             self.save_image(fig)
-
-    def plot_response(self, model='system', f_limits=None, save=False):
-
-        if model not in self.lti.keys():
-            print("'%s' not among supported models: %s." %
-                  (model, ', '.join("'%s'" % key for key in self.lti.keys())))
-            return
-
-        if f_limits is None:
-            f_limits = [self.f[1], self.f[-1]]
-        f_plot = logspace(f_limits[0], f_limits[1])
-        tf = sp.freqresp(self.lti[model], 2*np.pi*f_plot)[1]
-
-        width = plt.rcParams['figure.figsize'][0]
-        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
-        axes[0].semilogx(f_plot, 20*np.log10(np.abs(tf)), label=model)
-        axes[1].semilogx(f_plot, np.angle(tf, deg=True), label=model)
-        axes[0].axvline(self.f_sample()/2, linestyle='--', color='0.5')
-        axes[1].axvline(self.f_sample()/2, linestyle='--', color='0.5')
-        if np.any(np.abs(axes[1].get_ylim()) > 180):
-            axes[1].set_ylim([-180, 180])
-            axes[1].set_yticks(np.arange(-180, 180 + 1, 45.))
-
-        axes[0].set_ylabel('Sensitivity [dB wrt ]')
-        axes[0].legend(loc='best')
-        axes[1].set_ylabel('Phase [°]')
-        axes[1].set_xlabel('Frequency [Hz]')
-        subplots_squeeze(fig, hspace=0)
-
-        if save:
-            self.save_image(fig, model)
 
     def plot_transfer_function(self, scale='log', model='system',
                                remove_nominal=True, treat_errors='correct',
@@ -1007,62 +1025,60 @@ class CalibrationAnalyzer(StreamAnalyzer):
                   (model, ', '.join("'%s'" % key for key in self.lti.keys())))
             return
 
-        if self.f is None:
+        if self.stft.f is None:
             self.compute()
 
-        name, labels = factor_names(self.stream)
-        Txy = self._mean(self.Pyx)/self._mean(self.Pxx)
-
-        tf_system = sp.freqresp(self.lti['system'], 2*np.pi*self.f)[1]
-        if remove_nominal:
-            tf_remove = sp.freqresp(self.lti[model], 2*np.pi*self.f)[1]
-        else:
-            tf_remove = np.ones(tf_system.shape)
-        tf_nominal = tf_system/tf_remove
-
         option_list = []
+        labels = factor_names(self.stream)[1]
+        tf_estimate = self._mean(self.stft.p_xy)/self._mean(self.stft.p_xx)
+        f = self.stft.f
+
         if remove_nominal:
-            Txy /= tf_remove
+            tf_remove = sp.freqresp(self.lti[model], 2*np.pi*f)[1]
+            tf_estimate /= tf_remove
             option_list += ['nominal_' + model + '_removed']
+        else:
+            tf_remove = np.ones(f.shape)
+        tf_nominal = sp.freqresp(self.lti['system'], 2*np.pi*f)[1]/tf_remove
 
         if treat_errors in ['estimate', 'correct']:
-            gain_error, gain_error_std, time_error, time_error_std, message = \
+            gain_error, _, time_error, _, message = \
                 self.estimate_errors(confidence=confidence)
-            tf_error = tf_nominal*np.exp(1j*2*np.pi*self.f*time_error)
+            tf_error = tf_nominal*np.exp(1j*2*np.pi*f*time_error)
             tf_error *= gain_error
         if treat_errors == 'correct':
-            Txy /= gain_error
-            Txy /= np.exp(1j*2*np.pi*self.f*time_error)
+            tf_estimate /= gain_error
+            tf_estimate /= np.exp(1j*2*np.pi*f*time_error)
 
         width = plt.rcParams['figure.figsize'][0]
         fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
 
-        for gain, label in zip(20*np.log10(np.abs(Txy)), labels):
-            axes[0].plot(self.f[1:], gain[1:], label=label)
+        for gain, label in zip(20*np.log10(np.abs(tf_estimate)), labels):
+            axes[0].plot(f[1:], gain[1:], label=label)
         axes[0].set_ylabel('Gain [dB]')
-        axes[0].set_xlim((self.f[1], self.f[-1]))
+        axes[0].set_xlim((f[1], f[-1]))
         gain_nominal = 20*np.log10(np.abs(tf_nominal[1:]))
         if np.allclose(gain_nominal, 0):
             axes[0].set_ylim((-1, 1))
         else:
-            axes[0].plot(self.f[1:], gain_nominal, label='nominal')
+            axes[0].plot(f[1:], gain_nominal, label='nominal')
             axes[0].set_ylim((gain_nominal.min(), gain_nominal.max()))
         if treat_errors == 'estimate':
-            axes[0].plot(self.f[1:], 20*np.log10(np.abs(tf_error[1:])),
+            axes[0].plot(f[1:], 20*np.log10(np.abs(tf_error[1:])),
                          label='error')
 
-        for phase, label in zip(np.angle(Txy, deg=True), labels):
-            axes[1].plot(self.f[1:], phase[1:], label=label)
+        for phase, label in zip(np.angle(tf_estimate, deg=True), labels):
+            axes[1].plot(f[1:], phase[1:], label=label)
         axes[1].set_ylabel('Phase [°]')
         axes[1].set_xlabel('Frequency [Hz]')
         phase_nominal = np.angle(tf_nominal[1:], deg=True)
         if np.allclose(phase_nominal, 0):
             axes[1].set_ylim((-10, 10))
         else:
-            axes[1].plot(self.f[1:], phase_nominal, label='nominal')
+            axes[1].plot(f[1:], phase_nominal, label='nominal')
             axes[1].set_ylim((phase_nominal.min(), phase_nominal.max()))
         if treat_errors == 'estimate':
-            axes[1].plot(self.f[1:], np.angle(tf_error[1:], deg=True),
+            axes[1].plot(f[1:], np.angle(tf_error[1:], deg=True),
                          label='error')
 
         if treat_errors in ['estimate', 'correct']:

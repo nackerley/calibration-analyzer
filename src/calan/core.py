@@ -20,7 +20,7 @@ from antelope_tools.utilities import DATETIME_FORMAT, pretty_duration
 from calan.noise_survey_toolbox import (
     dataless2inventory, preferred_number)
 
-ROOT = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
 
 def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
@@ -95,7 +95,7 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     return sp.lti(z_out, p_out, k_out)
 
 
-def flip(m, axis):
+def flip(ndarray, axis):
     '''
     Reverse the order of elements in an array along the given axis.
     The shape of the array is preserved, but the elements are reordered.
@@ -121,15 +121,15 @@ def flip(m, axis):
 
     flip(m, 1) is equivalent to numpy.fliplr(m).
     '''
-    if not hasattr(m, 'ndim'):
-        m = np.asarray(m)
-    indexer = [slice(None)] * m.ndim
+    if not hasattr(ndarray, 'ndim'):
+        ndarray = np.asarray(ndarray)
+    indexer = [slice(None)] * ndarray.ndim
     try:
         indexer[axis] = slice(None, None, -1)
     except IndexError:
         raise ValueError('axis=%i is invalid for %i-dimensional input array'
-                         % (axis, m.ndim))
-    return m[tuple(indexer)]
+                         % (axis, ndarray.ndim))
+    return ndarray[tuple(indexer)]
 
 
 def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1):
@@ -631,6 +631,39 @@ def subplots_squeeze(fig, hspace=None, wspace=None):
                 ax.yaxis.get_major_ticks()[0].label.set_visible(False)
 
 
+class Stft():
+    '''
+    Short-term fourier auto- and cross-spectra between input and output.
+    '''
+    def __init__(self, f=None, t=None, p_xx=None, p_yy=None, p_xy=None):
+
+        self.f = f
+        self.t = t
+        self.p_xx = p_xx
+        self.p_yy = p_yy
+        self.p_xy = p_xy
+
+    def compute(self, x, y, f_sample, len_fft, len_overlap):
+        '''
+        Each segment is detrended by removing a constant value before
+        application of a 'hanning' window.
+        '''
+
+        # pylint: disable=protected-access
+        self.f, self.t, self.p_xy = sp.spectral._spectral_helper(
+            x, y,
+            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')
+
+        self.p_xx = sp.spectral._spectral_helper(
+            x, x,
+            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
+
+        self.p_yy = sp.spectral._spectral_helper(
+            y, y,
+            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
+        # pylint: enable=protected-access
+
+
 class StreamAnalyzer():
     '''
     Base class for a :class:`~obspy.Stream`-based signal analyzer.
@@ -740,15 +773,15 @@ class StreamAnalyzer():
         return self.stream[0].stats.sampling_rate
 
     @staticmethod
-    def _mean(Pxy):
+    def _mean(p_xy):
         '''Finishing touch on Welch's method.'''
 
-        if len(Pxy.shape) >= 2 and Pxy.size > 0:
-            if Pxy.shape[-1] > 1:
-                Pxy = Pxy.mean(axis=-1)
+        if len(p_xy.shape) >= 2 and p_xy.size > 0:
+            if p_xy.shape[-1] > 1:
+                p_xy = p_xy.mean(axis=-1)
             else:
-                Pxy = np.reshape(Pxy, Pxy.shape[:-1])
-        return Pxy
+                p_xy = np.reshape(p_xy, p_xy.shape[:-1])
+        return p_xy
 
     def save_image(self, fig=None, option_list=None):
         '''
@@ -762,14 +795,14 @@ class StreamAnalyzer():
         if isinstance(option_list, str):
             option_list = option_list.split(',')
 
+        # pylint:disable=protected-access
         caller_name = sys._getframe(1).f_code.co_name
         plot_type = caller_name.replace('plot_', '')
 
         file_parts = [plot_type]
 
-        if (option_list is not None and len(option_list) > 0 and
-                option_list[0] != ''):
-            file_parts += option_list
+        if option_list is not None:
+            file_parts += [option for option in option_list if len(option) > 0]
 
         if self.stream is not None:
             if hasattr(self, 'info'):
