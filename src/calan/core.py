@@ -5,6 +5,7 @@ A collection of utilities useful for station quality analysis.
 
 import os
 import sys
+import logging
 
 import numpy as np
 from scipy import fftpack
@@ -16,7 +17,8 @@ from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.client import FDSNException
 from obspy.core.inventory import CoefficientsTypeResponseStage
 
-from antelope_tools.utilities import DATETIME_FORMAT, pretty_duration
+from catalogue_tools.core import DATETIME_FORMAT
+from catalogue_tools.utilities import pretty_duration
 from calan.noise_survey_toolbox import (
     dataless2inventory, preferred_number)
 
@@ -375,32 +377,30 @@ def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
     return sig_stages[-1], z_out, sig_unused
 
 
-def extract_decimation_coefficients(stages, verbose=False):
+def extract_decimation_coefficients(stages):
     '''
     Extract decimation factors and filter coefficients from a list of stages.
     '''
 
+    logger = logging.getLogger(__name__)
     b_stages = []
     factors = []
     for stage in stages:
         if (isinstance(stage, CoefficientsTypeResponseStage) and
                 stage.decimation_factor > 1):
-            if len(factors) == 0 and verbose:
-                print('Input sample rate %g sps' %
-                      stage.decimation_input_sample_rate)
+            if len(factors) == 0:
+                logger.info('Input sample rate %g sps' %
+                            stage.decimation_input_sample_rate)
 
             factors.append(stage.decimation_factor)
             b_stages.append(stage.numerator)
-            if verbose:
-                print('Filter with %d coefficients '
-                      'and decimate by %d to %g sps'
-                      % (len(stage.numerator), stage.decimation_factor,
-                         stage.decimation_input_sample_rate /
-                         stage.decimation_factor))
-    if verbose:
-        n_pad_upsample = compute_decim_delay(b_stages, factors)
-        print('Filtering and decimation by %d consumes %d samples'
-              % (np.prod(factors), n_pad_upsample))
+            logger.info(
+                'Filter with %d coefficients and decimate by %d to %g sps'
+                % (len(stage.numerator), stage.decimation_factor,
+                   stage.decimation_input_sample_rate/stage.decimation_factor))
+    n_pad_upsample = compute_decim_delay(b_stages, factors)
+    logger.info('Filtering and decimation by %d consumes %d samples'
+                % (np.prod(factors), n_pad_upsample))
 
     return b_stages, factors
 
@@ -670,19 +670,19 @@ class StreamAnalyzer():
     '''
 
     def __init__(self, fdsn_server='http://132.156.41.208:6062',
-                 cache_format='MSEED', verbose=True):
+                 cache_format='MSEED', log='INFO'):
         '''
         Sets up FDSN server for later use.
         '''
+        self.logger = logging.getLogger(self.__class__.__name__)
         if fdsn_server is None or fdsn_server == '':
             self.client = None
-            print('You are working offline.')
+            self.logger.info('You are working offline.')
         else:
             self.client = Client(fdsn_server)
-            print('FDSN server: \n\t%s' % self.client.base_url)
+            self.logger.info('FDSN server: \n\t%s' % self.client.base_url)
 
         self.cache_format = cache_format
-        self.verbose = verbose
         self.stream = None
 
     def make_cache_name(self):
@@ -715,39 +715,35 @@ class StreamAnalyzer():
         if isinstance(channels, str):
             channels = [channels]
 
-        if input_file is None:
-            if self.verbose:
-                print('Requesting data from FDSN server: \n\t%s'
-                      % self.client.base_url)
+        if input_file is None or input_file == '':
+            self.logger.info('Requesting data from FDSN server: \n\t%s'
+                             % self.client.base_url)
             try:
                 self.stream = self.client.get_waveforms(
                     network=','.join(networks), station=','.join(stations),
                     location=','.join(locations), channel=','.join(channels),
                     starttime=start, endtime=end)
             except FDSNException as ex:
-                print('Networks: ', ','.join(networks))
-                print('Stations: ', ','.join(stations))
-                print('Locations:', ','.join(locations))
-                print('Channels: ', ','.join(channels))
-                print('Start:    ', str(start))
-                print('End:    ', str(end))
-                raise ex
+                self.logger.warning('Networks: ', ','.join(networks))
+                self.logger.warning('Stations: ', ','.join(stations))
+                self.logger.warning('Locations:', ','.join(locations))
+                self.logger.warning('Channels: ', ','.join(channels))
+                self.logger.warning('Start:    ', str(start))
+                self.logger.warning('End:    ', str(end))
+                self.logger.warning(ex)
 
             input_file = '.'.join([self.make_cache_name(), self.cache_format])
-            if self.verbose:
-                print('Caching %s locally as: \n\t%s' % (self.cache_format,
-                                                         input_file))
+            self.logger.info('Caching %s locally as: \n\t%s'
+                             % (self.cache_format, input_file))
             self.stream.write(input_file, format=self.cache_format)
         else:
-            if self.verbose:
-                print('Reading data from %s file: \n\t%s' % (self.cache_format,
-                                                             input_file))
+            self.logger.info('Reading data from %s file: \n\t%s'
+                             % (self.cache_format, input_file))
             self.stream = read(input_file)
 
-        if inventory_dataless is None:
-            if self.verbose:
-                print('Requesting responses from FDSN server: \n\t%s'
-                      % self.client.base_url)
+        if inventory_dataless is None or inventory_dataless == '':
+            self.logger.info('Requesting responses from FDSN server: \n\t%s'
+                             % self.client.base_url)
             inventory = self.client.get_stations(
                 network=','.join(networks), station=','.join(stations),
                 location=','.join(locations), channel=','.join(channels),
@@ -755,14 +751,12 @@ class StreamAnalyzer():
                 level='response', includerestricted=True)
 
             inventory_dataless = self.make_cache_name() + '.xml'
-            if self.verbose:
-                print('Caching StationXML locally as: \n\t%s'
-                      % inventory_dataless)
+            self.logger.info('Caching StationXML locally as: \n\t%s'
+                             % inventory_dataless)
             inventory.write(inventory_dataless, format='STATIONXML')
         else:
-            if self.verbose:
-                print('Reading responses from StationXML file: \n\t%s'
-                      % inventory_dataless)
+            self.logger.info('Reading responses from StationXML file: \n\t%s'
+                             % inventory_dataless)
             inventory = dataless2inventory(inventory_dataless)
 
         self.stream = self.stream.merge().split().sort()
@@ -822,8 +816,7 @@ class StreamAnalyzer():
 
         file_name = '_'.join(file_parts) + '.png'
 
-        if self.verbose:
-            print('Saving to', file_name)
+        self.logger.info('Saving to', file_name)
         plt.savefig(file_name, dpi=300, bbox_inches='tight')
 
     def plot_stream(self, save=False):
