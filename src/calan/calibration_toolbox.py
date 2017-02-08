@@ -8,11 +8,12 @@ from __future__ import absolute_import, division, print_function
 import os
 import wave
 import gzip
+import logging
 from warnings import warn
 from operator import mul
 from functools import reduce
 from struct import pack, unpack, calcsize
-from math import log10
+from math import log10, floor, ceil
 from io import BytesIO
 
 import numpy as np
@@ -24,8 +25,9 @@ import statsmodels.api as sm
 
 from obspy import read, UTCDateTime, Trace, Stream
 from obspy.signal.invsim import simulate_seismometer
+from obspy.signal.konnoohmachismoothing import konno_ohmachi_smoothing
 
-from antelope_tools.utilities import (
+from catalogue_tools.utilities import (
     pretty_duration, pretty_voltage, pretty_bytes,
     parse_duration, parse_voltage, round_sig,
     prepend_docstring)
@@ -108,13 +110,12 @@ def convert_counts_to_volts(signal):
     return signal.astype('float')*DAC_GAIN
 
 
-def _print_expected_wav_size(file_name, duration):
+def expected_wav_size(file_name, duration):
     '''
-    Print file name and its expected size before compression.
+    Compute expected size before compression.
     '''
-    file_size = pretty_bytes(
+    return pretty_bytes(
         calcsize(SAMPLE_FORMAT)*duration*CALIBRATION_SAMPLE_RATE)
-    print('Uncompressed output "%s.wav" will be %s.' % (file_name, file_size))
 
 
 def make_random_signal_file_name(
@@ -193,8 +194,8 @@ def _add_turn_on_off_times(signal, t_on, t_off):
 
 
 def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
-                      t_on=300, t_off=300, sample_rate=CALIBRATION_SAMPLE_RATE,
-                      verbose=True):
+                      t_on=300, t_off=300,
+                      sample_rate=CALIBRATION_SAMPLE_RATE):
     '''
     Generate a gaussian white noise calibration signal.
 
@@ -206,12 +207,14 @@ def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
     will be zero. Note that duration_seconds is forced to a multiple of
     1/sample_rate and does not include t_on and t_off (also in seconds).
     '''
+    logger = logging.getLogger(__name__)
     file_name = make_random_signal_file_name(
         'gaussian', duration_seconds, rms_voltage=rms_voltage,
         sample_rate=sample_rate, mean_voltage=mean_voltage,
         t_on=t_on, t_off=t_off)
-    if verbose:
-        _print_expected_wav_size(file_name, duration_seconds + t_on + t_off)
+    file_size = expected_wav_size(file_name, duration_seconds + t_on + t_off)
+    logger.debug('Uncompressed output "%s.wav" will be %s.'
+                 % (file_name, file_size))
 
     # generate random signal
     shape_a, shape_b = truncnorm_shape(mean_voltage, rms_voltage,
@@ -230,7 +233,7 @@ def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
 
 
 def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
-                           t_on=300, t_off=300, verbose=True):
+                           t_on=300, t_off=300):
     '''
     Generate a random binary calibration signal.
 
@@ -240,11 +243,13 @@ def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
     Note that duration_seconds is forced to a multiple of
     1/sample_rate and does not include t_on and t_off (also in seconds).
     '''
+    logger = logging.getLogger(__name__)
     file_name = make_random_signal_file_name(
         'binary', duration_seconds, pp_voltage=pp_voltage,
         sample_rate=sample_rate, t_on=t_on, t_off=t_off)
-    if verbose:
-        _print_expected_wav_size(file_name, duration_seconds + t_on + t_off)
+    file_size = expected_wav_size(file_name, duration_seconds + t_on + t_off)
+    logger.debug('Uncompressed output "%s.wav" will be %s.'
+                 % (file_name, file_size))
 
     # generate random binary signal and scale it appropriately
     length = int(round(duration_seconds*sample_rate))
@@ -260,18 +265,20 @@ def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
     return signal_volts, file_name
 
 
-def generate_piecewise_constant(durations, voltages, verbose=False):
+def generate_piecewise_constant(durations, voltages):
     '''
     Generate a piecewise constant calibration signal in volts.
     '''
+    logger = logging.getLogger(__name__)
     durations = np.asarray(durations)
     voltages = np.asarray(voltages)
 
     file_name = 'step_%s' % '_'.join(
         ['%gV_%ss' % (voltage, duration)
          for voltage, duration in zip(voltages, durations)])
-    if verbose:
-        _print_expected_wav_size(file_name, durations.sum())
+    file_size = expected_wav_size(file_name, durations.sum())
+    logger.debug('Uncompressed output "%s.wav" will be %s.'
+                 % (file_name, file_size))
 
     times = durations.cumsum()
     t = np.arange(0, durations.sum(), 1/CALIBRATION_SAMPLE_RATE).reshape(-1, 1)
@@ -288,7 +295,6 @@ def plot_calibration(signal,
     CAUTION: decimation is performed without prior filtering, so resulting
     signal may be strongly aliased.
     '''
-
     t = np.arange(len(signal))/CALIBRATION_SAMPLE_RATE
 
     step = int(CALIBRATION_SAMPLE_RATE/sample_rate)
@@ -306,7 +312,7 @@ def _chunk_fmt(len_chunk):
     return '%s%d%s' % (SAMPLE_FORMAT[0], len_chunk, SAMPLE_FORMAT[1])
 
 
-def write_wav_gz(file_name, signal, verbose=True, compresslevel=6):
+def write_wav_gz(file_name, signal, compresslevel=6):
     '''
     Write a single-channel .wav.gz file with fixed encoding for Centaur
     calibration. Compression is performed in memory, not on disk. Signal must
@@ -314,6 +320,8 @@ def write_wav_gz(file_name, signal, verbose=True, compresslevel=6):
 
     Default compression level of 6 set to match default behaviour of linux.
     '''
+    logger = logging.getLogger(__name__)
+
     if os.path.splitext(file_name)[1].lower() not in ['.gz', '.wav']:
         file_name += '.wav.gz'
 
@@ -348,11 +356,11 @@ def write_wav_gz(file_name, signal, verbose=True, compresslevel=6):
                 gz_file.write(stream.read())
         wav_size = stream.tell()
 
-    if verbose:
-        out_size = os.path.getsize(file_name)
-        print('Compressed size %s is %.2f%% of original size %s:\n\t%s' %
-              (pretty_bytes(out_size), 100*out_size/wav_size,
-               pretty_bytes(wav_size), file_name))
+    out_size = os.path.getsize(file_name)
+    logger.info(
+        'Compressed size %s is %.2f%% of original size %s:\n\t%s'
+        % (pretty_bytes(out_size), 100*out_size/wav_size,
+           pretty_bytes(wav_size), file_name))
 
 
 def read_wav_gz(file_name):
@@ -456,7 +464,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
     def __init__(self, calibration_file, start_time=None, attenuation=1,
                  duration=None, t_on=None, t_off=None,
                  fdsn_server='http://132.156.41.208:6062',
-                 cache_format='MSEED', verbose=True):
+                 cache_format='MSEED', log='INFO'):
         '''
         Sets up data server and calibration details for later use.
 
@@ -481,7 +489,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         super(CalibrationAnalyzer, self).__init__(
             fdsn_server=fdsn_server,
-            cache_format=cache_format, verbose=verbose)
+            cache_format=cache_format)
 
         assert os.path.exists(calibration_file)
 
@@ -549,7 +557,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
             self.response = channel.response
 
         b_stages, factors = extract_decimation_coefficients(
-            self.response.response_stages, verbose=self.verbose)
+            self.response.response_stages)
 
         f_sample = CALIBRATION_SAMPLE_RATE/reduce(mul, factors)
         cache_file = self.info['file'].replace('.gz', '')
@@ -557,28 +565,28 @@ class CalibrationAnalyzer(StreamAnalyzer):
                       '_decim_%gsps.%s' % (f_sample,
                                            self.cache_format.lower()))
         if os.path.exists(cache_file):
-            if self.verbose:
-                print('Reading calibration signal from %s file: \n\t%s'
-                      % (self.cache_format, os.path.basename(cache_file)))
+            self.logger.info(
+                'Reading calibration signal from %s file: \n\t%s'
+                % (self.cache_format, os.path.basename(cache_file)))
             self.input = read(cache_file)
         else:
-            if self.verbose:
-                print('Reading calibration signal from WAV file: \n\t%s'
-                      % os.path.basename(self.info['file']))
+            self.logger.info(
+                'Reading calibration signal from WAV file: \n\t%s'
+                % os.path.basename(self.info['file']))
             signal = read_wav_gz(self.info['file'])
             signal = sample_hold_digitize(signal)
             signal = pad_for_decimation(signal, b_stages, factors)[0]
 
-            if self.verbose:
-                print('Decimating by %d ...' % reduce(mul, factors))
+            self.logger.info(
+                'Decimating by %d ...' % reduce(mul, factors))
             signal = multi_decim(signal, b_stages, factors)[0]
 
             self.input = Stream([Trace(data=np.ascontiguousarray(signal),
                                        header={'sampling_rate': f_sample})])
 
-            if self.verbose:
-                print('Writing calibration signal to %s file: \n\t%s'
-                      % (self.cache_format, os.path.basename(cache_file)))
+            self.logger.info(
+                'Writing calibration signal to %s file: \n\t%s'
+                % (self.cache_format, os.path.basename(cache_file)))
             self.input.write(cache_file, self.cache_format)
 
     def f_sample(self):
@@ -736,10 +744,10 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         num_windows = num_windows_welch(len(x), len_fft, len_overlap)
         f_expected = fft_frequencies(len_fft, f_sample)
-        if self.verbose:
-            print("Computing spectra using Welch's method on " +
-                  '%d segments ' % num_windows +
-                  'from %g to %g Hz' % (f_expected[1], f_expected[-1]))
+        self.logger.info(
+            "Computing spectra using Welch's method on " +
+            '%d segments ' % num_windows +
+            'from %g to %g Hz' % (f_expected[1], f_expected[-1]))
 
         self.stft.compute(x, y, f_sample, len_fft, len_overlap)
 
@@ -764,7 +772,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         return whole_sig_sim
 
-    def estimate_errors(self, confidence=0.95):
+    def estimate_errors(self, confidence=0.95, variance_threshhold=0.01):
         '''
         Least-squares estimation of gain and timing errors.
 
@@ -821,14 +829,26 @@ class CalibrationAnalyzer(StreamAnalyzer):
             self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
         num_sigma = np.sqrt(2)*erfinv(confidence)
 
+        variance = (1/coherence_squared - 1)/(2*len(self.stft.t))
+        if variance_threshhold is not None:
+            keep = (variance < variance_threshhold).any(axis=0)
+        else:
+            keep = np.full_like(variance, True)
+        keep[0] = False
+        tf_estimate = tf_estimate[:, keep]
+        variance = variance[:, keep]
+        f = f[keep]
+        self.logger.info(
+            'Discarding %d points with variance > %g while fitting'
+             % (keep.sum(), variance_threshhold))
+
         magnitude = np.abs(tf_estimate)
         phase = unwrap_mid(np.angle(tf_estimate), f, axis=1)
-        variance = (1/coherence_squared - 1)/(2*len(self.stft.t))
 
-        f = np.reshape(np.tile(f[1:], magnitude.shape[0]), (-1, 1))
-        magnitude = np.reshape(magnitude[:, 1:], (-1, 1))
-        phase = np.reshape(phase[:, 1:], (-1, 1))
-        variance = np.reshape(variance[:, 1:], (-1, 1))
+        f = np.reshape(np.tile(f, magnitude.shape[0]), (-1, 1))
+        magnitude = np.reshape(magnitude, (-1, 1))
+        phase = np.reshape(phase, (-1, 1))
+        variance = np.reshape(variance, (-1, 1))
         weights = np.sqrt(1/variance)
 
         gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
@@ -850,7 +870,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         return (gain.params, num_sigma*gain.bse,
                 timing.params, num_sigma*timing.bse, summary)
 
-    def plot_check(self, where='start', window_seconds=5, save=False):
+    def plot_check(self, where='start', window_seconds=60, save=False):
         '''
         Spot check critical times in the calibration
         '''
@@ -900,8 +920,9 @@ class CalibrationAnalyzer(StreamAnalyzer):
         '''
 
         if model not in self.lti.keys():
-            print("'%s' not among supported models: %s." %
-                  (model, ', '.join("'%s'" % key for key in self.lti.keys())))
+            self.logger.warning(
+                "'%s' not among supported models: %s."
+                % (model, ', '.join("'%s'" % key for key in self.lti.keys())))
             return
 
         if f_limits is None:
@@ -1008,11 +1029,45 @@ class CalibrationAnalyzer(StreamAnalyzer):
         if save:
             self.save_image(fig)
 
+    def plot_variance(self, scale='log', save=False):
+        '''
+        Plot variance on log or linear scale.
+
+        Parameters
+        ----------
+        scale: str, optional
+            selects 'log' or 'linear' scaling for x-axis
+        '''
+
+        if self.stft.f is None:
+            self.compute()
+
+        labels = factor_names(self.stream)[1]
+
+        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
+            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
+        variances = (1/coherence_squared - 1)/(2*len(self.stft.t))
+
+        fig, ax = plt.subplots()
+        for snr, label in zip(variances, labels):
+            ax.semilogx(self.stft.f, snr, label=label)
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel('Relative Transfer Function Variance')
+        ax.set_ylim((0, 0.01))
+        ax.legend(loc='upper left')
+
+        if save:
+            self.save_image(fig)
+
     def plot_transfer_function(self, scale='log', model='system',
                                remove_nominal=True, treat_errors='correct',
-                               save=False, confidence=0.95):
+                               save=False, confidence=0.95,
+                               variance_threshhold=None, smooth=False):
         '''
         Plot calibration transfer function on log or linear scale.
+
+        Optional smoothing is done using
+        :func:`~obspy.signal.konnoohmachismoothing.konno_ohmachi_smoothing`.
 
         Parameters
         ----------
@@ -1021,8 +1076,9 @@ class CalibrationAnalyzer(StreamAnalyzer):
         '''
 
         if model not in self.lti.keys():
-            print("'%s' not among supported models: %s." %
-                  (model, ', '.join("'%s'" % key for key in self.lti.keys())))
+            self.logger.warning(
+                "'%s' not among supported models: %s."
+                % (model, ', '.join("'%s'" % key for key in self.lti.keys())))
             return
 
         if self.stft.f is None:
@@ -1031,6 +1087,11 @@ class CalibrationAnalyzer(StreamAnalyzer):
         option_list = []
         labels = factor_names(self.stream)[1]
         tf_estimate = self._mean(self.stft.p_xy)/self._mean(self.stft.p_xx)
+
+        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
+            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
+        variance = (1/coherence_squared - 1)/(2*len(self.stft.t))
+
         f = self.stft.f
 
         if remove_nominal:
@@ -1050,33 +1111,54 @@ class CalibrationAnalyzer(StreamAnalyzer):
             tf_estimate /= gain_error
             tf_estimate /= np.exp(1j*2*np.pi*f*time_error)
 
+        if variance_threshhold is not None:
+            tf_estimate[variance > variance_threshhold] = np.nan
+            option_list += ['variance_lt_%g' % variance_threshhold]
+
+        tf_magnitude = 20*np.log10(np.abs(tf_estimate))
+        tf_phase = np.angle(tf_estimate, deg=True)
+        #tf_phase = unwrap_mid(np.angle(tf_estimate), f, axis=1)*180./np.pi
+
+        if smooth:
+            # can't smooth over nans so discard them
+            keep = ~np.isnan(tf_estimate).any(axis=0)
+            tf_magnitude = tf_magnitude[:, keep]
+            tf_phase = tf_phase[:, keep]
+            f_keep = f[keep]
+
+            tf_magnitude = konno_ohmachi_smoothing(tf_magnitude, f_keep,
+                                                   normalize=True)
+            tf_phase = konno_ohmachi_smoothing(tf_phase, f_keep)
+            option_list += ['smoothed']
+        else:
+            f_keep = f
+
         width = plt.rcParams['figure.figsize'][0]
         fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
 
-        for gain, label in zip(20*np.log10(np.abs(tf_estimate)), labels):
-            axes[0].plot(f[1:], gain[1:], label=label)
+        for gain, label in zip(tf_magnitude, labels):
+            axes[0].plot(f_keep, gain, label=label)
         axes[0].set_ylabel('Gain [dB]')
         axes[0].set_xlim((f[1], f[-1]))
         gain_nominal = 20*np.log10(np.abs(tf_nominal[1:]))
-        if np.allclose(gain_nominal, 0):
-            axes[0].set_ylim((-1, 1))
-        else:
+        if not np.allclose(gain_nominal, 0):
             axes[0].plot(f[1:], gain_nominal, label='nominal')
-            axes[0].set_ylim((gain_nominal.min(), gain_nominal.max()))
+        axes[0].set_ylim((floor(gain_nominal.min()) - 1,
+                          ceil(gain_nominal.max()) + 1))
         if treat_errors == 'estimate':
             axes[0].plot(f[1:], 20*np.log10(np.abs(tf_error[1:])),
                          label='error')
 
-        for phase, label in zip(np.angle(tf_estimate, deg=True), labels):
-            axes[1].plot(f[1:], phase[1:], label=label)
+        for phase, label in zip(tf_phase, labels):
+            axes[1].plot(f_keep, phase, label=label)
         axes[1].set_ylabel('Phase [°]')
         axes[1].set_xlabel('Frequency [Hz]')
-        phase_nominal = np.angle(tf_nominal[1:], deg=True)
-        if np.allclose(phase_nominal, 0):
-            axes[1].set_ylim((-10, 10))
-        else:
+        phase_nominal = unwrap_mid(np.angle(tf_nominal[1:]), f[1:])*180./np.pi
+
+        if not np.allclose(phase_nominal, 0):
             axes[1].plot(f[1:], phase_nominal, label='nominal')
-            axes[1].set_ylim((phase_nominal.min(), phase_nominal.max()))
+        axes[1].set_ylim((floor(phase_nominal.min()) - 10,
+                          ceil(phase_nominal.max()) + 10))
         if treat_errors == 'estimate':
             axes[1].plot(f[1:], np.angle(tf_error[1:], deg=True),
                          label='error')
