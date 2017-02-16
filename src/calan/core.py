@@ -674,7 +674,11 @@ class StreamAnalyzer():
         '''
         Sets up FDSN server for later use.
         '''
-        self.logger = logging.getLogger(self.__class__.__name__)
+        file_class = '.'.join([os.path.splitext(os.path.basename(__file__))[0],
+                               self.__class__.__name__])
+        self.logger = logging.getLogger(file_class)
+        self.logger.debug('Initializing')
+
         if fdsn_server is None or fdsn_server == '':
             self.client = None
             self.logger.info('You are working offline.')

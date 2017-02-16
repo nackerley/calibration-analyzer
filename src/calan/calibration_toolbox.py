@@ -840,7 +840,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         f = f[keep]
         self.logger.info(
             'Discarding %d points with variance > %g while fitting'
-             % (keep.sum(), variance_threshhold))
+            % (keep.sum(), variance_threshhold))
 
         magnitude = np.abs(tf_estimate)
         phase = unwrap_mid(np.angle(tf_estimate), f, axis=1)
@@ -1117,7 +1117,6 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         tf_magnitude = 20*np.log10(np.abs(tf_estimate))
         tf_phase = np.angle(tf_estimate, deg=True)
-        #tf_phase = unwrap_mid(np.angle(tf_estimate), f, axis=1)*180./np.pi
 
         if smooth:
             # can't smooth over nans so discard them
