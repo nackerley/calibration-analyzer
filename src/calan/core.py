@@ -2,6 +2,9 @@
 """
 A collection of utilities useful for station quality analysis.
 """
+# for Python 2 & 3 compatibility
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import os
 import sys
@@ -14,13 +17,13 @@ import scipy.signal as sp
 import matplotlib.pyplot as plt
 
 from obspy import read, read_inventory, UTCDateTime
-from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.client import FDSNException
-from obspy.core.stream import Stream
-from obspy.core.inventory import Inventory, CoefficientsTypeResponseStage
+from obspy.core.inventory import CoefficientsTypeResponseStage
 
-from catalogue_tools.core import DATETIME_FORMAT
-from catalogue_tools.utilities import pretty_duration, get_logger
+from catalogue_tools.core import get_clients, DATETIME_FORMAT
+from catalogue_tools.utilities import (
+    get_logger, string_list, pretty_duration, preferred_number,
+    fdsn_error_message)
 
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
@@ -436,224 +439,6 @@ def extract_decimation_coefficients(stages):
     return b_stages, factors
 
 
-R_SERIES = {
-    3: [1, 2, 5, 10],
-    5: [1.00, 1.60, 2.50, 4.00, 6.30, 10.00],
-    10: [1.00, 1.25, 1.60, 2.00, 2.50, 3.15, 4.00, 5.00, 6.30, 8.00, 10.00],
-    20: [1.00, 1.12, 1.25, 1.40, 1.60, 1.80, 2.00, 2.24, 2.50, 2.80,
-         3.15, 3.55, 4.00, 4.50, 5.00, 5.60, 6.30, 7.10, 8.00, 9.00, 10.00],
-    40: [1.00, 1.06, 1.12, 1.18, 1.25, 1.32, 1.40, 1.50, 1.60, 1.70,
-         1.80, 1.90, 2.00, 2.12, 2.24, 2.36, 2.50, 2.65, 2.80, 3.00,
-         3.15, 3.35, 3.55, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00, 5.30,
-         5.60, 6.00, 6.30, 6.70, 7.10, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00],
-    80: [1.00, 1.03, 1.06, 1.09, 1.12, 1.15, 1.18, 1.22, 1.25, 1.28,
-         1.32, 1.36, 1.40, 1.45, 1.50, 1.55, 1.60, 1.65, 1.70, 1.75,
-         1.80, 1.85, 1.90, 1.95, 2.00, 2.06, 2.12, 2.18, 2.24, 2.30,
-         2.36, 2.43, 2.50, 2.58, 2.65, 2.72, 2.80, 2.90, 3.00, 3.07,
-         3.15, 3.25, 3.35, 3.45, 3.55, 3.65, 3.75, 3.87, 4.00, 4.12,
-         4.25, 4.37, 4.50, 4.62, 4.75, 4.87, 5.00, 5.15, 5.30, 5.45,
-         5.60, 5.80, 6.00, 6.15, 6.30, 6.50, 6.70, 6.90, 7.10, 7.30,
-         7.50, 7.75, 8.00, 8.25, 8.50, 8.75, 9.00, 9.25, 9.50, 9.75, 10.00],
-}
-
-
-E_SERIES = {
-    6: [10, 15, 22, 33, 47, 68, 100],
-    12: [10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82, 100],
-    24: [10, 11, 12, 13, 15, 16, 18, 20, 22, 24, 27, 30,
-         33, 36, 39, 43, 47, 51, 56, 62, 68, 75, 82, 91, 100],
-    48: [100, 105, 110, 115, 121, 127, 133, 140, 147, 154, 162, 169,
-         178, 187, 196, 205, 215, 226, 237, 249, 261, 274, 287, 301,
-         316, 332, 348, 365, 383, 402, 422, 442, 464, 487, 511, 536,
-         562, 590, 619, 649, 681, 715, 750, 787, 825, 866, 909, 953, 1000],
-    96: [100, 102, 105, 107, 110, 113, 115, 118, 121, 124, 127, 130,
-         133, 137, 140, 143, 147, 150, 154, 158, 162, 165, 169, 174,
-         178, 182, 187, 191, 196, 200, 205, 210, 215, 221, 226, 232,
-         237, 243, 249, 255, 261, 267, 274, 280, 287, 294, 301, 309,
-         316, 324, 332, 340, 348, 357, 365, 374, 383, 392, 402, 412,
-         422, 432, 442, 453, 464, 475, 487, 499, 511, 523, 536, 549,
-         562, 576, 590, 604, 619, 634, 649, 665, 681, 698, 715, 732,
-         750, 768, 787, 806, 825, 845, 866, 887, 909, 931, 953, 976, 1000],
-    192: [100, 101, 102, 104, 105, 106, 107, 109, 110, 111, 113, 114,
-          115, 117, 118, 120, 121, 123, 124, 126, 127, 129, 130, 132,
-          133, 135, 137, 138, 140, 142, 143, 145, 147, 149, 150, 152,
-          154, 156, 158, 160, 162, 164, 165, 167, 169, 172, 174, 176,
-          178, 180, 182, 184, 187, 189, 191, 193, 196, 198, 200, 203,
-          205, 208, 210, 213, 215, 218, 221, 223, 226, 229, 232, 234,
-          237, 240, 243, 246, 249, 252, 255, 258, 261, 264, 267, 271,
-          274, 277, 280, 284, 287, 291, 294, 298, 301, 305, 309, 312,
-          316, 320, 324, 328, 332, 336, 340, 344, 348, 352, 357, 361,
-          365, 370, 374, 379, 383, 388, 392, 397, 402, 407, 412, 417,
-          422, 427, 432, 437, 442, 448, 453, 459, 464, 470, 475, 481,
-          487, 493, 499, 505, 511, 517, 523, 530, 536, 542, 549, 556,
-          562, 569, 576, 583, 590, 597, 604, 612, 619, 626, 634, 642,
-          649, 657, 665, 673, 681, 690, 698, 706, 715, 723, 732, 741,
-          750, 759, 768, 777, 787, 796, 806, 816, 825, 835, 845, 856,
-          866, 876, 887, 898, 909, 920, 931, 942, 953, 965, 976, 988, 1000]
-}
-
-
-def preferred_number(value, series=(1, 2, 5), method='nearest'):
-    '''
-    Find nearest value from Renard or E-series.
-    '''
-    # ensure preferred value series ends a factor of 10 higher than it starts
-    if series[-1] != 10*series[0]:
-        series = np.hstack((series, 10*series[0]))
-
-    mul_series = 10**(np.floor(np.log10(series[0])))
-    log_series = np.log10(series) % 1.
-    log_series[-1] += 1
-
-    sign_value = np.sign(value)
-    value = np.abs(value)
-    mul_value = 10**(np.floor(np.log10(value)))
-    log_value = np.log10(value) % 1.
-
-    diffs = log_series - log_value
-    if method == 'floor':
-        diffs[diffs > 0] = 1
-    elif method == 'ceil':
-        diffs[diffs < 0] = 1
-
-    nearest = sign_value*series[np.argmin(np.abs(diffs))]*mul_value/mul_series
-    return nearest
-
-
-def stdval(value, num=96, bump=0, preferred=None):
-    """
-    Computes nearest values in a standard-value series.
-
-    For non-standard E-numbers, Renard numbers are used. Note that the
-    standard E-series do not strictly follow the Renard number series,
-    which is why lookup tables must be used. An optional variable "bump"
-    specifies the number by which the series index is to be adjusted up or
-    down, and is useful for ceiling/floor type operations.
-
-    Arguments
-    :param value: Values to which the nearest standard values are sought
-    :param num: Number of preferred values in standard series,
-        e.g. 96 for E96 series
-    :type num: list[int]
-    :param preferred: Preferred values, e.g. [1, 2, 5, 10]
-    :type preferred::mod:numpy:array:
-    :param float bump: Amount by which each series index is adjusted before
-        choosing value
-
-    Note that num=3 gives same result as preferred=[1, 2, 5, 10], but
-    num=24 would not give the correct E24 series if it weren't overridden.
-
-    :returns output: Nearest standard values after rounding
-    """
-
-    # we're going to need to do some elementwise operations
-    x_type = type(value)
-    value = np.asarray(value, dtype=float)
-
-    # and some operations which depend on input being a column vector
-    x_shape = value.shape
-    value = np.reshape(value, (value.size, 1))
-
-    # negative values will not be handled
-    value[value < 0] = np.nan
-
-    if preferred is None:
-        if num in E_SERIES.keys():
-            preferred = np.array(E_SERIES[num])
-        elif num in R_SERIES.keys():
-            preferred = np.array(R_SERIES[num])
-        log_series = True
-    else:
-        # for the purpose of "bumping" it will be assumed that the preferred
-        # values are approximately logarithmically-spaced and span a decade
-        preferred = np.asarray(preferred, dtype=float)
-        preferred = np.reshape(preferred, (1, preferred.size))
-        num = preferred.size - 1
-        log_series = False
-
-    # bump input up or down as requested to support rounding up and down
-    if log_series:
-        value = value*10**(np.asarray(bump)/num)
-
-    if preferred is not None:
-        # determine how many digits of result to keep
-        preferred = np.asarray(preferred, dtype=float)
-        preferred = np.reshape(preferred, (1, preferred.size))
-        digits = len('%d' % preferred[0][0])
-
-        # compute multiplier for rounding
-        multiplier = 10**np.floor(np.log10(value) - digits + 1)
-
-        # shift input to have the right number of digits
-        value = value/multiplier
-
-        # find nearest standard value in a logarithmic sense
-        pref_mat = np.tile(np.log10(preferred), (value.size, 1)).transpose()
-        x_mat = np.tile(np.log10(value), (1, preferred.size)).transpose()
-
-        log_dist = pref_mat - x_mat
-        i_closest = np.argmin(np.abs(log_dist), 0)
-
-        if log_series or bump == 0:
-            output = preferred[0, i_closest]
-        else:
-            # for non-logarithmic series, bump just means round up or down
-            if bump > 0 and log_dist[i_closest] < 0:
-                if i_closest == preferred.size:
-                    output = preferred[1]*10
-                else:
-                    output = preferred[i_closest + 1]
-
-            elif bump < 0 and log_dist[i_closest] > 0:
-                if i_closest == 1:
-                    output = preferred[-1]/10
-                else:
-                    output = preferred[i_closest - 1]
-
-        # restore correct number
-        output = output[:, None]*multiplier
-
-    else:
-        # the nth power of a decade is the base
-        base = 10**(1.0/num)
-
-        # determine how many digits of result to keep
-        digits = np.max((1, -np.round(np.log10(base - 1) - 1)))
-
-        # compute the sequence number
-        exponent = np.round(np.log(value)/np.log(base))
-
-        # compute raw result
-        raw = base**exponent
-
-        # compute multiplier for rounding
-        multiplier = 10**np.floor(np.log10(raw) - digits + 1)
-
-        # round result to requested number of digits
-        output = np.round(raw/multiplier)*multiplier
-
-    output = np.reshape(output, x_shape)
-
-    if (x_type is int) | (x_type is float):
-        output = float(output)
-
-    return output
-
-
-def logspace(start, stop, num=12):
-    """
-    Computes logarithmically spaced vector of preferred numbers.
-
-    See stdval.
-    """
-
-    log_start = np.floor(np.log10(start))
-    log_stop = np.ceil(np.log10(stop))
-    n_total = num*(log_stop-log_start) + 1
-    temp = stdval(np.logspace(log_start, log_stop, num=n_total), num=num)
-    return temp[np.bitwise_and(temp >= start, temp <= stop)]
-
-
 def truncnorm_shape(mean, std, clip_a, clip_b=None):
     '''
     Convert mean, standard deviation and clip levels to
@@ -722,37 +507,22 @@ class Stft():
         # pylint: enable=protected-access
 
 
-def fdsn_error_message(ex):
-    lines = ex.args[0].split('\n')
-    if 'No data available' in lines[0]:
-        msg = lines[0]
-    else:
-        msg = ' '.join([' '.join(lines), ex.args[1]])
-    return msg
-
-
 class StreamAnalyzer(object):
     '''
     Base class for a :class:`~obspy.Stream`-based signal analyzer.
     '''
     CACHE = 'cache'
 
-    def __init__(self, fdsn_servers=('http://132.156.41.208:6062',
-                                     'http://132.156.41.208:6061',
-                                     'IRIS'),
+    def __init__(self, fdsn_servers=None, clients=None,
                  cache_format='MSEED', log='INFO'):
         '''
         Sets up FDSN server for later use.
         '''
         self.logger = get_logger(self.__class__.__name__, LOG_FILE_NAME, log)
-
-        self.clients = []
-        if fdsn_servers is not None:
-            for fdsn_server in fdsn_servers:
-                try:
-                    self.clients.append(Client(fdsn_server))
-                except FDSNException as ex:
-                    self.logger.warning(repr(ex))
+        if clients is not None:
+            self.clients = clients
+        else:
+            self.clients = get_clients(fdsn_servers)
 
         if len(self.clients) == 0:
             self.logger.info('You are working offline.')
@@ -784,9 +554,24 @@ class StreamAnalyzer(object):
 
     def load_stream(self, start, end,
                     input_file=None, inventory_dataless=None, networks=None,
-                    stations=None, locations=None, channels=None):
+                    stations=None, locations=None, channels=None,
+                    minimum_sampling_rate_sps=10):
         '''
-        Load stream and attach inventory from files or FDSN server.
+        Load stream and attach inventory from files or FDSN clients. Files, if
+        specified, are loaded first, then self.clients are searched, in order,
+        for any remaining combinations of `networks`, `stations`, `locations`
+        and `channels`, until an instance of each `station` in `stations` is
+        found.
+
+        Note
+        ----
+        The networks, channels and locations arguments only serve to narrow the
+        scope of the search for the specified stations. Thus, There is no way
+        to use this method to return only ``N1.STN1`` and ``N2.STN2`` if
+        ``N1.STN2`` or ``N2.STN1`` exist; in that case the result a request for
+        ``stations=['STN1', 'STN2']`` and ``networks=['N1', 'N2]`` must
+        subsequently be narrowed using
+        :func:`~obspy.core.stream.Stream.select`.
         '''
         start = UTCDateTime(start)
         end = UTCDateTime(end)
@@ -798,14 +583,10 @@ class StreamAnalyzer(object):
             locations = '*'
         if channels is None:
             channels = '*'
-        if isinstance(networks, str):
-            networks = [networks]
-        if isinstance(stations, str):
-            stations = [stations]
-        if isinstance(locations, str):
-            locations = [locations]
-        if isinstance(channels, str):
-            channels = [channels]
+        networks = string_list(networks)
+        stations = string_list(stations)
+        locations = string_list(locations)
+        channels = string_list(channels)
 
         if input_file is not None:
             self.logger.info('Reading data from %s file: %s'
@@ -815,6 +596,9 @@ class StreamAnalyzer(object):
             self.stream = None
 
         for client in self.clients:
+            if 'dataselect' not in client.services.keys():
+                continue
+
             if self.stream is None:
                 remaining = stations
             else:
@@ -825,7 +609,7 @@ class StreamAnalyzer(object):
                 break
 
             self.logger.info('Trying FDSN server: ' + client.base_url)
-            self.logger.info('Requesting data: ' + ','.join(remaining))
+            self.logger.info('Requesting data: ' + ', '.join(remaining))
             try:
                 partial_stream = client.get_waveforms(
                     network=','.join(networks),
@@ -839,6 +623,9 @@ class StreamAnalyzer(object):
                 self.logger.warning(fdsn_error_message(ex))
 
             if partial_stream is not None:
+                partial_stream.traces = [
+                    trace for trace in partial_stream.traces
+                    if trace.stats.sampling_rate >= minimum_sampling_rate_sps]
                 partial_stream.merge()
 
                 partial_stream.sort(keys=['starttime'])
@@ -856,7 +643,11 @@ class StreamAnalyzer(object):
                            partial_stream[0].stats.endtime, end))
 
                 partial_stream.trim(starttime=start, endtime=end)
-                partial_stream = partial_stream.split()
+                try:
+                    partial_stream = partial_stream.split()
+                except ZeroDivisionError as ex:
+                    print(partial_stream.__str__(extended=True))
+                    raise ex
 
                 for gap in partial_stream.get_gaps():
                     self.logger.warning(
@@ -888,6 +679,9 @@ class StreamAnalyzer(object):
             inventory = None
 
         for client in self.clients:
+            if 'station' not in client.services.keys():
+                continue
+
             if inventory is None:
                 remaining = stations
             else:
@@ -897,7 +691,7 @@ class StreamAnalyzer(object):
                 break
 
             self.logger.info('Trying FDSN server: ' + client.base_url)
-            self.logger.info('Requesting inventory: ' + ','.join(remaining))
+            self.logger.info('Requesting inventory: ' + ', '.join(remaining))
             try:
                 partial_inventory = client.get_stations(
                     network=','.join(networks),
@@ -924,7 +718,16 @@ class StreamAnalyzer(object):
 
         if self.stream is not None:
             self.stream = self.stream.merge().sort()
-            self.stream.attach_response(inventory)
+            with warnings.catch_warnings():
+                warnings.simplefilter('error')
+                try:
+                    not_found = self.stream.attach_response(inventory)
+                    if len(not_found) > 0:
+                        self.logger.warning(
+                            'No response found:' +
+                            ', '.join([trace.id for trace in not_found]))
+                except UserWarning as ex:
+                    self.logger.warning(ex.args[0].replace('\n', ' '))
 
             remaining = [station for station in stations
                          if station not in set([trace.stats.station
@@ -934,14 +737,16 @@ class StreamAnalyzer(object):
                     'Missing stations: ' + ', '.join(remaining))
 
             for trace in self.stream:
-                try:
+                if 'response' not in trace.stats:
+                    self.logger.warning(
+                        'No response for: ' + trace.id)
+                if trace.id in inventory.get_contents()['channels']:
                     trace.stats.coordinates = \
                         inventory.get_coordinates(trace.id)
-                except Exception as ex:
-                    self.logger.warning(ex.message)
+                else:
                     self.logger.warning(
-                        'No station coordinates for: ' + trace.id)
-                    continue
+                        'No coordinates for: ' + trace.id)
+
         else:
             self.logger.warning('No data loaded.')
 
