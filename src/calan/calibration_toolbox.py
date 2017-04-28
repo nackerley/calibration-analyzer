@@ -30,15 +30,18 @@ from obspy.signal.konnoohmachismoothing import konno_ohmachi_smoothing
 from catalogue_tools.utilities import (
     pretty_duration, pretty_voltage, pretty_bytes,
     parse_duration, parse_voltage, round_sig,
-    prepend_docstring)
+    prepend_docstring, logspace, get_logger)
 
-from calan.noise_survey_toolbox import dataless2inventory
 from calan.core import (
-    StreamAnalyzer, Stft,
+    dataless2inventory, StreamAnalyzer, Stft,
     factor_names, subplots_squeeze,
-    lti_from_zpsf, minreal, unwrap_mid, logspace, truncnorm_shape,
+    lti_from_zpsf, minreal, unwrap_mid, truncnorm_shape,
     len_fft_welch, num_windows_welch, fft_frequencies,
     extract_decimation_coefficients, compute_decim_delay, multi_decim)
+
+
+FILE_NAME = os.path.basename(__file__)
+LOG_FILE_NAME = os.path.splitext(FILE_NAME)[0] + '.log'
 
 # Nanometrics Centaur User Guide 17935R5, 2016-11-02
 CALIBRATION_SAMPLE_RATE = 30e3
@@ -462,9 +465,8 @@ class CalibrationAnalyzer(StreamAnalyzer):
     '''
 
     def __init__(self, calibration_file, start_time=None, attenuation=1,
-                 duration=None, t_on=None, t_off=None,
-                 fdsn_server='http://132.156.41.208:6062',
-                 cache_format='MSEED', log='INFO'):
+                 duration=None, t_on=None, t_off=None, fdsn_servers=None,
+                 clients=None, cache_format='MSEED', log_level='INFO'):
         '''
         Sets up data server and calibration details for later use.
 
@@ -486,10 +488,10 @@ class CalibrationAnalyzer(StreamAnalyzer):
             any format supported by :func:`obspy.read` and
             :func:`obspy.Stream.write`
         '''
-
-        super(CalibrationAnalyzer, self).__init__(
-            fdsn_server=fdsn_server,
-            cache_format=cache_format)
+        super(CalibrationAnalyzer, self).__init__(fdsn_servers=fdsn_servers,
+                                                  clients=clients)
+        self.logger = get_logger(self.__class__.__name__, LOG_FILE_NAME,
+                                 log_level)
 
         assert os.path.exists(calibration_file)
 
