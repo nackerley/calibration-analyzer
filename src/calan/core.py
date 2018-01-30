@@ -20,7 +20,7 @@ from obspy import read, read_inventory, UTCDateTime
 from obspy.clients.fdsn.client import FDSNException
 from obspy.core.inventory import CoefficientsTypeResponseStage
 
-from catalogue_tools.core import get_clients, DATETIME_FORMAT
+from catalogue_tools.core import get_clients, short_utc
 from catalogue_tools.utilities import (
     get_logger, string_list, pretty_duration, preferred_number,
     fdsn_error_message)
@@ -540,7 +540,7 @@ class StreamAnalyzer(object):
 
         start = np.max([trace.stats.starttime for trace in self.stream])
         end = np.min([trace.stats.endtime for trace in self.stream])
-        start_string = start.strftime(DATETIME_FORMAT)
+        start_string = short_utc(start)
         start_string = start_string.replace(':', '-').replace(' ', '_')
         duration_string = pretty_duration(end - start)
         common_name = factor_names(self.stream)[0]
