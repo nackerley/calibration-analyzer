@@ -19,12 +19,13 @@ import matplotlib.pyplot as plt
 from obspy import read, read_inventory, UTCDateTime
 from obspy.clients.fdsn.client import FDSNException
 from obspy.core.inventory import CoefficientsTypeResponseStage
+from obspy.core.util.attribdict import AttribDict
 
-from catalogue_tools.core import get_clients, short_utc
+from catalogue_tools.core import short_utc
 from catalogue_tools.utilities import (
     get_logger, string_list, pretty_duration, preferred_number,
     fdsn_error_message)
-
+from catalogue_tools.css2seed import GscStationInfo
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 FILE_NAME = os.path.basename(__file__)
@@ -507,22 +508,20 @@ class Stft():
         # pylint: enable=protected-access
 
 
-class StreamAnalyzer(object):
+class StreamAnalyzer(GscStationInfo):
     '''
     Base class for a :class:`~obspy.Stream`-based signal analyzer.
     '''
     CACHE = 'cache'
 
-    def __init__(self, fdsn_servers=None, clients=None,
-                 cache_format='MSEED', log='INFO'):
+    def __init__(self, fdsn_servers=None, clients=None, cache_format='MSEED',
+                 log_level='INFO', log_file_name=LOG_FILE_NAME):
         '''
         Sets up FDSN server for later use.
         '''
-        self.logger = get_logger(self.__class__.__name__, LOG_FILE_NAME, log)
-        if clients is not None:
-            self.clients = clients
-        else:
-            self.clients = get_clients(fdsn_servers)
+        super(StreamAnalyzer, self).__init__(
+            fdsn_servers=fdsn_servers, clients=clients,
+            log_level=log_level, log_file_name=log_file_name)
 
         if len(self.clients) == 0:
             self.logger.info('You are working offline.')
@@ -530,6 +529,13 @@ class StreamAnalyzer(object):
         self.cache_format = cache_format
         self.stream = None
         self.name = ''
+
+    def __str__(self):
+        lines = ['Clients:']
+        lines += ['\t' + str(client).split('\n')[0] for client in self.clients]
+        if self.stream:
+            lines += self.stream.__str__(extended=True).split('\n')
+        return '\n'.join(lines)
 
     def make_cache_name(self):
         '''
@@ -555,7 +561,8 @@ class StreamAnalyzer(object):
     def load_stream(self, start, end,
                     input_file=None, inventory_dataless=None, networks=None,
                     stations=None, locations=None, channels=None,
-                    minimum_sampling_rate_sps=10):
+                    minimum_sampling_rate_sps=10,
+                    response=True, cache=True, fill_value=None):
         '''
         Load stream and attach inventory from files or FDSN clients. Files, if
         specified, are loaded first, then self.clients are searched, in order,
@@ -596,7 +603,7 @@ class StreamAnalyzer(object):
             self.stream = None
 
         for client in self.clients:
-            if 'dataselect' not in client.services.keys():
+            if 'dataselect' not in client.services:
                 continue
 
             if self.stream is None:
@@ -608,8 +615,14 @@ class StreamAnalyzer(object):
             if len(remaining) == 0:
                 break
 
-            self.logger.info('Trying FDSN server: ' + client.base_url)
-            self.logger.info('Requesting data: ' + ', '.join(remaining))
+            if hasattr(client, 'base_url'):
+                self.logger.info('Trying URL: ' + client.base_url)
+            elif hasattr(client, 'sds_root'):
+                self.logger.info('Trying filesystem: ' + client.sds_root)
+            else:
+                continue
+
+            self.logger.info('Requesting stations: ' + ', '.join(remaining))
             try:
                 partial_stream = client.get_waveforms(
                     network=','.join(networks),
@@ -659,7 +672,7 @@ class StreamAnalyzer(object):
             elif partial_stream is not None:
                 self.stream += partial_stream
 
-            if partial_stream is not None:
+            if cache and partial_stream is not None:
                 input_file = '.'.join([self.make_cache_name(),
                                        self.cache_format])
                 self.logger.info('Caching %s locally as: %s'
@@ -671,15 +684,21 @@ class StreamAnalyzer(object):
                     except UserWarning as ex:
                         self.logger.warning(ex.args[0].replace('\n', ' '))
 
+        if self.stream is not None:
+            self.stream = self.stream.merge(fill_value=fill_value).sort()
+
+        if not response:
+            return
+
         if inventory_dataless is not None:
-            self.logger.info('Reading responses from StationXML file: %s'
-                             % inventory_dataless)
+            self.logger.info('Reading responses from StationXML file: %s' %
+                             inventory_dataless)
             inventory = dataless2inventory(inventory_dataless)
         else:
             inventory = None
 
         for client in self.clients:
-            if 'station' not in client.services.keys():
+            if 'station' not in client.services:
                 continue
 
             if inventory is None:
@@ -691,7 +710,8 @@ class StreamAnalyzer(object):
                 break
 
             self.logger.info('Trying FDSN server: ' + client.base_url)
-            self.logger.info('Requesting inventory: ' + ', '.join(remaining))
+            self.logger.info(
+                'Requesting inventory: ' + ', '.join(remaining))
             try:
                 partial_inventory = client.get_stations(
                     network=','.join(networks),
@@ -710,14 +730,13 @@ class StreamAnalyzer(object):
                 partial_inventory = None
                 self.logger.warning(fdsn_error_message(ex))
 
-            if partial_inventory is not None:
+            if cache and partial_inventory is not None:
                 inventory_dataless = self.make_cache_name() + '.xml'
                 self.logger.info('Caching StationXML locally as: %s'
                                  % inventory_dataless)
                 inventory.write(inventory_dataless, format='STATIONXML')
 
         if self.stream is not None:
-            self.stream = self.stream.merge().sort()
             with warnings.catch_warnings():
                 warnings.simplefilter('error')
                 try:
@@ -726,7 +745,7 @@ class StreamAnalyzer(object):
                         self.logger.warning(
                             'No response found:' +
                             ', '.join([trace.id for trace in not_found]))
-                except UserWarning as ex:
+                except (UserWarning, ValueError) as ex:
                     self.logger.warning(ex.args[0].replace('\n', ' '))
 
             remaining = [station for station in stations
@@ -737,15 +756,26 @@ class StreamAnalyzer(object):
                     'Missing stations: ' + ', '.join(remaining))
 
             for trace in self.stream:
-                if 'response' not in trace.stats:
-                    self.logger.warning(
-                        'No response for: ' + trace.id)
                 if trace.id in inventory.get_contents()['channels']:
                     trace.stats.coordinates = \
                         inventory.get_coordinates(trace.id)
                 else:
+                    site = self.get_site(trace.stats.station)
+                    if site is not None:
+                        trace.stats.coordinates = AttribDict({
+                            'latitude': site.lat,
+                            'longitude': site.lon,
+                            'elevation': site.elev,
+                            'local_depth': 0.0,  # get_site needs work here
+                            })
+
+                missing_attributes = [
+                    attribute for attribute in ['response', 'coordinates']
+                    if attribute not in trace.stats]
+                if missing_attributes:
                     self.logger.warning(
-                        'No coordinates for: ' + trace.id)
+                        'No %s for: %s' %
+                        (', '.join(missing_attributes), trace.id))
 
         else:
             self.logger.warning('No data loaded.')
@@ -790,9 +820,9 @@ class StreamAnalyzer(object):
             if hasattr(self, 'info'):
                 start_string = str(self.info['start'].date)
             else:
-                start = np.max([trace.stats.starttime
-                                for trace in self.stream])
-                start_string = start.strftime(DATETIME_FORMAT)
+                start_string = short_utc(np.max([trace.stats.starttime
+                                                 for trace in self.stream]))
+
             common_name = factor_names(self.stream)[0]
 
             file_parts += [common_name, start_string]
