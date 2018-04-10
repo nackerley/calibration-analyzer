@@ -16,7 +16,7 @@ from scipy import fftpack
 import scipy.signal as sp
 import matplotlib.pyplot as plt
 
-from obspy import read, read_inventory, UTCDateTime
+from obspy import read, read_inventory, UTCDateTime, Stream
 from obspy.clients.fdsn.client import FDSNException
 from obspy.core.inventory import CoefficientsTypeResponseStage
 from obspy.core.util.attribdict import AttribDict
@@ -632,10 +632,10 @@ class StreamAnalyzer(GscStationInfo):
                     starttime=start - 1, endtime=end + 1)
 
             except FDSNException as ex:
-                partial_stream = None
+                partial_stream = Stream()
                 self.logger.warning(fdsn_error_message(ex))
 
-            if partial_stream is not None:
+            if len(partial_stream) > 0:
                 partial_stream.traces = [
                     trace for trace in partial_stream.traces
                     if trace.stats.sampling_rate >= minimum_sampling_rate_sps]
@@ -669,10 +669,10 @@ class StreamAnalyzer(GscStationInfo):
 
             if self.stream is None:
                 self.stream = partial_stream
-            elif partial_stream is not None:
+            elif len(partial_stream) > 0:
                 self.stream += partial_stream
 
-            if cache and partial_stream is not None:
+            if cache and len(self.stream) > 0:
                 input_file = '.'.join([self.make_cache_name(),
                                        self.cache_format])
                 self.logger.info('Caching %s locally as: %s'
