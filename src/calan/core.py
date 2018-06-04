@@ -10,20 +10,23 @@ import os
 import sys
 import warnings
 from glob import glob
+from contextlib import redirect_stdout, redirect_stderr
 
 import numpy as np
+import pandas as pd
 from scipy import fftpack
 import scipy.signal as sp
 import matplotlib.pyplot as plt
 
 from obspy import read, read_inventory, UTCDateTime, Stream
 from obspy.clients.fdsn.client import FDSNException
+from obspy.io.mseed import InternalMSEEDError
 from obspy.core.inventory import CoefficientsTypeResponseStage
 from obspy.core.util.attribdict import AttribDict
 
 from catalogue_tools.core import short_utc
 from catalogue_tools.utilities import (
-    get_logger, string_list, pretty_duration, preferred_number,
+    get_logger, LoggerWriter, string_list, pretty_duration, preferred_number,
     fdsn_error_message)
 from catalogue_tools.css2seed import GscStationInfo
 
@@ -508,6 +511,281 @@ class Stft():
         # pylint: enable=protected-access
 
 
+def _missing_samples(delta, sampling_rate):
+    return np.rint(np.fabs(delta)*sampling_rate)
+
+
+def is_complete(stream, start, end, trace_ids=None, tolerance=0.5):
+    '''
+    Check whether stream is complete.
+    '''
+    if trace_ids is None:
+        trace_ids = sorted(list(set(trace.id for trace in stream)))
+
+    stream = stream.sort()
+    for trace_id in trace_ids:
+        traces = stream.select(id=trace_id).traces
+
+        # ensure that there is some data
+        if not traces:
+            return False
+
+        for i in range(len(traces) - 1):
+            # check start
+            if i == 0 and (traces[i].stats.starttime > UTCDateTime(start) +
+                           tolerance/traces[i].stats.sampling_rate):
+                return False
+
+            # check sample rate hasn't changed
+            if traces[i].stats.delta != traces[i + 1].stats.delta:
+                return False
+
+            # compute gap (positive) or overlap (negative)
+            delta = (traces[i + 1].stats['starttime'].timestamp -
+                     traces[i].stats['endtime'].timestamp +
+                     traces[i].stats.delta)
+
+            # check that any overlap is not larger than trace coverage
+            if delta < 0:
+                temp = (traces[i + 1].stats['endtime'].timestamp -
+                        traces[i + 1].stats['starttime'].timestamp)
+                if (delta * -1) > temp:
+                    delta = -1 * temp
+
+            missing_samples = _missing_samples(
+                delta, traces[i].stats['sampling_rate'])
+            if missing_samples > 0:
+                return False
+
+            # check end
+            if i + 1 == len(traces) - 1 and (
+                    traces[i + 1].stats.endtime < UTCDateTime(end) -
+                    tolerance/traces[i].stats.sampling_rate):
+                return False
+
+    return True
+
+
+ID_COLUMNS = ['network', 'station', 'location', 'channel']
+GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
+
+
+def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
+             end=pd.Timestamp.now(), tolerance=0.5):
+    '''
+    Construct a dataframe of gaps, including start & end gaps.
+
+    If an empty stream is provided the returned value are empty dataframes
+    with the correct columns.
+
+    Returns
+    -------
+    2-tuple of pd.DataFrame:
+        gaps_df, overlap_df
+    '''
+    trace_ids = string_list(trace_ids)
+    if not isinstance(start, pd.Timestamp):
+        start = pd.to_datetime(start.datetime)
+    if not isinstance(end, pd.Timestamp):
+        end = pd.to_datetime(end.datetime)
+
+    if stream:
+        gaps_df = pd.DataFrame(stream.get_gaps(),
+                               columns=ID_COLUMNS + GAP_COLUMNS)
+
+        gaps_df.insert(
+            0, 'id', ['.'.join(items)
+                      for _, items in gaps_df[ID_COLUMNS].iterrows()])
+        gaps_df['sampling_rate'] = np.round(gaps_df.samples/gaps_df.duration)
+        gaps_df.starttime = gaps_df.starttime.apply(
+            lambda item: pd.to_datetime(item.datetime))
+        gaps_df.endtime = gaps_df.endtime.apply(
+            lambda item: pd.to_datetime(item.datetime))
+    else:
+        gaps_df = pd.DataFrame(
+            columns=['id'] + ID_COLUMNS + GAP_COLUMNS + ['sampling_rate'])
+
+    if not trace_ids:
+        trace_ids = sorted(set([trace.id for trace in stream]))
+    if not trace_ids:
+        raise RuntimeError('Empty streams require trace_ids be specified.')
+
+    for trace_id in trace_ids:
+        id_stream = stream.select(id=trace_id)
+        if not id_stream:
+            duration = (end - start).total_seconds()
+            series = pd.Series({
+                'id': trace_id,
+                'network': trace_id.split('.')[0],
+                'station': trace_id.split('.')[1],
+                'location': trace_id.split('.')[2],
+                'channel': trace_id.split('.')[3],
+                'starttime': start,
+                'endtime': end,
+                'duration': duration,
+                'samples': -1,
+                'sampling_rate': np.NaN,
+                })
+            gaps_df = gaps_df.append(series, ignore_index=True)
+
+    for trace_id in trace_ids:
+        id_stream = stream.select(id=trace_id)
+        if not id_stream:
+            continue
+        id_stream.sort(keys=['starttime'])
+        trace = id_stream[0]
+        sampling_rate = trace.stats.sampling_rate
+        tol = pd.to_timedelta(tolerance/sampling_rate, 's')
+        trace_start = pd.to_datetime(trace.stats.starttime.datetime)
+        if trace_start > start + tol:
+            duration = (trace_start - start).total_seconds()
+            series = pd.Series({
+                'id': trace_id,
+                'network': trace.stats.network,
+                'station': trace.stats.station,
+                'location': trace.stats.location,
+                'channel': trace.stats.channel,
+                'starttime': start,
+                'endtime': trace_start,
+                'duration': duration,
+                'samples': _missing_samples(duration, sampling_rate),
+                'sampling_rate': sampling_rate,
+                })
+            gaps_df = gaps_df.append(series, ignore_index=True)
+
+    for trace_id in trace_ids:
+        id_stream = stream.select(id=trace_id)
+        if not id_stream:
+            continue
+        id_stream.sort(keys=['endtime'])
+        trace = id_stream[-1]
+        sampling_rate = trace.stats.sampling_rate
+        tol = pd.to_timedelta(tolerance/sampling_rate, 's')
+        trace_end = pd.to_datetime(trace.stats.endtime.datetime)
+        if trace_end < end - tol:
+            duration = (end - trace_end).total_seconds()
+            series = pd.Series({
+                'id': trace_id,
+                'network': trace.stats.network,
+                'station': trace.stats.station,
+                'location': trace.stats.location,
+                'channel': trace.stats.channel,
+                'starttime': trace_end,
+                'endtime': end,
+                'duration': duration,
+                'samples': _missing_samples(duration, sampling_rate),
+                'sampling_rate': sampling_rate,
+                })
+            gaps_df = gaps_df.append(series, ignore_index=True)
+
+        gaps_df.sort_values(by=['starttime', 'endtime'],
+                            ascending=[True, False], inplace=True)
+        gaps_df.reset_index(inplace=True, drop=True)
+
+    return gaps_df[gaps_df.duration > 0], gaps_df[gaps_df.duration <= 0]
+
+
+def fraction_available(trace_ids, start, end, gaps_df):
+    '''
+    Compute fraction of requested data which is available.
+    '''
+    trace_ids = string_list(trace_ids)
+
+    expected_duration = len(trace_ids)*((UTCDateTime(end) -
+                                        UTCDateTime(start)))
+    gap_duration = gaps_df.loc[gaps_df.id.isin(trace_ids)].duration.sum()
+    if expected_duration:
+        return 1 - gap_duration/expected_duration
+    else:
+        return np.NaN
+
+
+def log_availability(logger, gaps_df, trace_ids, start, end,
+                     column='duration'):
+    '''
+    Given a gap listing, summarize availability to a log file.
+    '''
+    gaps_df = gaps_df.copy()
+    num_gaps = gaps_df.shape[0]
+    daylong = np.abs((UTCDateTime(end) - UTCDateTime(start)) - 24*60*60) < 3600
+
+    if num_gaps == 0:
+        return
+
+    assert column in ['duration', 'samples']
+    if column == 'duration':
+        gap_unit = 's'
+    else:
+        gap_unit = 'sample'
+
+    common_id = ''.join(chars[0] for chars in zip(*trace_ids)
+                        if len(set(chars)) == 1).strip('.')
+
+    percent_available = 100*fraction_available(trace_ids, start, end, gaps_df)
+    logger.info(
+        '%s was %.1f%% complete with %d gap(s), e.g.:' %
+        (common_id, percent_available, num_gaps))
+
+    gaps_df.loc[:, 'note'] = ''
+
+    # identify largest first and last gaps
+    gaps_df.sort_values(by=['endtime', 'starttime'],
+                        ascending=[False, True], inplace=True)
+    last = gaps_df.index[0]
+    gaps_df.sort_values(by=['starttime', 'endtime'],
+                        ascending=[True, False], inplace=True)
+    first = gaps_df.index[0]
+    if first == last:
+        gaps_df.at[first, 'note'] = 'first,last'
+    else:
+        gaps_df.at[first, 'note'] = 'first'
+        gaps_df.at[last, 'note'] = 'last'
+
+    # compute gap statistics
+    percentiles = [0.05, 0.5, 0.95]
+    keys = ['mode', '50%', 'max', 'min', '95%', '5%']
+    notes = ['mode', 'median', 'largest', 'smallest', '95th', '5th']
+    stats = gaps_df[column].describe(percentiles=percentiles)
+    stats['mode'] = gaps_df[column].mode()[0]
+
+    # eliminate redundant statistics
+    for key in keys:
+        if key in stats:
+            stats = stats[(stats != stats[key]).values |
+                          (stats.index == key)]
+
+    # label gaps
+    for key, note in zip(keys, notes):
+        if key in stats:
+            indices = gaps_df[column] == stats[key]
+            gaps_df.loc[indices, 'note'] = \
+                [','.join([item, note]) if item else note
+                 for item in gaps_df.loc[indices, 'note']]
+
+    # remove redundancies
+    gaps_df = gaps_df[gaps_df.note != '']
+    if gaps_df.at[first, 'note'] != 'first':
+        gaps_df = gaps_df[gaps_df.note !=
+                          gaps_df.at[first,
+                                     'note'].replace('first,', '')]
+    if gaps_df.at[last, 'note'] != 'last':
+        gaps_df = gaps_df[gaps_df.note !=
+                          gaps_df.at[last,
+                                     'note'].replace('last,', '')]
+    gaps_df = gaps_df.drop_duplicates(subset='note')
+
+    for i, gap in gaps_df.iterrows():
+        if daylong:
+            logger.info(
+                '%s: %s start of %.3g %s gap (%s)'
+                % (gap.id, str(gap.starttime.time())[:-3],
+                   gap[column], gap_unit, gap.note))
+        else:
+            logger.info(
+                '%s: %s start of %.3g %s gap (%s)'
+                % (gap.id, str(gap.starttime)[:-3],
+                   gap[column], gap_unit, gap.note))
+
 class StreamAnalyzer(GscStationInfo):
     '''
     Base class for a :class:`~obspy.Stream`-based signal analyzer.
@@ -528,6 +806,7 @@ class StreamAnalyzer(GscStationInfo):
 
         self.cache_format = cache_format
         self.stream = None
+        self.gaps_df = None
         self.name = ''
 
     def __str__(self):
@@ -558,17 +837,20 @@ class StreamAnalyzer(GscStationInfo):
         return os.path.join(
             self.CACHE, '_'.join([common_name, start_string, duration_string]))
 
+    # @profile
     def load_stream(self, start, end,
                     input_file=None, inventory_dataless=None, networks=None,
-                    stations=None, locations=None, channels=None,
+                    stations=None, locations=None, channels=None, ids=None,
                     minimum_sampling_rate_sps=10,
-                    response=True, cache=True, fill_value=None):
+                    response=True, cache=True):
         '''
         Load stream and attach inventory from files or FDSN clients. Files, if
         specified, are loaded first, then self.clients are searched, in order,
         for any remaining combinations of `networks`, `stations`, `locations`
         and `channels`, until an instance of each `station` in `stations` is
         found.
+
+        Clients are searched until a gapless, complete dataset is found.
 
         Note
         ----
@@ -609,9 +891,10 @@ class StreamAnalyzer(GscStationInfo):
             if self.stream is None:
                 remaining = stations
             else:
-                remaining = [station for station in stations
-                             if station not in set([trace.stats.station
-                                                    for trace in self.stream])]
+                remaining = [
+                    station for station in stations
+                    if not is_complete(self.stream.select(station=station),
+                                       start, end)]
             if len(remaining) == 0:
                 break
 
@@ -634,58 +917,46 @@ class StreamAnalyzer(GscStationInfo):
             except FDSNException as ex:
                 partial_stream = Stream()
                 self.logger.warning(fdsn_error_message(ex))
+            except InternalMSEEDError as ex:
+                partial_stream = Stream()
+                for line in str(ex).split('\n'):
+                    self.logger.warning(line)
 
             if len(partial_stream) > 0:
                 partial_stream.traces = [
                     trace for trace in partial_stream.traces
                     if trace.stats.sampling_rate >= minimum_sampling_rate_sps]
-                partial_stream.merge()
-
-                partial_stream.sort(keys=['starttime'])
-                if partial_stream[-1].stats.starttime > start:
-                    self.logger.warning(
-                        '%s starts at %s, after requested %s'
-                        % (partial_stream[0].id,
-                           partial_stream[-1].stats.starttime, start))
-
-                partial_stream.sort(keys=['endtime'])
-                if partial_stream[0].stats.endtime < end:
-                    self.logger.warning(
-                        '%s ends at %s, before requested %s'
-                        % (partial_stream[0].id,
-                           partial_stream[0].stats.endtime, end))
-
                 partial_stream.trim(starttime=start, endtime=end)
-                try:
-                    partial_stream = partial_stream.split()
-                except ZeroDivisionError as ex:
-                    print(partial_stream.__str__(extended=True))
-                    raise ex
-
-                for gap in partial_stream.get_gaps():
-                    self.logger.warning(
-                        '%s: %d sample gap at %s'
-                        % ('.'.join(gap[:4]), gap[7], gap[4]))
 
             if self.stream is None:
                 self.stream = partial_stream
             elif len(partial_stream) > 0:
+                before = len(self.stream)
                 self.stream += partial_stream
+                self.stream.merge(method=-1)
+                after = len(self.stream)
+                self.logger.info('%d traces added' % (after - before))
 
-            if cache and len(self.stream) > 0:
-                input_file = '.'.join([self.make_cache_name(),
-                                       self.cache_format])
-                self.logger.info('Caching %s locally as: %s'
-                                 % (self.cache_format, input_file))
-                with warnings.catch_warnings():
-                    warnings.simplefilter('error')
-                    try:
-                        self.stream.write(input_file, format=self.cache_format)
-                    except UserWarning as ex:
-                        self.logger.warning(ex.args[0].replace('\n', ' '))
+        self.gaps_df = gap_list(self.stream, ids, start, end)
+
+        for station, gaps_df in self.gaps_df.groupby('station'):
+            station_ids = [id_ for id_ in ids if id_.split('.')[1] == station]
+            self.availability(gaps_df, station_ids, start, end)
+
+        if cache and len(self.stream) > 0:
+            input_file = '.'.join([self.make_cache_name(),
+                                   self.cache_format])
+            self.logger.info('Caching %s locally as: %s'
+                             % (self.cache_format, input_file))
+            with warnings.catch_warnings():
+                warnings.simplefilter('error')
+                try:
+                    self.stream.write(input_file, format=self.cache_format)
+                except UserWarning as ex:
+                    self.logger.warning(ex.args[0].replace('\n', ' '))
 
         if self.stream is not None:
-            self.stream = self.stream.merge(fill_value=fill_value).sort()
+            self.stream.sort()
 
         if not response:
             return
@@ -700,6 +971,8 @@ class StreamAnalyzer(GscStationInfo):
         for client in self.clients:
             if 'station' not in client.services:
                 continue
+
+            # import pdb; pdb.set_trace()
 
             if inventory is None:
                 remaining = stations
@@ -737,16 +1010,20 @@ class StreamAnalyzer(GscStationInfo):
                 inventory.write(inventory_dataless, format='STATIONXML')
 
         if self.stream is not None:
-            with warnings.catch_warnings():
-                warnings.simplefilter('error')
+            with redirect_stdout(
+                    LoggerWriter(self.logger,
+                                 'debug', 'stdout')), \
+                    redirect_stderr(
+                        LoggerWriter(self.logger,
+                                     'warning', 'stderr')):
                 try:
                     not_found = self.stream.attach_response(inventory)
                     if len(not_found) > 0:
                         self.logger.warning(
                             'No response found:' +
                             ', '.join([trace.id for trace in not_found]))
-                except (UserWarning, ValueError) as ex:
-                    self.logger.warning(ex.args[0].replace('\n', ' '))
+                except ValueError as ex:
+                    self.logger.warning(repr(ex))
 
             remaining = [station for station in stations
                          if station not in set([trace.stats.station
@@ -779,6 +1056,12 @@ class StreamAnalyzer(GscStationInfo):
 
         else:
             self.logger.warning('No data loaded.')
+
+    def availability(self, gaps_df, ids, start, end):
+        '''
+        Log availability statistics for given ids.
+        '''
+        log_availability(self.logger, gaps_df, ids, start, end)
 
     def f_sample(self):
         '''Return stream sampling rate'''
