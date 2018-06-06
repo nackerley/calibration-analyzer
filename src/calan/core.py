@@ -515,10 +515,12 @@ def _missing_samples(delta, sampling_rate):
     return np.rint(np.fabs(delta)*sampling_rate)
 
 
-def is_complete(stream, start, end, trace_ids=None, tolerance=0.5):
+def is_complete(stream, trace_ids=(), start=pd.Timestamp(0),
+                end=pd.Timestamp.now(), tolerance=0.5):
     '''
-    Check whether stream is complete.
+    Lightweight test whether stream is complete.
     '''
+    trace_ids = string_list(trace_ids)
     if trace_ids is None:
         trace_ids = sorted(list(set(trace.id for trace in stream)))
 
@@ -530,13 +532,18 @@ def is_complete(stream, start, end, trace_ids=None, tolerance=0.5):
         if not traces:
             return False
 
-        for i in range(len(traces) - 1):
-            # check start
-            if i == 0 and (traces[i].stats.starttime > UTCDateTime(start) +
-                           tolerance/traces[i].stats.sampling_rate):
-                return False
+        # check start
+        if (traces[0].stats.starttime > UTCDateTime(start) +
+                tolerance/traces[0].stats.sampling_rate):
+            return False
 
-            # check sample rate hasn't changed
+        # check end
+        if (traces[-1].stats.endtime < UTCDateTime(end) -
+                tolerance/traces[-1].stats.sampling_rate):
+            return False
+
+        for i in range(len(traces) - 1):
+            # check that sample rate doesn't change
             if traces[i].stats.delta != traces[i + 1].stats.delta:
                 return False
 
@@ -555,12 +562,6 @@ def is_complete(stream, start, end, trace_ids=None, tolerance=0.5):
             missing_samples = _missing_samples(
                 delta, traces[i].stats['sampling_rate'])
             if missing_samples > 0:
-                return False
-
-            # check end
-            if i + 1 == len(traces) - 1 and (
-                    traces[i + 1].stats.endtime < UTCDateTime(end) -
-                    tolerance/traces[i].stats.sampling_rate):
                 return False
 
     return True
