@@ -8,8 +8,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import os
 import sys
+import inspect
 import warnings
 from glob import glob
+from time import time
+from tempfile import gettempdir
 from contextlib import redirect_stdout, redirect_stderr
 
 import numpy as np
@@ -19,12 +22,13 @@ import scipy.signal as sp
 import matplotlib.pyplot as plt
 
 from obspy import read, read_inventory, UTCDateTime, Stream
+from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.client import FDSNException
 from obspy.io.mseed import InternalMSEEDError
 from obspy.core.inventory import CoefficientsTypeResponseStage
 from obspy.core.util.attribdict import AttribDict
 
-from catalogue_tools.core import short_utc
+from catalogue_tools.core import short_utc, DEFAULT_FDSN_SERVERS
 from catalogue_tools.utilities import (
     get_logger, LoggerWriter, string_list, pretty_duration, preferred_number,
     fdsn_error_message)
@@ -60,6 +64,63 @@ def dataless2inventory(inventory_dataless, inventory_source='GSC'):
             inventory_dataless))
 
     return read_inventory(inventory_xml)
+
+
+def _elapsed_since(tick):
+    return str(pd.to_timedelta(round(time() - tick), 's')).split()[-1]
+
+
+def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
+                      maxlongitude=-40, minlongitude=-170):
+    '''
+    Returns an inventory of all stations for which CHIS has waveform data.
+
+    If a cache is found, it is used, for speedup.
+
+    Example
+    -------
+    inventory = get_chis_stations()
+    INFO     Client: http://192.168.41.158:8080
+    INFO     Read GSC inventory via SeisComP3: 00:01:03
+    INFO     Cached /tmp/response_minlatitude35_maxlatitude90.xml: 00:00:09
+
+    inventory = get_chis_stations()
+    INFO     Cache: /tmp/response_minlatitude35_maxlatitude90.xml
+    INFO     Elapsed: 00:00:17
+    '''
+    logger = get_logger(__name__)
+
+    args, _, _, defaults = inspect.getfullargspec(get_chis_stations)[:4]
+    inventory_file = os.path.join(
+        gettempdir(),
+        '_'.join('%s%s' % (arg, default)
+                 for arg, default in zip(args, defaults)) + '.xml')
+    inventory_file = inventory_file.replace('level', '')
+
+    if os.path.isfile(inventory_file):
+        logger.info('Cache: ' + inventory_file)
+        tick = time()
+        inventory = read_inventory(inventory_file)
+        logger.info('Elapsed: ' + _elapsed_since(tick))
+    else:
+        try:
+            chis_fdsn_client = Client(DEFAULT_FDSN_SERVERS[0])
+        except FDSNException:
+            chis_fdsn_client = Client(DEFAULT_FDSN_SERVERS[2])
+
+        logger.info('Client: ' + chis_fdsn_client.base_url)
+
+        tick = time()
+        inventory = chis_fdsn_client.get_stations(
+            level=level, minlatitude=minlatitude, maxlatitude=maxlatitude,
+            maxlongitude=maxlongitude, minlongitude=minlongitude)
+        logger.info('Read %s inventory via %s: %s' %
+                    (inventory.sender.upper(), inventory.source,
+                     _elapsed_since(tick)))
+
+        tick = time()
+        inventory.write(inventory_file, format='StationXML')
+        logger.info('Cached %s: %s' % (inventory_file, _elapsed_since(tick)))
 
 
 def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
@@ -786,6 +847,7 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
                 '%s: %s start of %.3g %s gap (%s)'
                 % (gap.id, str(gap.starttime)[:-3],
                    gap[column], gap_unit, gap.note))
+
 
 class StreamAnalyzer(GscStationInfo):
     '''
