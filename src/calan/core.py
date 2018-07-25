@@ -957,7 +957,7 @@ class StreamAnalyzer(GscStationInfo):
                 remaining = [
                     station for station in stations
                     if not is_complete(self.stream.select(station=station),
-                                       start, end)]
+                                       start=start, end=end)]
             if len(remaining) == 0:
                 break
 
@@ -1000,7 +1000,7 @@ class StreamAnalyzer(GscStationInfo):
                 after = len(self.stream)
                 self.logger.info('%d traces added' % (after - before))
 
-        self.gaps_df = gap_list(self.stream, ids, start, end)
+        self.gaps_df = gap_list(self.stream, ids, start, end)[0]
 
         for station, gaps_df in self.gaps_df.groupby('station'):
             station_ids = [id_ for id_ in ids if id_.split('.')[1] == station]
