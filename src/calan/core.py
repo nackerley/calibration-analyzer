@@ -1002,8 +1002,14 @@ class StreamAnalyzer(GscStationInfo):
 
         self.gaps_df = gap_list(self.stream, ids, start, end)[0]
 
+        if ids:
+            log_ids = ids
+        else:
+            log_ids = self.gaps_df.id.tolist()
+
         for station, gaps_df in self.gaps_df.groupby('station'):
-            station_ids = [id_ for id_ in ids if id_.split('.')[1] == station]
+            station_ids = [id_ for id_ in log_ids
+                           if id_.split('.')[1] == station]
             self.availability(gaps_df, station_ids, start, end)
 
         if cache and len(self.stream) > 0:
