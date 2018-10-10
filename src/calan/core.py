@@ -645,7 +645,8 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
     2-tuple of pd.DataFrame:
         gaps_df, overlap_df
     '''
-    trace_ids = string_list(trace_ids)
+    if trace_ids is None:
+        trace_ids = ()
     if not isinstance(start, pd.Timestamp):
         start = pd.to_datetime(start.datetime)
     if not isinstance(end, pd.Timestamp):
@@ -668,7 +669,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
             columns=['id'] + ID_COLUMNS + GAP_COLUMNS + ['sampling_rate'])
 
     if not trace_ids:
-        trace_ids = sorted(set([trace.id for trace in stream]))
+        trace_ids = sorted(set(trace.id for trace in stream))
     if not trace_ids:
         raise RuntimeError('Empty streams require trace_ids be specified.')
 
@@ -903,7 +904,7 @@ class StreamAnalyzer(GscStationInfo):
     # @profile
     def load_stream(self, start, end,
                     input_file=None, inventory_dataless=None, networks=None,
-                    stations=None, locations=None, channels=None, ids=None,
+                    stations=None, locations=None, channels=None, ids=(),
                     minimum_sampling_rate_sps=10,
                     response=True, cache=True):
         '''
