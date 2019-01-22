@@ -826,7 +826,8 @@ class CalibrationAnalyzer(StreamAnalyzer):
         '''
         f = self.stft.f
         tf_estimate = self._mean(self.stft.p_xy)/self._mean(self.stft.p_xx)
-        tf_estimate /= sp.freqresp(self.lti['system'], 2*np.pi*f)[1]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            tf_estimate /= sp.freqresp(self.lti['system'], 2*np.pi*f)[1]
         coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
             self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
         num_sigma = np.sqrt(2)*erfinv(confidence)
@@ -1098,11 +1099,15 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         if remove_nominal:
             tf_remove = sp.freqresp(self.lti[model], 2*np.pi*f)[1]
-            tf_estimate /= tf_remove
+            with np.errstate(divide='ignore', invalid='ignore'):
+                tf_estimate /= tf_remove
             option_list += ['nominal_' + model + '_removed']
         else:
             tf_remove = np.ones(f.shape)
-        tf_nominal = sp.freqresp(self.lti['system'], 2*np.pi*f)[1]/tf_remove
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            tf_nominal = sp.freqresp(self.lti['system'],
+                                     2*np.pi*f)[1]/tf_remove
 
         if treat_errors in ['estimate', 'correct']:
             gain_error, _, time_error, _, message = \
@@ -1110,7 +1115,8 @@ class CalibrationAnalyzer(StreamAnalyzer):
             tf_error = tf_nominal*np.exp(1j*2*np.pi*f*time_error)
             tf_error *= gain_error
         if treat_errors == 'correct':
-            tf_estimate /= gain_error
+            with np.errstate(divide='ignore', invalid='ignore'):
+                tf_estimate /= gain_error
             tf_estimate /= np.exp(1j*2*np.pi*f*time_error)
 
         if variance_threshhold is not None:

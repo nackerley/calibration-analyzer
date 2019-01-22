@@ -171,8 +171,10 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
 
     condition = np.abs(z_mat - p_mat)
     if method == 'damping':
-        condition /= np.sqrt(np.abs(p_mat)*np.abs(z_mat)) / \
-                     np.sqrt(np.cos(np.angle(p_mat)) * np.cos(np.angle(z_mat)))
+        with np.errstate(divide='ignore', invalid='ignore'):
+            condition /= np.sqrt(np.abs(p_mat)*np.abs(z_mat)) / \
+                         np.sqrt(np.cos(np.angle(p_mat)) *
+                                 np.cos(np.angle(z_mat)))
 
         # deal with NaNs produced by 0/0
         condition[z_mat == p_mat] = 0
@@ -180,11 +182,12 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     # a zero may cancel only one pole and vice versa
     # thus only closest cancellation is retained
     cancel_indices = np.zeros(condition.shape, dtype=bool)
-    while np.any(np.any(condition <= tolerance)):
-        i, j = np.unravel_index(np.nanargmin(condition), condition.shape)
-        condition[i, :] = np.inf
-        condition[:, j] = np.inf
-        cancel_indices[i, j] = True
+    with np.errstate(divide='ignore', invalid='ignore'):
+        while np.any(np.any(condition <= tolerance)):
+            i, j = np.unravel_index(np.nanargmin(condition), condition.shape)
+            condition[i, :] = np.inf
+            condition[:, j] = np.inf
+            cancel_indices[i, j] = True
 
     p_out = lti_in.poles[np.logical_not(np.any(cancel_indices, axis=0))]
     z_out = lti_in.zeros[np.logical_not(np.any(cancel_indices, axis=1))]
@@ -945,6 +948,7 @@ class StreamAnalyzer(GscStationInfo):
             self.logger.info('Reading data from %s file: %s'
                              % (self.cache_format, input_file))
             self.stream = read(input_file)
+            cache = False
         else:
             self.stream = None
 
@@ -1187,7 +1191,7 @@ class StreamAnalyzer(GscStationInfo):
 
         file_name = '_'.join(file_parts) + '.png'
 
-        self.logger.info('Saving to', file_name)
+        self.logger.info('Saving to: ' + file_name)
         plt.savefig(file_name, dpi=300, bbox_inches='tight')
 
     def plot_stream(self, save=False):
