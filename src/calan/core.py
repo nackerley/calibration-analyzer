@@ -7,37 +7,95 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
-import sys
+import queue
+import requests
 import inspect
-import warnings
+
 from glob import glob
 from time import time
 from tempfile import gettempdir
-from contextlib import redirect_stdout, redirect_stderr
 
 import numpy as np
 import pandas as pd
 from scipy import fftpack
 import scipy.signal as sp
-import matplotlib.pyplot as plt
 
-from obspy import read, read_inventory, UTCDateTime, Stream
-from obspy.clients.fdsn import Client
-from obspy.clients.fdsn.client import FDSNException
-from obspy.io.mseed import InternalMSEEDError
+from obspy import read_inventory, UTCDateTime
+from obspy.clients import fdsn
 from obspy.core.inventory import CoefficientsTypeResponseStage
-from obspy.core.util.attribdict import AttribDict
 
-from catalogue_tools.core import short_utc, DEFAULT_FDSN_SERVERS
-from catalogue_tools.utilities import (
-    get_logger, LoggerWriter, string_list, pretty_duration, preferred_number,
-    fdsn_error_message)
+from catalogue_tools.utilities import get_logger, string_list, preferred_number
 
-from calan.css2seed import GscStationInfo
+from calan import chis_archive
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-FILE_NAME = os.path.basename(__file__)
-LOG_FILE_NAME = os.path.splitext(FILE_NAME)[0] + '.log'
+
+DEFAULT_FDSN_SERVERS = (
+    'http://192.168.41.158:8080',  # sc3-o1, CHIS network, SeisComP3
+    'http://192.168.41.45:8080',  # antarc-o2, CHIS network, non-SeisComP3
+    'http://132.156.41.208:6062',  # sc3-o1, NRCan network, seisComP3
+    'http://132.156.41.208:6060',  # antarc-o2, NRCan network, non-SeisComP3
+    'IRIS',
+    )
+
+
+def get_clients(servers=None, test_timeout=2):
+    '''
+    Given a list of URLs, returns a list of FDSN clients.
+    '''
+    if servers is None:
+        servers = [chis_archive.DEFAULT_ROOT] + list(DEFAULT_FDSN_SERVERS)
+    servers = string_list(servers)
+
+    clients = []
+    logger = get_logger(__name__)
+    if servers is not None:
+        for server in servers:
+            fdsn_server = (server.startswith('http') or
+                           server in fdsn.URL_MAPPINGS)
+
+            if fdsn_server:
+                if server.startswith('http'):
+                    test_server = server
+                else:
+                    test_server = fdsn.URL_MAPPINGS[server]
+
+                try:
+                    requests.get(test_server, timeout=test_timeout)
+                except (requests.Timeout, requests.ConnectionError,
+                        queue.Empty) as ex:
+                    logger.debug(repr(ex))
+                    continue
+                except requests.TooManyRedirects as ex:
+                    logger.debug(repr(ex))
+            else:
+                if not os.path.isdir(server):
+                    logger.warning(
+                        'CHIS archive %s not available. Ignoring.' % server)
+                    continue
+
+            try:
+                if fdsn_server:
+                    clients.append(fdsn.Client(server))
+                else:
+                    clients.append(chis_archive.Client(server))
+            except fdsn.client.FDSNException as ex:
+                logger.warning(repr(ex))
+
+    return clients
+
+
+def fdsn_error_message(ex):
+    '''
+    Cleans up certain obspy.clients.fdsn exception messages.
+    '''
+    lines = ex.args[0].split('\n')
+    if 'No data available' in lines[0]:
+        msg = lines[0]
+    else:
+        msg = ' '.join(lines)
+    return msg
+
 
 STATIONXML_CONVERTER_FILE = 'stationxml-converter-1.0.9.jar'
 STATIONXML_CONVERTER = next(iter(glob(
@@ -105,9 +163,9 @@ def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
         logger.info('Elapsed: ' + _elapsed_since(tick))
     else:
         try:
-            chis_fdsn_client = Client(DEFAULT_FDSN_SERVERS[0])
-        except FDSNException:
-            chis_fdsn_client = Client(DEFAULT_FDSN_SERVERS[2])
+            chis_fdsn_client = fdsn.Client(DEFAULT_FDSN_SERVERS[0])
+        except fdsn.client.FDSNException:
+            chis_fdsn_client = fdsn.Client(DEFAULT_FDSN_SERVERS[2])
 
         logger.info('Client: ' + chis_fdsn_client.base_url)
 
@@ -852,363 +910,3 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
                 '%s: %s start of %.3g %s gap (%s)'
                 % (gap.id, str(gap.starttime)[:-3],
                    gap[column], gap_unit, gap.note))
-
-
-class StreamAnalyzer(GscStationInfo):
-    '''
-    Base class for a :class:`~obspy.Stream`-based signal analyzer.
-    '''
-    CACHE = 'cache'
-
-    def __init__(self, fdsn_servers=None, clients=None, cache_format='MSEED',
-                 log_level='INFO', log_file_name=LOG_FILE_NAME):
-        '''
-        Sets up FDSN server for later use.
-        '''
-        super(StreamAnalyzer, self).__init__(
-            fdsn_servers=fdsn_servers, clients=clients,
-            log_level=log_level, log_file_name=log_file_name)
-
-        if len(self.clients) == 0:
-            self.logger.info('You are working offline.')
-
-        self.cache_format = cache_format
-        self.stream = None
-        self.gaps_df = None
-        self.name = ''
-
-    def __str__(self):
-        lines = ['Clients:']
-        lines += ['\t' + str(client).split('\n')[0] for client in self.clients]
-        if self.stream:
-            lines += self.stream.__str__(extended=True).split('\n')
-        return '\n'.join(lines)
-
-    def make_cache_name(self):
-        '''
-        Construct a name for cached copy of a stream or an inventory.
-        '''
-        if self.stream is None:
-            return None
-
-        start = np.max([trace.stats.starttime for trace in self.stream])
-        end = np.min([trace.stats.endtime for trace in self.stream])
-        start_string = short_utc(start)
-        start_string = start_string.replace(':', '-').replace(' ', '_')
-        duration_string = pretty_duration(end - start)
-        common_name = factor_names(self.stream)[0]
-        common_name = common_name.replace(' ', '').replace('..', '.')
-        common_name = common_name.replace('..', '.')
-        if common_name.startswith('.'):
-            common_name = common_name[1:]
-
-        return os.path.join(
-            self.CACHE, '_'.join([common_name, start_string, duration_string]))
-
-    # @profile
-    def load_stream(self, start, end,
-                    input_file=None, inventory_dataless=None, networks=None,
-                    stations=None, locations=None, channels=None, ids=(),
-                    minimum_sampling_rate_sps=10,
-                    response=True, cache=True):
-        '''
-        Load stream and attach inventory from files or FDSN clients. Files, if
-        specified, are loaded first, then self.clients are searched, in order,
-        for any remaining combinations of `networks`, `stations`, `locations`
-        and `channels`, until an instance of each `station` in `stations` is
-        found.
-
-        Clients are searched until a gapless, complete dataset is found.
-
-        Note
-        ----
-        The networks, channels and locations arguments only serve to narrow the
-        scope of the search for the specified stations. Thus, There is no way
-        to use this method to return only ``N1.STN1`` and ``N2.STN2`` if
-        ``N1.STN2`` or ``N2.STN1`` exist; in that case the result a request for
-        ``stations=['STN1', 'STN2']`` and ``networks=['N1', 'N2]`` must
-        subsequently be narrowed using
-        :func:`~obspy.core.stream.Stream.select`.
-        '''
-        start = UTCDateTime(start)
-        end = UTCDateTime(end)
-        if networks is None:
-            networks = '*'
-        if stations is None:
-            stations = '*'
-        if locations is None:
-            locations = '*'
-        if channels is None:
-            channels = '*'
-        networks = string_list(networks)
-        stations = string_list(stations)
-        locations = string_list(locations)
-        channels = string_list(channels)
-
-        if input_file is not None:
-            self.logger.info('Reading data from %s file: %s'
-                             % (self.cache_format, input_file))
-            self.stream = read(input_file)
-            cache = False
-        else:
-            self.stream = None
-
-        for client in self.clients:
-            if 'dataselect' not in client.services:
-                continue
-
-            if self.stream is None:
-                remaining = stations
-            else:
-                remaining = [
-                    station for station in stations
-                    if not is_complete(self.stream.select(station=station),
-                                       start=start, end=end)]
-            if len(remaining) == 0:
-                break
-
-            if hasattr(client, 'base_url'):
-                self.logger.info('Trying URL: ' + client.base_url)
-            elif hasattr(client, 'sds_root'):
-                self.logger.info('Trying filesystem: ' + client.sds_root)
-            else:
-                continue
-
-            self.logger.info('Requesting stations: ' + ', '.join(remaining))
-            try:
-                partial_stream = client.get_waveforms(
-                    network=','.join(networks),
-                    station=','.join(remaining),
-                    location=','.join(locations),
-                    channel=','.join(channels),
-                    starttime=start - 1, endtime=end + 1)
-
-            except FDSNException as ex:
-                partial_stream = Stream()
-                self.logger.warning(fdsn_error_message(ex))
-            except InternalMSEEDError as ex:
-                partial_stream = Stream()
-                for line in str(ex).split('\n'):
-                    self.logger.warning(line)
-
-            if len(partial_stream) > 0:
-                partial_stream.traces = [
-                    trace for trace in partial_stream.traces
-                    if trace.stats.sampling_rate >= minimum_sampling_rate_sps]
-                partial_stream.trim(starttime=start, endtime=end)
-
-            if self.stream is None:
-                self.stream = partial_stream
-            elif len(partial_stream) > 0:
-                before = len(self.stream)
-                self.stream += partial_stream
-                self.stream.merge(method=-1)
-                after = len(self.stream)
-                self.logger.info('%d traces added' % (after - before))
-
-        self.gaps_df = gap_list(self.stream, ids, start, end)[0]
-
-        if ids:
-            log_ids = ids
-        else:
-            log_ids = self.gaps_df.id.tolist()
-
-        for station, gaps_df in self.gaps_df.groupby('station'):
-            station_ids = [id_ for id_ in log_ids
-                           if id_.split('.')[1] == station]
-            self.availability(gaps_df, station_ids, start, end)
-
-        if cache and len(self.stream) > 0:
-            input_file = '.'.join([self.make_cache_name(),
-                                   self.cache_format])
-            self.logger.info('Caching %s locally as: %s'
-                             % (self.cache_format, input_file))
-            with warnings.catch_warnings():
-                warnings.simplefilter('error')
-                try:
-                    self.stream.write(input_file, format=self.cache_format)
-                except UserWarning as ex:
-                    self.logger.warning(ex.args[0].replace('\n', ' '))
-
-        if self.stream is not None:
-            self.stream.sort()
-
-        if not response:
-            return
-
-        if inventory_dataless is not None:
-            self.logger.info('Reading responses from StationXML file: %s' %
-                             inventory_dataless)
-            inventory = dataless2inventory(inventory_dataless)
-        else:
-            inventory = None
-
-        for client in self.clients:
-            if 'station' not in client.services:
-                continue
-
-            # import pdb; pdb.set_trace()
-
-            if inventory is None:
-                remaining = stations
-            else:
-                remaining = [station for station in stations
-                             if len(inventory.select(station=station)) == 0]
-            if len(remaining) == 0:
-                break
-
-            self.logger.info('Trying FDSN server: ' + client.base_url)
-            self.logger.info(
-                'Requesting inventory: ' + ', '.join(remaining))
-            try:
-                partial_inventory = client.get_stations(
-                    network=','.join(networks),
-                    station=','.join(remaining),
-                    location=','.join(locations),
-                    channel=','.join(channels),
-                    startbefore=start, endafter=end,
-                    level='response', includerestricted=True)
-
-                if inventory is None:
-                    inventory = partial_inventory
-                else:
-                    inventory += partial_inventory
-
-            except FDSNException as ex:
-                partial_inventory = None
-                self.logger.warning(fdsn_error_message(ex))
-
-            if cache and partial_inventory is not None:
-                inventory_dataless = self.make_cache_name() + '.xml'
-                self.logger.info('Caching StationXML locally as: %s'
-                                 % inventory_dataless)
-                inventory.write(inventory_dataless, format='STATIONXML')
-
-        if self.stream is not None:
-            with redirect_stdout(
-                    LoggerWriter(self.logger,
-                                 'debug', 'stdout')), \
-                    redirect_stderr(
-                        LoggerWriter(self.logger,
-                                     'warning', 'stderr')):
-                try:
-                    not_found = self.stream.attach_response(inventory)
-                    if len(not_found) > 0:
-                        self.logger.warning(
-                            'No response found:' +
-                            ', '.join([trace.id for trace in not_found]))
-                except ValueError as ex:
-                    self.logger.warning(repr(ex))
-
-            remaining = [station for station in stations
-                         if station not in set([trace.stats.station
-                                                for trace in self.stream])]
-            if len(remaining) > 0:
-                self.logger.warning(
-                    'Missing stations: ' + ', '.join(remaining))
-
-            for trace in self.stream:
-                if trace.id in inventory.get_contents()['channels']:
-                    trace.stats.coordinates = \
-                        inventory.get_coordinates(trace.id)
-                else:
-                    site = self.get_site(trace.stats.station)
-                    if site is not None:
-                        trace.stats.coordinates = AttribDict({
-                            'latitude': site.lat,
-                            'longitude': site.lon,
-                            'elevation': site.elev,
-                            'local_depth': 0.0,  # get_site needs work here
-                            })
-
-                missing_attributes = [
-                    attribute for attribute in ['response', 'coordinates']
-                    if attribute not in trace.stats]
-                if missing_attributes:
-                    self.logger.warning(
-                        'No %s for: %s' %
-                        (', '.join(missing_attributes), trace.id))
-
-        else:
-            self.logger.warning('No data loaded.')
-
-    def availability(self, gaps_df, ids, start, end):
-        '''
-        Log availability statistics for given ids.
-        '''
-        log_availability(self.logger, gaps_df, ids, start, end)
-
-    def f_sample(self):
-        '''Return stream sampling rate'''
-        return self.stream[0].stats.sampling_rate
-
-    @staticmethod
-    def _mean(p_xy):
-        '''Finishing touch on Welch's method.'''
-
-        if len(p_xy.shape) >= 2 and p_xy.size > 0:
-            if p_xy.shape[-1] > 1:
-                p_xy = p_xy.mean(axis=-1)
-            else:
-                p_xy = np.reshape(p_xy, p_xy.shape[:-1])
-        return p_xy
-
-    def save_image(self, fig=None, option_list=None):
-        '''
-        Save a figure with an automatically descriptive file name.
-        options: comma-separated string or list of strings, optional
-            'system' or 'cal' divides out that part of the nominal response
-        '''
-
-        if fig is None:
-            fig = plt.gcf()
-        if isinstance(option_list, str):
-            option_list = option_list.split(',')
-
-        # pylint:disable=protected-access
-        caller_name = sys._getframe(1).f_code.co_name
-        plot_type = caller_name.replace('plot_', '')
-
-        file_parts = [plot_type]
-
-        if option_list is not None:
-            file_parts += [option for option in option_list if len(option) > 0]
-
-        if self.stream is not None:
-            if hasattr(self, 'info'):
-                start_string = str(self.info['start'].date)
-            else:
-                start_string = short_utc(np.max([trace.stats.starttime
-                                                 for trace in self.stream]))
-
-            common_name = factor_names(self.stream)[0]
-
-            file_parts += [common_name, start_string]
-        else:
-            if hasattr(self, 'file'):
-                calibration_name = self.info['file'].replace('.gz', '')
-                calibration_name = calibration_name.replace('.wav', '')
-                file_parts += [calibration_name]
-
-        file_name = '_'.join(file_parts) + '.png'
-
-        self.logger.info('Saving to: ' + file_name)
-        plt.savefig(file_name, dpi=300, bbox_inches='tight')
-
-    def plot_stream(self, save=False):
-        '''
-        Quick plot of signals.
-        '''
-        self.stream.plot(handle=True)
-
-        if save:
-            self.save_image()
-
-    def _save_figure(self, obj, label, savefig):
-
-        if savefig:
-            if not isinstance(obj, plt.Figure):
-                obj = obj.get_figure()
-            label = label.replace(' ', '_').replace(':', '-')
-            file_name = '_'.join([label, self.name]) + '.png'
-            obj.savefig(file_name, dpi=300, bbox_inches='tight')

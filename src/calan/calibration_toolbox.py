@@ -33,11 +33,12 @@ from catalogue_tools.utilities import (
     prepend_docstring, logspace, get_logger)
 
 from calan.core import (
-    dataless2inventory, StreamAnalyzer, Stft,
+    dataless2inventory, Stft,
     factor_names, subplots_squeeze,
     lti_from_zpsf, minreal, unwrap_mid, truncnorm_shape,
     len_fft_welch, num_windows_welch, fft_frequencies,
     extract_decimation_coefficients, compute_decim_delay, multi_decim)
+from calan.stream_analyzer import StreamAnalyzer
 
 
 FILE_NAME = os.path.basename(__file__)
