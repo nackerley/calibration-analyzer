@@ -32,7 +32,8 @@ from catalogue_tools.core import short_utc, DEFAULT_FDSN_SERVERS
 from catalogue_tools.utilities import (
     get_logger, LoggerWriter, string_list, pretty_duration, preferred_number,
     fdsn_error_message)
-from catalogue_tools.css2seed import GscStationInfo
+
+from calan.css2seed import GscStationInfo
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 FILE_NAME = os.path.basename(__file__)
