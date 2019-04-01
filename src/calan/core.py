@@ -613,11 +613,30 @@ class Stft():
         self.p_yy = p_yy
         self.p_xy = p_xy
 
+    @staticmethod
+    def _mean(p_xy):
+        '''
+        Finishing touch of Welch's method when deriving results.
+        '''
+        if len(p_xy.shape) >= 2 and p_xy.size > 0:
+            if p_xy.shape[-1] > 1:
+                p_xy = p_xy.mean(axis=-1)
+            else:
+                p_xy = np.reshape(p_xy, p_xy.shape[:-1])
+        return p_xy
+
     def compute(self, x, y, f_sample, len_fft, len_overlap):
         '''
         Each segment is detrended by removing a constant value before
         application of a 'hanning' window.
         '''
+        logger = get_logger(self.__class__.__name__ + ':' + __name__)
+        f_expected = fft_frequencies(len_fft, f_sample)
+        num_samples = x.shape[0]
+        num_windows = num_windows_welch(num_samples, len_fft, len_overlap)
+        logger.info(
+            'Computing spectra on %d segments ' % num_windows +
+            'from %g to %g Hz' % (f_expected[1], f_expected[-1]))
 
         # pylint: disable=protected-access
         self.f, self.t, self.p_xy = sp.spectral._spectral_helper(
@@ -632,6 +651,35 @@ class Stft():
             y, y,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
         # pylint: enable=protected-access
+
+    def trim(self, low_frequency_points=5, high_frequency_fraction=0.8):
+        '''
+        Trim low- and high-frequency points.
+
+        Typically low-frequency measurements are spoiled by imperfect DC
+        removal. Similarly high-frequency measurements beyond the decimation
+        filter corner are not useful.
+        '''
+        keep = ((self.f >= self.f[low_frequency_points]) &
+                (self.f < self.f[-1]*high_frequency_fraction))
+        self.f = self.f[keep]
+        self.p_xx = self.p_xx[..., keep, :]
+        self.p_yy = self.p_yy[..., keep, :]
+        self.p_xy = self.p_xy[..., keep, :]
+
+    def get_transfer_function(self, alpha=0):
+        '''
+        Return transfer function estimate, differentiated alpha times.
+        '''
+        return (self._mean(self.p_xy) /
+                self._mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha
+
+    def get_coherence_squared(self):
+        '''
+        Return squared coherence.
+        '''
+        return (np.abs(self._mean(self.p_xy))**2 /
+                (self._mean(self.p_xx)*self._mean(self.p_yy)))
 
 
 def _missing_samples(delta, sampling_rate):
