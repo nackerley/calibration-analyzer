@@ -566,15 +566,15 @@ def extract_decimation_coefficients(stages):
     return b_stages, factors
 
 
-def truncnorm_shape(mean, std, clip_a, clip_b=None):
+def truncnorm_shape(mean, std, clip_b, clip_a=None):
     '''
     Convert mean, standard deviation and clip levels to
     :class:`~scipy.stats.truncnorm' shape parameters.
 
     :returns: a, b
     '''
-    if clip_b is None:
-        clip_b = - clip_a
+    if clip_a is None:
+        clip_a = -clip_b
     shape_a, shape_b = (clip_a - mean) / std, (clip_b - mean) / std
 
     return shape_a, shape_b
