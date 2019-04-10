@@ -2,7 +2,7 @@
 """
 A collection of functions useful for seismograph calibration.
 """
-
+# pylint: disable=logging-not-lazy
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -114,7 +114,7 @@ def convert_counts_to_volts(signal):
     return signal.astype('float')*DAC_GAIN
 
 
-def expected_wav_size(file_name, duration):
+def expected_wav_size(duration):
     '''
     Compute expected size before compression.
     '''
@@ -180,7 +180,7 @@ def parse_random_signal_file_name(file_name):
         else:
             extras.append(default)
 
-    if len(parts) != 0:
+    if parts:
         warn('Not parsed: %s' % '_'.join(parts))
 
     # pylint:disable=unbalanced-tuple-unpacking
@@ -216,7 +216,7 @@ def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
         'gaussian', duration_seconds, rms_voltage=rms_voltage,
         sample_rate=sample_rate, mean_voltage=mean_voltage,
         t_on=t_on, t_off=t_off)
-    file_size = expected_wav_size(file_name, duration_seconds + t_on + t_off)
+    file_size = expected_wav_size(duration_seconds + t_on + t_off)
     logger.debug('Uncompressed output "%s.wav" will be %s.'
                  % (file_name, file_size))
 
@@ -251,7 +251,7 @@ def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
     file_name = make_random_signal_file_name(
         'binary', duration_seconds, pp_voltage=pp_voltage,
         sample_rate=sample_rate, t_on=t_on, t_off=t_off)
-    file_size = expected_wav_size(file_name, duration_seconds + t_on + t_off)
+    file_size = expected_wav_size(duration_seconds + t_on + t_off)
     logger.debug('Uncompressed output "%s.wav" will be %s.'
                  % (file_name, file_size))
 
@@ -280,7 +280,7 @@ def generate_piecewise_constant(durations, voltages):
     file_name = 'step_%s' % '_'.join(
         ['%gV_%ss' % (voltage, duration)
          for voltage, duration in zip(voltages, durations)])
-    file_size = expected_wav_size(file_name, durations.sum())
+    file_size = expected_wav_size(durations.sum())
     logger.debug('Uncompressed output "%s.wav" will be %s.'
                  % (file_name, file_size))
 
@@ -309,7 +309,7 @@ def plot_calibration(signal,
 
     if file_name is not None:
         file_name = os.path.splitext(file_name)[0] + '.png'
-        plt.get_figure().savefig(file_name, dpi=300, bbox_inches='tight')
+        plt.gcf().savefig(file_name, dpi=300, bbox_inches='tight')
 
 
 def _chunk_fmt(len_chunk):
@@ -926,7 +926,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         if model not in self.lti.keys():
             self.logger.warning(
                 "'%s' not among supported models: %s."
-                % (model, ', '.join("'%s'" % key for key in self.lti.keys())))
+                % (model, ', '.join("'%s'" % key for key in self.lti)))
             return
 
         if f_limits is None:
@@ -1058,6 +1058,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         ax.set_xlabel('Frequency [Hz]')
         ax.set_ylabel('Relative Transfer Function Variance')
         ax.set_ylim((0, 0.01))
+        ax.set_yscale(scale)
         ax.legend(loc='upper left')
 
         if save:
@@ -1082,7 +1083,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         if model not in self.lti.keys():
             self.logger.warning(
                 "'%s' not among supported models: %s."
-                % (model, ', '.join("'%s'" % key for key in self.lti.keys())))
+                % (model, ', '.join("'%s'" % key for key in self.lti)))
             return
 
         if self.stft.f is None:

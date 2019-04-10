@@ -2,19 +2,19 @@
 """
 A collection of utilities useful for station quality analysis.
 """
+# pylint: disable=logging-not-lazy
 # for Python 2 & 3 compatibility
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
 import queue
-import requests
 import inspect
-
 from glob import glob
 from time import time
 from tempfile import gettempdir
 
+import requests
 import numpy as np
 import pandas as pd
 from scipy import fftpack
@@ -515,7 +515,7 @@ def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
     sig_stages[0] = sig_in[:len_input_required]
     sig_unused = sig_in[len_input_required:]
 
-    if isinstance(z_in, int) or isinstance(z_in, float):
+    if isinstance(z_in, (int, float)):
         z_in = [z_in*sp.lfilter_zi(b_stage, 1) for b_stage in b_stages]
     else:
         assert len(z_in) == len(factors)
@@ -550,7 +550,7 @@ def extract_decimation_coefficients(stages):
     for stage in stages:
         if (isinstance(stage, CoefficientsTypeResponseStage) and
                 stage.decimation_factor > 1):
-            if len(factors) == 0:
+            if not factors:
                 logger.info('Input sample rate %g sps' %
                             stage.decimation_input_sample_rate)
 
@@ -866,12 +866,12 @@ def fraction_available(trace_ids, start, end, gaps_df):
     trace_ids = string_list(trace_ids)
 
     expected_duration = len(trace_ids)*((UTCDateTime(end) -
-                                        UTCDateTime(start)))
+                                         UTCDateTime(start)))
     gap_duration = gaps_df.loc[gaps_df.id.isin(trace_ids)].duration.sum()
-    if expected_duration:
-        return 1 - gap_duration/expected_duration
-    else:
+    if not expected_duration:
         return np.NaN
+
+    return 1 - gap_duration/expected_duration
 
 
 def log_availability(logger, gaps_df, trace_ids, start, end,
@@ -948,7 +948,7 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
                                      'note'].replace('last,', '')]
     gaps_df = gaps_df.drop_duplicates(subset='note')
 
-    for i, gap in gaps_df.iterrows():
+    for _, gap in gaps_df.iterrows():
         if daylong:
             logger.info(
                 '%s: %s start of %.3g %s gap (%s)'
