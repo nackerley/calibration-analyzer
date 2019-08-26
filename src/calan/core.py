@@ -111,6 +111,16 @@ def dataless2inventory(inventory_dataless, inventory_source='GSC'):
     Convert a dataless SEED to an :class:`~obspy.core.inventory.Inventory`.
     A StationXML file is produced in the same directory as the input file.
     '''
+    inventory_xml = dataless2stationxml(inventory_dataless,
+                                        inventory_source=inventory_source)
+    return read_inventory(inventory_xml)
+
+
+def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
+    '''
+    Convert a dataless SEED to an :class:`~obspy.core.inventory.Inventory`.
+    A StationXML file is produced in the same directory as the input file.
+    '''
     logger = get_logger(__name__)
     if not os.path.isfile(inventory_dataless):
         logger.warning('Dataless SEED file "%s" not found'
@@ -119,11 +129,32 @@ def dataless2inventory(inventory_dataless, inventory_source='GSC'):
     inventory_xml = inventory_dataless.replace('.dataless', '.xml')
 
     if not os.path.isfile(inventory_xml):
-        os.system('java -jar %s --xml --source %s --output %s %s' % (
-            STATIONXML_CONVERTER, inventory_source, inventory_xml,
-            inventory_dataless))
+        os.system(
+            'java -jar %s --xml --prettyprint --source %s --output %s %s' %
+            (STATIONXML_CONVERTER, inventory_source, inventory_xml,
+             inventory_dataless))
 
-    return read_inventory(inventory_xml)
+    return inventory_xml
+
+
+def inventory2dataless(inventory_xml):
+    '''
+    Convert a dataless SEED to an :class:`~obspy.core.inventory.Inventory`.
+    A StationXML file is produced in the same directory as the input file.
+    '''
+    logger = get_logger(__name__)
+    if not os.path.isfile(inventory_xml):
+        logger.warning('StationXML file "%s" not found'
+                       % inventory_xml)
+
+    inventory_dataless = inventory_xml.replace('.xml', '.dataless')
+
+    if not os.path.isfile(inventory_dataless):
+        os.system(
+            'java -jar %s --seed --output %s %s' %
+            (STATIONXML_CONVERTER, inventory_dataless, inventory_xml))
+
+    return inventory_dataless
 
 
 def _elapsed_since(tick):
