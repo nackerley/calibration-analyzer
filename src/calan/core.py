@@ -391,6 +391,7 @@ def factor_names(stream):
                            if not same) for name in full_names]
     common_name = ''.join(letter for letter, same in zip(full_names[0], sames)
                           if same)
+    common_name = '.'.join(part.strip() for part in common_name.split('.'))
     return common_name, short_names
 
 
