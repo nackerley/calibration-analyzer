@@ -636,7 +636,8 @@ def subplots_squeeze(fig, hspace=None, wspace=None):
 
 class Stft():
     '''
-    Short-term fourier auto- and cross-spectra between input and output.
+    Short-term fourier auto- and cross-spectra between input (x) and output
+    (y) signals.
     '''
     def __init__(self, f=None, t=None, p_xx=None, p_yy=None, p_xy=None):
 
@@ -668,8 +669,8 @@ class Stft():
         num_samples = x.shape[0]
         num_windows = num_windows_welch(num_samples, len_fft, len_overlap)
         logger.info(
-            'Computing spectra on %d segments ' % num_windows +
-            'from %g to %g Hz' % (f_expected[1], f_expected[-1]))
+            '%d segments from %g to %g Hz' %
+            (num_windows, f_expected[1], f_expected[-1]))
 
         # pylint: disable=protected-access
         self.f, self.t, self.p_xy = sp.spectral._spectral_helper(
@@ -702,7 +703,8 @@ class Stft():
 
     def get_transfer_function(self, alpha=0):
         '''
-        Return transfer function estimate, differentiated alpha times.
+        Return transfer function estimate (from input, x, to output, y),
+        differentiated alpha times.
         '''
         return (self._mean(self.p_xy) /
                 self._mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha
