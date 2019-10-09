@@ -32,10 +32,8 @@ ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 PACKAGE = os.path.basename(os.path.dirname(__file__))
 
 DEFAULT_FDSN_SERVERS = (
-    'http://192.168.41.158:8080',  # sc3-o1, CHIS network, SeisComP3
-    'http://192.168.41.45:8080',  # antarc-o2, CHIS network, non-SeisComP3
-    'http://132.156.41.208:6062',  # sc3-o1, NRCan network, seisComP3
-    'http://132.156.41.208:6060',  # antarc-o2, NRCan network, non-SeisComP3
+    'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
+    'http://sc3-stage.seismo.nrcan.gc.ca',  # staging, seisComP3
     'IRIS',
     )
 

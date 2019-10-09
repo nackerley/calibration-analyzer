@@ -1,28 +1,27 @@
-2019-10-09 16:39:09 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
-2019-10-09 16:39:09 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
-2019-10-09 16:39:12 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000AAC4128>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
-2019-10-09 16:39:14 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
-2019-10-09 16:39:14 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
-2019-10-09 16:39:14 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_1.png
-2019-10-09 16:39:15 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_1.png
-2019-10-09 16:39:16 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
-2019-10-09 16:39:16 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_1.png
-2019-10-09 16:39:22 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
-2019-10-09 16:39:22 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
-2019-10-09 16:39:22 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_2.png
-2019-10-09 16:39:23 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_2.png
-2019-10-09 16:39:24 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
-2019-10-09 16:39:24 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_2.png
-2019-10-09 16:39:29 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
-2019-10-09 16:39:29 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
-2019-10-09 16:39:29 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_1.png
-2019-10-09 16:39:30 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_1.png
-2019-10-09 16:39:30 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
-2019-10-09 16:39:31 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_1.png
-2019-10-09 16:39:37 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
-2019-10-09 16:39:37 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
-2019-10-09 16:39:37 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_2.png
-2019-10-09 16:39:37 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_2.png
-2019-10-09 16:39:38 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
-2019-10-09 16:39:39 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_2.png
-2019-10-09 16:39:44 - INFO     sine_analyzer.py:calan.sine_analyzer:sine_analzyer - Summary: sine_analyzer.csv
+2019-10-09 16:50:25 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 16:50:25 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 16:50:28 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
+2019-10-09 16:50:28 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
+2019-10-09 16:50:28 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_1.png
+2019-10-09 16:50:28 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_1.png
+2019-10-09 16:50:29 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 16:50:29 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_1.png
+2019-10-09 16:50:33 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
+2019-10-09 16:50:33 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
+2019-10-09 16:50:33 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_2.png
+2019-10-09 16:50:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_2.png
+2019-10-09 16:50:35 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 16:50:35 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_2.png
+2019-10-09 16:50:40 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
+2019-10-09 16:50:40 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
+2019-10-09 16:50:40 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_1.png
+2019-10-09 16:50:40 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_1.png
+2019-10-09 16:50:41 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 16:50:41 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_1.png
+2019-10-09 16:50:45 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
+2019-10-09 16:50:45 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
+2019-10-09 16:50:45 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_2.png
+2019-10-09 16:50:46 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_2.png
+2019-10-09 16:50:47 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 16:50:47 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_2.png
+2019-10-09 16:50:53 - INFO     sine_analyzer.py:calan.sine_analyzer:sine_analzyer - Summary: sine_analyzer.csv
