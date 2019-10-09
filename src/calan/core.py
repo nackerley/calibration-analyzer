@@ -659,7 +659,7 @@ class Stft():
                 p_xy = np.reshape(p_xy, p_xy.shape[:-1])
         return p_xy
 
-    def compute(self, x, y, f_sample, len_fft, len_overlap):
+    def compute(self, x, y, f_sample, len_fft, len_overlap, window='hann'):
         '''
         Each segment is detrended by removing a constant value before
         application of a 'hanning' window.
@@ -674,15 +674,15 @@ class Stft():
 
         # pylint: disable=protected-access
         self.f, self.t, self.p_xy = sp.spectral._spectral_helper(
-            x, y,
+            x, y, window=window,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')
 
         self.p_xx = sp.spectral._spectral_helper(
-            x, x,
+            x, x, window=window,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
 
         self.p_yy = sp.spectral._spectral_helper(
-            y, y,
+            y, y,window=window,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
         # pylint: enable=protected-access
 

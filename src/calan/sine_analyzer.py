@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct  4 12:31:48 2019
-
-@author: nackerle
+Analyzer for sinusoidal calibrations of seismometers.
 """
 import os
 import sys
@@ -13,15 +11,15 @@ import matplotlib.pyplot as plt
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
-from argparse import ArgumentParser
+from pkg_resources import get_distribution
 
 from obspy import read, read_inventory
 from obspy.core.inventory.response import \
     PolesZerosResponseStage, CoefficientsTypeResponseStage
 
-
-from calan.core import Stft, get_clients
-from catalogue_tools.utilities import get_logger
+from calan.core import Stft, get_clients, PACKAGE
+from catalogue_tools.utilities import (
+    MyArgumentParser, MyFormatter, get_logger)
 
 MASS_KG = 5
 GENERATOR_VMS = 629
@@ -33,8 +31,10 @@ DAC_GAIN = 2**12/5
 
 LEN_FFT = 200
 LEN_OVERLAP = int(LEN_FFT/2)
+WINDOW = 'hann'
 TRIM_S = 5
 MIN_COHERENCE = 0.9
+PATTERN = '*.mseed'
 OUTPUT_LABEL = '_Output'
 INPUT_LABEL = '_Input'
 DPI = 150
@@ -43,16 +43,19 @@ THIS_FILE_NAME = os.path.basename(__file__)
 LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
 
 
-def first_zero_crossing(trace, tol=0.01, type='matplotlib'):
+def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
     '''
     Estimate time of first zero crossing after first departure from zero
-    greater than given tolerance relative to peak-to-peak amplitude.
+    greater than given tolerance relative to peak-to-peak amplitude. Only a
+    very crude DC removal is attempted, by subtracting the value of the first
+    sample.
     '''
-    i = ((np.abs(trace.data - trace.data[0]) /
-          (trace.data.max() - trace.data.min())/2) > tol).argmax()
-    i += np.diff(np.sign(trace.data[i:])).argmax()
-    t = trace.times(type=type)
-    x = trace.data
+    x = trace.data - trace.data[0]
+    t = trace.times(type=time_type)
+
+    i = ((2*np.abs(x)/(x.max() - x.min())) > tol).argmax()
+    i += np.diff(np.sign(x[i:])).argmax()
+
     return t[i] - (t[i + 1] - t[i])/(x[i + 1] - x[i])*x[i]
 
 
@@ -61,7 +64,7 @@ class SynchronousCalibrationAnalyzer():
     def __init__(self, log_file_name=LOG_FILE_NAME):
 
         # helpers
-        self.logger = get_logger(__name__, LOG_FILE_NAME)
+        self.logger = get_logger(__name__, log_file_name)
         self.client = get_clients()[0]
 
         # inputs
@@ -105,12 +108,11 @@ class SynchronousCalibrationAnalyzer():
             fig = self.stream.plot(endtime=start + 1,
                                    handle=True, equal_scale=False)
             for ax, trace in zip(fig.axes, reversed(self.stream)):
-                ax.axvline(start.matplotlib_date,
+                ax.axvline(first_zero_crossing(trace), label='first zero',
+                           linestyle='-.', color='red', linewidth=0.5)
+                ax.axvline(start.matplotlib_date, label='start',
                            linestyle='--', color='blue', linewidth=0.5)
-
-                ax.axvline(first_zero_crossing(trace),
-                           linestyle='-', color='red', linewidth=0.5)
-
+            fig.axes[0].legend(loc='upper right')
             fig.savefig(start_png, dpi=DPI)
 
             end_png = 'end_' + self.test_name + '.png'
@@ -118,9 +120,9 @@ class SynchronousCalibrationAnalyzer():
             fig = self.stream.plot(starttime=end - 1,
                                    handle=True, equal_scale=False)
             for ax in fig.axes:
-                ax.axvline(end.matplotlib_date,
+                ax.axvline(end.matplotlib_date, label='end',
                            linestyle='--', color='blue', linewidth=0.5)
-
+            fig.axes[0].legend(loc='upper right')
             fig.savefig(end_png, dpi=DPI)
 
         self.stream = self.stream.trim(starttime=start, endtime=end)
@@ -170,14 +172,15 @@ class SynchronousCalibrationAnalyzer():
         self.stream.attach_response(inventory)
 
     def compute_peak_response(self, len_fft=LEN_FFT, len_overlap=LEN_OVERLAP,
-                              min_coherence=MIN_COHERENCE, plot=False):
+                              min_coherence=MIN_COHERENCE, window=WINDOW,
+                              plot=False):
         '''
         Compute relative transfer function estimate at spectral peak.
         '''
         self.stft = Stft()
         self.stft.compute(self.stream[0].data, self.stream[1].data,
                           self.stream[0].stats.sampling_rate,
-                          len_fft, len_overlap)
+                          len_fft, len_overlap, window=window)
         self.f_lim = (self.stft.f[1], self.stft.f[-1])
         self.stft.trim()
         f = self.stft.f
@@ -260,15 +263,17 @@ class SynchronousCalibrationAnalyzer():
 
     def summary(self):
         result = pd.Series()
-        result['test_name'] = self.test_name
-        result['channel_id'] = self.stream[1].id
+        result['test name'] = self.test_name
+        result['channel id'] = self.stream[1].id
         result['start'] = self.stream[1].stats.starttime
-        result['end'] = self.stream[1].stats.endtime
-        result['f_min'] = self.f_lim[0]
-        result['f_max'] = self.f_lim[1]
+        result['duration [s]'] = (self.stream[1].stats.endtime -
+                                  self.stream[1].stats.starttime)
+        result['f_min [Hz]'] = self.f_lim[0]
+        result['f_max [Hz]'] = self.f_lim[1]
+        result['windows'] = self.stft.p_xx.shape[1]
         result['gain'] = self.gain_coherent
-        result['phase_degrees'] = self.phase_coherent
-        result['peak_variance'] = self.peak_variance
+        result['phase [°]'] = self.phase_coherent
+        result['normalized error'] = np.sqrt(self.peak_variance)
         return result
 
 
@@ -277,57 +282,73 @@ def _argparser():
     Command-line arguments for main
     '''
     # pylint: disable=no-member
-    parser = ArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
-                            description=__doc__)
+    parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
+                              description=__doc__,
+                              formatter_class=MyFormatter)
 
     parser.add_argument(
-        'calibration_output_pattern',
-        help='pattern matching one or more calibration outputs')
+        '-g', '--pattern', default=PATTERN,
+        help='glob pattern matching calibration files')
     parser.add_argument(
         '-l', '--len_fft', type=int, default=LEN_FFT,
         help='length of FFT')
     parser.add_argument(
+        '-w', '--window', default=WINDOW,
+        help="window function to be used for Welch's method")
+    parser.add_argument(
         '-i', '--input_label', default=INPUT_LABEL,
-        help='length of FFT')
+        help='string to be found in input waveform file names')
     parser.add_argument(
         '-o', '--output_label', default=OUTPUT_LABEL,
-        help='length of FFT')
+        help='string to be found in output waveform file names')
     parser.add_argument(
         '-p', '--plot', action='store_true',
         help='generate diagnostic plots for each analysis')
+    parser.add_argument(
+        '-v', '--version', action='version',
+        version='%s %s' % (PACKAGE, get_distribution(PACKAGE).version))
     return parser
 
 
-def sine_analzyer(calibration_output_pattern, len_fft=LEN_FFT, plot=False,
+def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW, plot=False,
                   output_label=OUTPUT_LABEL, input_label=INPUT_LABEL):
     '''
-    Run analysis for all calibration output files matching a pattern.
+    Run analysis for all calibration files matching a glob pattern.
     '''
     analyzer = SynchronousCalibrationAnalyzer()
 
-    output_csv = (os.path.splitext(calibration_output_pattern)[0]
-                  .replace('*', 'All').replace('?', 'all') + '.csv')
-    if not os.access(output_csv, os.W_OK):
-        analyzer.logger.error('Cannot write to output: ' + output_csv)
+    output_csv = os.path.splitext(THIS_FILE_NAME)[0] + '.csv'
+    if os.path.exists(output_csv) and os.path.isfile(output_csv) and \
+            not os.access(output_csv, os.W_OK):
+        analyzer.logger.error('Cannot write to ' + output_csv)
+        return ''
+
+    calibration_files = sorted([item for item in glob(pattern)
+                                if output_label in item])
+    if not calibration_files:
+        analyzer.logger.error('No files found matching pattern "%s".' %
+                              pattern)
         return ''
 
     rows = []
-    for calibration_file in glob(calibration_output_pattern):
+    for calibration_file in calibration_files:
         try:
             analyzer.load_waveforms(calibration_file, plot=plot)
-            analyzer.compute_peak_response(len_fft=len_fft, plot=plot)
+            analyzer.compute_peak_response(len_fft=len_fft, window=window,
+                                           plot=plot)
             row = analyzer.summary()
             rows.append(row)
-        except RuntimeError as ex:
-            analyzer.warning(repr(ex))
+        except Exception as ex:
+            analyzer.logger.error(repr(ex))
             with StringIO() as buf, redirect_stdout(buf):
                 analyzer.stream.print_gaps()
                 gap_summary = buf.getvalue()
-            analyzer.debug(gap_summary)
+            analyzer.logger.debug('\n' + gap_summary)
         finally:
             plt.close('all')
     df = pd.concat(rows, axis=1).T
 
+    analyzer.logger.info('Summary: ' + output_csv)
     df.to_csv(output_csv, index=False)
     return output_csv
 
@@ -339,15 +360,11 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
     parser = _argparser()
-    if len(argv) == 1:
-        parser.print_help()
-        sys.exit(1)
     args = parser.parse_args(argv[1:])
 
     config = vars(args).copy()
-    calibration_output_pattern = config.pop('calibration_output_pattern')
 
-    result = sine_analzyer(calibration_output_pattern, **config)
+    result = sine_analzyer(**config)
 
     return len(result) == 0
 
