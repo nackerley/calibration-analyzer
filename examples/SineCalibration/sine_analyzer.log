@@ -1,0 +1,168 @@
+2019-10-09 13:26:30 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 13:26:30 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 13:26:32 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000BA92198>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
+2019-10-09 13:26:34 - DEBUG    core.py:calan.core:get_clients - ReadTimeout(ReadTimeoutError("HTTPConnectionPool(host='service.iris.edu', port=80): Read timed out. (read timeout=2)",),)
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
+2019-10-09 13:26:34 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
+2019-10-09 13:26:34 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
+2019-10-09 13:26:34 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
+2019-10-09 13:26:34 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 13:26:34 - INFO     sine_analyzer.py:calan.sine_analyzer:sine_analzyer - Summary: sine_analyzer.csv
+2019-10-09 15:45:32 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 15:45:32 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 15:45:34 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000BF55048>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
+2019-10-09 15:45:37 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
+2019-10-09 15:45:37 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
+2019-10-09 15:45:37 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_1.png
+2019-10-09 15:45:38 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_1.png
+2019-10-09 15:45:38 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:45:38 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_1.png
+2019-10-09 15:45:44 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
+2019-10-09 15:45:44 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
+2019-10-09 15:45:44 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_2.png
+2019-10-09 15:45:44 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_2.png
+2019-10-09 15:45:45 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:45:45 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_2.png
+2019-10-09 15:45:49 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
+2019-10-09 15:45:49 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
+2019-10-09 15:45:49 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_1.png
+2019-10-09 15:45:50 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_1.png
+2019-10-09 15:45:51 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:45:51 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_1.png
+2019-10-09 15:45:55 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
+2019-10-09 15:45:55 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
+2019-10-09 15:45:55 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_2.png
+2019-10-09 15:45:56 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_2.png
+2019-10-09 15:45:57 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:45:57 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_2.png
+2019-10-09 15:46:01 - INFO     sine_analyzer.py:calan.sine_analyzer:sine_analzyer - Summary: sine_analyzer.csv
+2019-10-09 15:51:55 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 15:51:55 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 15:51:57 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000AA97DA0>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
+2019-10-09 15:51:58 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
+2019-10-09 15:51:58 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
+2019-10-09 15:51:58 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_1.png
+2019-10-09 15:51:59 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_1.png
+2019-10-09 15:51:59 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:51:59 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_1.png
+2019-10-09 15:52:05 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
+2019-10-09 15:52:05 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
+2019-10-09 15:52:05 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_2.png
+2019-10-09 15:52:06 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_2.png
+2019-10-09 15:52:06 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:52:06 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_2.png
+2019-10-09 15:52:11 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
+2019-10-09 15:52:11 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
+2019-10-09 15:52:11 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_1.png
+2019-10-09 15:52:11 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_1.png
+2019-10-09 15:52:12 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:52:12 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_1.png
+2019-10-09 15:52:17 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
+2019-10-09 15:52:17 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
+2019-10-09 15:52:17 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_2.png
+2019-10-09 15:52:18 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_2.png
+2019-10-09 15:52:18 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:52:18 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_2.png
+2019-10-09 15:52:23 - INFO     sine_analyzer.py:calan.sine_analyzer:sine_analzyer - Summary: sine_analyzer.csv
+2019-10-09 15:53:51 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 15:53:51 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 15:53:53 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000BA950B8>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
+2019-10-09 15:53:54 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
+2019-10-09 15:53:54 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
+2019-10-09 15:53:54 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_1.png
+2019-10-09 15:53:55 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_1.png
+2019-10-09 15:53:55 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:53:55 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_1.png
+2019-10-09 15:54:00 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
+2019-10-09 15:54:00 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
+2019-10-09 15:54:00 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_2.png
+2019-10-09 15:54:01 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_2.png
+2019-10-09 15:54:01 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:54:02 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_2.png
+2019-10-09 15:54:06 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
+2019-10-09 15:54:06 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
+2019-10-09 15:54:06 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_1.png
+2019-10-09 15:54:06 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_1.png
+2019-10-09 15:54:07 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:54:07 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_1.png
+2019-10-09 15:54:11 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
+2019-10-09 15:54:11 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
+2019-10-09 15:54:11 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_2.png
+2019-10-09 15:54:12 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_2.png
+2019-10-09 15:54:13 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:54:13 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_2.png
+2019-10-09 15:54:17 - INFO     sine_analyzer.py:calan.sine_analyzer:sine_analzyer - Summary: sine_analyzer.csv
+2019-10-09 15:55:23 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 15:55:23 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 15:55:25 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000BA950F0>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
+2019-10-09 15:55:26 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
+2019-10-09 15:55:26 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
+2019-10-09 15:55:26 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_1.png
+2019-10-09 15:55:27 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_1.png
+2019-10-09 15:55:28 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:55:28 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_1.png
+2019-10-09 15:55:35 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
+2019-10-09 15:55:35 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
+2019-10-09 15:55:36 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_2.png
+2019-10-09 15:55:36 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Indoor_2.png
+2019-10-09 15:55:37 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:55:37 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Indoor_2.png
+2019-10-09 15:55:43 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
+2019-10-09 15:55:43 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
+2019-10-09 15:55:43 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_1.png
+2019-10-09 15:55:44 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_1.png
+2019-10-09 15:55:45 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:55:45 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_1.png
+2019-10-09 15:55:49 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
+2019-10-09 15:55:49 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
+2019-10-09 15:55:49 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_2.png
+2019-10-09 15:55:50 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check end: end_Outdoor_2.png
+2019-10-09 15:55:50 - INFO     core.py:Stft:calan.core:compute - 115 segments from 0.2 to 20 Hz
+2019-10-09 15:55:51 - INFO     sine_analyzer.py:calan.sine_analyzer:compute_peak_response - Saving: spectra_0.2-20Hz_Outdoor_2.png
+2019-10-09 15:55:55 - INFO     sine_analyzer.py:calan.sine_analyzer:sine_analzyer - Summary: sine_analyzer.csv
+2019-10-09 16:20:03 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 16:20:03 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 16:20:05 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000BA80240>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
+2019-10-09 16:20:06 - ERROR    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - TypeError("load_waveforms() got an unexpected keyword argument 'plot'",)
+2019-10-09 16:20:58 - INFO     utilities.py:calan.sine_analyzer:get_logger - Logfile: C:\Users\nackerle\Desktop\src\python\station-tools\examples\SineCalibration\sine_analyzer.log
+2019-10-09 16:20:58 - WARNING  core.py:calan.core:get_clients - CHIS archive /wfdata not available. Ignoring.
+2019-10-09 16:21:00 - DEBUG    core.py:calan.core:get_clients - ConnectTimeout(MaxRetryError("HTTPConnectionPool(host='192.168.41.45', port=8080): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000000000ACD6198>, 'Connection to 192.168.41.45 timed out. (connect timeout=2)'))",),)
+2019-10-09 16:21:03 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Output.mseed
+2019-10-09 16:21:03 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_1_Input.mseed
+2019-10-09 16:21:03 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_1.png
+2019-10-09 16:21:03 - ERROR    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - TypeError("unsupported operand type(s) for /: 'str' and 'int'",)
+2019-10-09 16:21:03 - DEBUG    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - 
+Source            Last Sample                 Next Sample                 Delta           Samples 
+Total: 0 gap(s) and 0 overlap(s)
+
+2019-10-09 16:21:03 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Output.mseed
+2019-10-09 16:21:03 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Indoor_2_Input.mseed
+2019-10-09 16:21:03 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Indoor_2.png
+2019-10-09 16:21:03 - ERROR    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - TypeError("unsupported operand type(s) for /: 'str' and 'int'",)
+2019-10-09 16:21:03 - DEBUG    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - 
+Source            Last Sample                 Next Sample                 Delta           Samples 
+Total: 0 gap(s) and 0 overlap(s)
+
+2019-10-09 16:21:03 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Output.mseed
+2019-10-09 16:21:04 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_1_Input.mseed
+2019-10-09 16:21:04 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_1.png
+2019-10-09 16:21:04 - ERROR    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - TypeError("unsupported operand type(s) for /: 'str' and 'int'",)
+2019-10-09 16:21:04 - DEBUG    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - 
+Source            Last Sample                 Next Sample                 Delta           Samples 
+Total: 0 gap(s) and 0 overlap(s)
+
+2019-10-09 16:21:04 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Output.mseed
+2019-10-09 16:21:04 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Outdoor_2_Input.mseed
+2019-10-09 16:21:04 - INFO     sine_analyzer.py:calan.sine_analyzer:load_waveforms - Check start: start_Outdoor_2.png
+2019-10-09 16:21:04 - ERROR    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - TypeError("unsupported operand type(s) for /: 'str' and 'int'",)
+2019-10-09 16:21:04 - DEBUG    sine_analyzer.py:calan.sine_analyzer:sine_analzyer - 
+Source            Last Sample                 Next Sample                 Delta           Samples 
+Total: 0 gap(s) and 0 overlap(s)
+

@@ -61,10 +61,12 @@ def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
 
 class SynchronousCalibrationAnalyzer():
 
-    def __init__(self, log_file_name=LOG_FILE_NAME):
+    def __init__(self, log_file_name=LOG_FILE_NAME, plot=False, dpi=DPI):
 
         # helpers
         self.logger = get_logger(__name__, log_file_name)
+        self.plot = plot
+        self.dpi = dpi
         self.client = get_clients()[0]
 
         # inputs
@@ -82,7 +84,7 @@ class SynchronousCalibrationAnalyzer():
         self.gain_coherent = None
         self.phase_coherent = None
 
-    def load_waveforms(self, output_file, trim_s=TRIM_S, plot=False,
+    def load_waveforms(self, output_file, trim_s=TRIM_S,
                        output_label=OUTPUT_LABEL, input_label=INPUT_LABEL):
         '''
         Load and preserve synchronous portions of input and output traces.
@@ -102,7 +104,7 @@ class SynchronousCalibrationAnalyzer():
         start = max(trace.stats.starttime for trace in self.stream) + trim_s
         end = min(trace.stats.endtime for trace in self.stream) - trim_s
 
-        if plot:
+        if self.plot:
             start_png = 'start_' + self.test_name + '.png'
             self.logger.info('Check start: ' + start_png)
             fig = self.stream.plot(endtime=start + 1,
@@ -113,7 +115,7 @@ class SynchronousCalibrationAnalyzer():
                 ax.axvline(start.matplotlib_date, label='start',
                            linestyle='--', color='blue', linewidth=0.5)
             fig.axes[0].legend(loc='upper right')
-            fig.savefig(start_png, dpi=DPI)
+            fig.savefig(start_png, dpi=self.dpi)
 
             end_png = 'end_' + self.test_name + '.png'
             self.logger.info('Check end: ' + end_png)
@@ -123,7 +125,7 @@ class SynchronousCalibrationAnalyzer():
                 ax.axvline(end.matplotlib_date, label='end',
                            linestyle='--', color='blue', linewidth=0.5)
             fig.axes[0].legend(loc='upper right')
-            fig.savefig(end_png, dpi=DPI)
+            fig.savefig(end_png, dpi=self.dpi)
 
         self.stream = self.stream.trim(starttime=start, endtime=end)
 
@@ -172,8 +174,7 @@ class SynchronousCalibrationAnalyzer():
         self.stream.attach_response(inventory)
 
     def compute_peak_response(self, len_fft=LEN_FFT, len_overlap=LEN_OVERLAP,
-                              min_coherence=MIN_COHERENCE, window=WINDOW,
-                              plot=False):
+                              min_coherence=MIN_COHERENCE, window=WINDOW):
         '''
         Compute relative transfer function estimate at spectral peak.
         '''
@@ -206,7 +207,7 @@ class SynchronousCalibrationAnalyzer():
             (phase[coherent]/variance[coherent]).sum() /
             (1/variance[coherent]).sum())
 
-        if plot:
+        if self.plot:
 
             fig, axes = plt.subplots(4, 1, figsize=(6.5, 8), sharex=True)
             fig.subplots_adjust(hspace=0)
@@ -259,7 +260,7 @@ class SynchronousCalibrationAnalyzer():
             summary_png = ('spectra_%g-%gHz_%s.png' %
                            tuple(list(self.f_lim) + [self.test_name]))
             self.logger.info('Saving: ' + summary_png)
-            fig.savefig(summary_png, dpi=DPI, bbox_inches='tight')
+            fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
 
     def summary(self):
         result = pd.Series()
@@ -290,7 +291,7 @@ def _argparser():
         '-g', '--pattern', default=PATTERN,
         help='glob pattern matching calibration files')
     parser.add_argument(
-        '-l', '--len_fft', type=int, default=LEN_FFT,
+        '-l', '--len_fft', default=LEN_FFT, type=int,
         help='length of FFT')
     parser.add_argument(
         '-w', '--window', default=WINDOW,
@@ -305,17 +306,21 @@ def _argparser():
         '-p', '--plot', action='store_true',
         help='generate diagnostic plots for each analysis')
     parser.add_argument(
+        '-d', '--dpi', default=DPI, type=int,
+        help='resolution to use for plots in dots per inch')
+    parser.add_argument(
         '-v', '--version', action='version',
         version='%s %s' % (PACKAGE, get_distribution(PACKAGE).version))
     return parser
 
 
-def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW, plot=False,
-                  output_label=OUTPUT_LABEL, input_label=INPUT_LABEL):
+def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
+                  output_label=OUTPUT_LABEL, input_label=INPUT_LABEL,
+                  plot=False, dpi=DPI):
     '''
     Run analysis for all calibration files matching a glob pattern.
     '''
-    analyzer = SynchronousCalibrationAnalyzer()
+    analyzer = SynchronousCalibrationAnalyzer(plot=plot, dpi=dpi)
 
     output_csv = os.path.splitext(THIS_FILE_NAME)[0] + '.csv'
     if os.path.exists(output_csv) and os.path.isfile(output_csv) and \
@@ -326,19 +331,18 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW, plot=False,
     calibration_files = sorted([item for item in glob(pattern)
                                 if output_label in item])
     if not calibration_files:
-        analyzer.logger.error('No files found matching pattern "%s".' %
-                              pattern)
+        analyzer.logger.error('No files matching "%s" contain "%s".' %
+                              (pattern, output_label))
         return ''
 
     rows = []
     for calibration_file in calibration_files:
         try:
-            analyzer.load_waveforms(calibration_file, plot=plot)
-            analyzer.compute_peak_response(len_fft=len_fft, window=window,
-                                           plot=plot)
+            analyzer.load_waveforms(calibration_file)
+            analyzer.compute_peak_response(len_fft=len_fft, window=window)
             row = analyzer.summary()
             rows.append(row)
-        except Exception as ex:
+        except ValueError as ex:
             analyzer.logger.error(repr(ex))
             with StringIO() as buf, redirect_stdout(buf):
                 analyzer.stream.print_gaps()
@@ -346,6 +350,11 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW, plot=False,
             analyzer.logger.debug('\n' + gap_summary)
         finally:
             plt.close('all')
+
+    if not rows:
+        analyzer.logger.error('No valid calibration results.')
+        return ''
+
     df = pd.concat(rows, axis=1).T
 
     analyzer.logger.info('Summary: ' + output_csv)
