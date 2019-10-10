@@ -294,6 +294,9 @@ def _argparser():
         '-l', '--len_fft', default=LEN_FFT, type=int,
         help='length of FFT')
     parser.add_argument(
+        '-t', '--trim_s', default=TRIM_S, type=float,
+        help='time to trim off beginning and end of signal, in seconds')
+    parser.add_argument(
         '-w', '--window', default=WINDOW,
         help="window function to be used for Welch's method")
     parser.add_argument(
@@ -315,6 +318,7 @@ def _argparser():
 
 
 def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
+                  trim_s=TRIM_S,
                   output_label=OUTPUT_LABEL, input_label=INPUT_LABEL,
                   plot=False, dpi=DPI):
     '''
@@ -338,7 +342,8 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     rows = []
     for calibration_file in calibration_files:
         try:
-            analyzer.load_waveforms(calibration_file)
+            analyzer.load_waveforms(calibration_file, input_label=input_label,
+                                    output_label=output_label, trim_s=trim_s)
             analyzer.compute_peak_response(len_fft=len_fft, window=window)
             row = analyzer.summary()
             rows.append(row)

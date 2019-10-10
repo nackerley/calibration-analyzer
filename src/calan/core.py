@@ -660,7 +660,7 @@ class Stft():
     def compute(self, x, y, f_sample, len_fft, len_overlap, window='hann'):
         '''
         Each segment is detrended by removing a constant value before
-        application of a 'hanning' window.
+        application of a window.
         '''
         logger = get_logger(self.__class__.__name__ + ':' + __name__)
         f_expected = fft_frequencies(len_fft, f_sample)
