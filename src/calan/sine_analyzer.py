@@ -329,14 +329,16 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     output_csv = os.path.splitext(THIS_FILE_NAME)[0] + '.csv'
     if os.path.exists(output_csv) and os.path.isfile(output_csv) and \
             not os.access(output_csv, os.W_OK):
-        analyzer.logger.error('Cannot write to ' + output_csv)
+        analyzer.logger.error('Will not be able to write summary to %s.' %
+                              output_csv)
         return ''
 
     calibration_files = sorted([item for item in glob(pattern)
                                 if output_label in item])
     if not calibration_files:
-        analyzer.logger.error('No files matching "%s" contain "%s".' %
-                              (pattern, output_label))
+        analyzer.logger.error(
+            'No files matching pattern "%s" contain output label "%s".' %
+            (pattern, output_label))
         return ''
 
     rows = []
