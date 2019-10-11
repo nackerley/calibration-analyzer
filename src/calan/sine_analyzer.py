@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
 """
 Analyzer for sinusoidal calibrations of seismometers.
+
+Temperature data can be appended with provision of a weather station ID.
+Use this inventory to look up the nearest wether station:
+ftp://client_climate@ftp.tor.ec.gc.ca/Pub/Get_More_Data_Plus_de_donnees/Station%20Inventory%20EN.csv
 """
 import os
 import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import pytz
 
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
 from pkg_resources import get_distribution
+from urllib.parse import urlencode, urlunsplit
+from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
 from obspy import read, read_inventory
 from obspy.core.inventory.response import \
@@ -21,6 +28,7 @@ from calan.core import Stft, get_clients, PACKAGE
 from catalogue_tools.utilities import (
     MyArgumentParser, MyFormatter, get_logger)
 
+# calibration circuit parameter estimates
 MASS_KG = 5
 GENERATOR_VMS = 629
 COIL_OHM = 3600
@@ -29,16 +37,28 @@ MOTOR_MS2A = GENERATOR_VMS/MASS_KG*CAL_OHM/COIL_OHM
 MOTOR_MS2V = MOTOR_MS2A*CAL_OHM
 DAC_GAIN = 2**12/5
 
+# default values for analysis
 LEN_FFT = 200
 LEN_OVERLAP = int(LEN_FFT/2)
 WINDOW = 'hann'
 TRIM_S = 5
 MIN_COHERENCE = 0.9
+
+# default inputs
 PATTERN = '*.mseed'
 OUTPUT_LABEL = '_Output'
 INPUT_LABEL = '_Input'
 DPI = 150
 
+# weather station queries
+WEATHER_SCHEME = 'https'
+WEATHER_NETLOC = 'climate.weather.gc.ca'
+WEATHER_PATH = '/climate_data/bulk_data_e.html'
+WEATHER_STATION_ID = 51058
+WEATHER_STATION_TIME_ZONE = 'America/Yellowknife'
+WEATHER_QUERY = dict(format='csv', submit='Download+Data', timeframe=1)
+
+# bookkeeping
 THIS_FILE_NAME = os.path.basename(__file__)
 LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
 
@@ -60,6 +80,8 @@ def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
 
 
 class SynchronousCalibrationAnalyzer():
+
+    TIME_ZONE_FINDER = TimezoneFinder()
 
     def __init__(self, log_file_name=LOG_FILE_NAME, plot=False, dpi=DPI):
 
@@ -262,19 +284,54 @@ class SynchronousCalibrationAnalyzer():
             self.logger.info('Saving: ' + summary_png)
             fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
 
-    def summary(self):
+    def get_temperature(self, dt_utc, station_id=WEATHER_STATION_ID,
+                        time_zone=WEATHER_STATION_TIME_ZONE):
+        '''
+        Get temperature near station at given time.
+        '''
+        tz = pytz.timezone(time_zone)
+        dt_local = tz.fromutc(dt_utc)
+
+        query = dict(stationID=station_id, Year=dt_local.year,
+                     Month=dt_local.month, Day=dt_local.day)
+        query.update(WEATHER_QUERY)
+        url = urlunsplit((WEATHER_SCHEME, WEATHER_NETLOC, WEATHER_PATH,
+                          urlencode(query), ''))
+        try:
+            df = pd.read_csv(url, parse_dates=['Date/Time'])
+            actual_tz = pytz.timezone(self.TIME_ZONE_FINDER.timezone_at(
+                lat=df['Latitude (y)'].mean(), lng=df['Longitude (x)'].mean()))
+            if actual_tz != tz:
+                self.logger.warning(
+                    'Data is from time zone "%s"; expected "%s".' %
+                    (actual_tz.zone, time_zone))
+
+            df['Date/Time'] = df['Date/Time'].dt.tz_localize(tz)
+
+            index = (df['Date/Time'] > dt_local).idxmax()
+            return df.at[index, 'Temp (°C)']
+        except Exception as ex:
+            self.logger.error(repr(ex))
+            return np.NaN
+
+    def summary(self, station_id=WEATHER_STATION_ID,
+                time_zone=WEATHER_STATION_TIME_ZONE):
         result = pd.Series()
         result['test name'] = self.test_name
         result['channel id'] = self.stream[1].id
-        result['start'] = self.stream[1].stats.starttime
+        result['start'] = pd.to_datetime(
+            self.stream[1].stats.starttime.datetime)
         result['duration [s]'] = (self.stream[1].stats.endtime -
                                   self.stream[1].stats.starttime)
         result['f_min [Hz]'] = self.f_lim[0]
         result['f_max [Hz]'] = self.f_lim[1]
         result['windows'] = self.stft.p_xx.shape[1]
-        result['gain'] = self.gain_coherent
+        result['gain [dB]'] = 20*np.log10(self.gain_coherent)
         result['phase [°]'] = self.phase_coherent
         result['normalized error'] = np.sqrt(self.peak_variance)
+        result['temperature [°C]'] = self.get_temperature(
+            self.stream[1].stats.starttime.datetime, station_id, time_zone)
+
         return result
 
 
@@ -306,6 +363,12 @@ def _argparser():
         '-o', '--output_label', default=OUTPUT_LABEL,
         help='string to be found in output waveform file names')
     parser.add_argument(
+        '-s', '--station_id', default=WEATHER_STATION_ID,
+        help='weather station id for temperature lookup')
+    parser.add_argument(
+        '-z', '--time_zone', default=WEATHER_STATION_TIME_ZONE,
+        help='time zone of weather station')
+    parser.add_argument(
         '-p', '--plot', action='store_true',
         help='generate diagnostic plots for each analysis')
     parser.add_argument(
@@ -318,7 +381,8 @@ def _argparser():
 
 
 def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
-                  trim_s=TRIM_S,
+                  trim_s=TRIM_S, station_id=WEATHER_STATION_ID,
+                  time_zone=WEATHER_STATION_TIME_ZONE,
                   output_label=OUTPUT_LABEL, input_label=INPUT_LABEL,
                   plot=False, dpi=DPI):
     '''
@@ -326,7 +390,12 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     '''
     analyzer = SynchronousCalibrationAnalyzer(plot=plot, dpi=dpi)
 
-    output_csv = os.path.splitext(THIS_FILE_NAME)[0] + '.csv'
+    pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
+                           if char.isalnum())
+    output_parts = [os.path.splitext(THIS_FILE_NAME)[0]]
+    if pattern_slug:
+        output_parts += pattern_slug.split('_')
+    output_csv = '_'.join(output_parts) + '.csv'
     if os.path.exists(output_csv) and os.path.isfile(output_csv) and \
             not os.access(output_csv, os.W_OK):
         analyzer.logger.error('Will not be able to write summary to %s.' %
@@ -347,7 +416,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
             analyzer.load_waveforms(calibration_file, input_label=input_label,
                                     output_label=output_label, trim_s=trim_s)
             analyzer.compute_peak_response(len_fft=len_fft, window=window)
-            row = analyzer.summary()
+            row = analyzer.summary(station_id=station_id, time_zone=time_zone)
             rows.append(row)
         except ValueError as ex:
             analyzer.logger.error(repr(ex))
@@ -363,6 +432,19 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
         return ''
 
     df = pd.concat(rows, axis=1).T
+    df['start'] = pd.to_datetime(df['start'])
+    df.sort_values('start', inplace=True)
+
+    # clean up column data types - not strictly necessary
+    df['duration [s]'] = df['duration [s]'].astype(float)
+    df['f_min [Hz]'] = df['f_min [Hz]'].astype(float)
+    df['f_max [Hz] '] = df['f_max [Hz]'].astype(float)
+    df['windows'] = df['windows'].astype(int)
+    df['gain [dB]'] = df['gain [dB]'].astype(float).round(2)
+    df['phase [°]'] = df['phase [°]'].astype(float).round(1)
+    df['normalized error'] = [float('%.1e' % item)
+                              for item in df['normalized error']]
+    df['temperature [°C]'] = df['temperature [°C]'].astype(float)
 
     analyzer.logger.info('Summary: ' + output_csv)
     df.to_csv(output_csv, index=False)
