@@ -31,11 +31,11 @@ from calan import chis_archive
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 PACKAGE = os.path.basename(os.path.dirname(__file__))
 
-DEFAULT_FDSN_SERVERS = (
+CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
     'http://sc3-stage.seismo.nrcan.gc.ca',  # staging, seisComP3
-    'IRIS',
     )
+DEFAULT_FDSN_SERVERS = tuple(list(CHIS_FDSN_SERVERS) +  ['IRIS'])
 
 
 def get_clients(servers=None, test_timeout=2):
