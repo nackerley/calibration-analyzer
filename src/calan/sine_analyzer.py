@@ -127,7 +127,9 @@ class SynchronousCalibrationAnalyzer():
         end = min(trace.stats.endtime for trace in self.stream) - trim_s
 
         if self.plot:
-            start_png = 'start_' + self.test_name + '.png'
+            start_png = os.path.join(
+                os.path.dirname(self.test_name),
+                'start_%s.png' % os.path.basename(self.test_name))
             self.logger.info('Check start: ' + start_png)
             fig = self.stream.plot(endtime=start + 1,
                                    handle=True, equal_scale=False)
@@ -139,7 +141,9 @@ class SynchronousCalibrationAnalyzer():
             fig.axes[0].legend(loc='upper right')
             fig.savefig(start_png, dpi=self.dpi)
 
-            end_png = 'end_' + self.test_name + '.png'
+            end_png = os.path.join(
+                os.path.dirname(self.test_name),
+                'end_%s.png' % os.path.basename(self.test_name))
             self.logger.info('Check end: ' + end_png)
             fig = self.stream.plot(starttime=end - 1,
                                    handle=True, equal_scale=False)
@@ -279,8 +283,11 @@ class SynchronousCalibrationAnalyzer():
             axes[0].legend()
             fig.subplots_adjust()
 
-            summary_png = ('spectra_%g-%gHz_%s.png' %
-                           tuple(list(self.f_lim) + [self.test_name]))
+            summary_png = os.path.join(
+                os.path.dirname(self.test_name),
+                'spectra_%g-%gHz_%s.png' % tuple(
+                    list(self.f_lim) + [os.path.basename(self.test_name)]))
+
             self.logger.info('Saving: ' + summary_png)
             fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
 
@@ -289,6 +296,7 @@ class SynchronousCalibrationAnalyzer():
         '''
         Get temperature near station at given time.
         '''
+        logger = get_logger(__name__)
         tz = pytz.timezone(time_zone)
         dt_local = tz.fromutc(dt_utc)
 
@@ -306,13 +314,18 @@ class SynchronousCalibrationAnalyzer():
                     'Data is from time zone "%s"; expected "%s".' %
                     (actual_tz.zone, time_zone))
 
-            df['Date/Time'] = df['Date/Time'].dt.tz_localize(tz)
+            df['Date/Time'] = df['Date/Time'].dt.tz_localize(
+                tz, ambiguous=True, nonexistent='NaT')
+            df['Date/Time [UTC]'] = df['Date/Time'].dt.tz_convert(None)
 
-            index = (df['Date/Time'] > dt_local).idxmax()
-            return df.at[index, 'Temp (°C)']
+            index = (df['Date/Time [UTC]'] > dt_utc).idxmax()
+            result = df.at[index, 'Temp (°C)']
         except Exception as ex:
             self.logger.error(repr(ex))
-            return np.NaN
+            result = np.NaN
+
+        logger.info('Temperature: %g°C' % result)
+        return result
 
     def summary(self, station_id=WEATHER_STATION_ID,
                 time_zone=WEATHER_STATION_TIME_ZONE):
@@ -363,6 +376,9 @@ def _argparser():
         '-o', '--output_label', default=OUTPUT_LABEL,
         help='string to be found in output waveform file names')
     parser.add_argument(
+        '--summary_csv', default='OUTPUT_LABEL',
+        help='by default a file name is generated from --pattern')
+    parser.add_argument(
         '-s', '--station_id', default=WEATHER_STATION_ID,
         help='weather station id for temperature lookup')
     parser.add_argument(
@@ -384,22 +400,25 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
                   trim_s=TRIM_S, station_id=WEATHER_STATION_ID,
                   time_zone=WEATHER_STATION_TIME_ZONE,
                   output_label=OUTPUT_LABEL, input_label=INPUT_LABEL,
+                  summary_csv='',
                   plot=False, dpi=DPI):
     '''
     Run analysis for all calibration files matching a glob pattern.
     '''
     analyzer = SynchronousCalibrationAnalyzer(plot=plot, dpi=dpi)
 
-    pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
-                           if char.isalnum())
-    output_parts = [os.path.splitext(THIS_FILE_NAME)[0]]
-    if pattern_slug:
-        output_parts += pattern_slug.split('_')
-    output_csv = '_'.join(output_parts) + '.csv'
-    if os.path.exists(output_csv) and os.path.isfile(output_csv) and \
-            not os.access(output_csv, os.W_OK):
+    if not summary_csv:
+        pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
+                               if char.isalnum())
+        output_parts = [os.path.splitext(THIS_FILE_NAME)[0]]
+        if pattern_slug:
+            output_parts += pattern_slug.split('_')
+        summary_csv = '_'.join(output_parts) + '.csv'
+
+    if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
+            not os.access(summary_csv, os.W_OK):
         analyzer.logger.error('Will not be able to write summary to %s.' %
-                              output_csv)
+                              summary_csv)
         return ''
 
     calibration_files = sorted([item for item in glob(pattern)
@@ -446,9 +465,9 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
                               for item in df['normalized error']]
     df['temperature [°C]'] = df['temperature [°C]'].astype(float)
 
-    analyzer.logger.info('Summary: ' + output_csv)
-    df.to_csv(output_csv, index=False)
-    return output_csv
+    analyzer.logger.info('Summary: ' + summary_csv)
+    df.to_csv(summary_csv, index=False)
+    return summary_csv
 
 
 def main(argv=None):
