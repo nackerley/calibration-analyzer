@@ -376,7 +376,7 @@ def _argparser():
         '-o', '--output_label', default=OUTPUT_LABEL,
         help='string to be found in output waveform file names')
     parser.add_argument(
-        '--summary_csv', default='OUTPUT_LABEL',
+        '--summary_csv', default='',
         help='by default a file name is generated from --pattern')
     parser.add_argument(
         '-s', '--station_id', default=WEATHER_STATION_ID,
