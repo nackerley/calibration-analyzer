@@ -459,8 +459,8 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     df['f_min [Hz]'] = df['f_min [Hz]'].astype(float)
     df['f_max [Hz] '] = df['f_max [Hz]'].astype(float)
     df['windows'] = df['windows'].astype(int)
-    df['gain [dB]'] = df['gain [dB]'].astype(float).round(2)
-    df['phase [°]'] = df['phase [°]'].astype(float).round(1)
+    df['gain [dB]'] = df['gain [dB]'].astype(float).round(4)
+    df['phase [°]'] = df['phase [°]'].astype(float).round(3)
     df['normalized error'] = [float('%.1e' % item)
                               for item in df['normalized error']]
     df['temperature [°C]'] = df['temperature [°C]'].astype(float)
