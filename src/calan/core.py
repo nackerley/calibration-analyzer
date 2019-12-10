@@ -13,6 +13,7 @@ import inspect
 from glob import glob
 from time import time
 from tempfile import gettempdir
+from operator import attrgetter
 
 import requests
 import numpy as np
@@ -35,7 +36,36 @@ CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
     'http://sc3-stage.seismo.nrcan.gc.ca',  # staging, seisComP3
     )
-DEFAULT_FDSN_SERVERS = tuple(list(CHIS_FDSN_SERVERS) +  ['IRIS'])
+DEFAULT_FDSN_SERVERS = tuple(list(CHIS_FDSN_SERVERS) + ['IRIS'])
+
+NSLC = ['network', 'station', 'location', 'channel']
+GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
+
+NETWORK_KEYS = ((
+    ('code', 'network'),
+    ('description', 'network_description'),
+    ))
+STATION_KEYS = ((
+    ('code', 'station'),
+    ('site.name', 'site_name'),
+    ('creation_date.datetime', 'creation_date'),
+    ))
+CHANNEL_KEYS = ((
+    ('location_code', 'location'),
+    ('code', 'channel'),
+    ('latitude', 'latitude'),
+    ('longitude', 'longitude'),
+    ('elevation', 'elevation'),
+    ('depth', 'depth'),
+    ('azimuth', 'azimuth'),
+    ('dip', 'dip'),
+    ('sensor.description', 'sensor'),
+    ('data_logger.description', 'data_logger'),
+    ('sample_rate', 'sample_rate'),
+    ('restricted_status', 'restricted_status'),
+    ('start_date.datetime', 'start_date'),
+    ('end_date.datetime', 'end_date',),
+    ))
 
 
 def get_clients(servers=None, test_timeout=2):
@@ -368,9 +398,7 @@ def lti_from_zpsf(zeros, poles, sensitivity, frequency):
     return sp.lti(zeros, poles, sensitivity/midband)
 
 
-def long_names(stream,
-               parts=('network', 'station', 'location', 'channel'),
-               widths=(2, 5, 2, 3)):
+def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
     '''Construct a list of names for the traces in a stream.'''
     return ['.'.join([('%' + str(width) + 's') % trace.stats[part]
                       for part, width in zip(parts, widths)])
@@ -680,7 +708,7 @@ class Stft():
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
 
         self.p_yy = sp.spectral._spectral_helper(
-            y, y,window=window,
+            y, y, window=window,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
         # pylint: enable=protected-access
 
@@ -771,10 +799,6 @@ def is_complete(stream, trace_ids=(), start=pd.Timestamp(0),
     return True
 
 
-ID_COLUMNS = ['network', 'station', 'location', 'channel']
-GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
-
-
 def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
              end=pd.Timestamp.now(), tolerance=0.5):
     '''
@@ -797,11 +821,11 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
 
     if stream:
         gaps_df = pd.DataFrame(stream.get_gaps(),
-                               columns=ID_COLUMNS + GAP_COLUMNS)
+                               columns=NSLC + GAP_COLUMNS)
 
         gaps_df.insert(
             0, 'id', ['.'.join(items)
-                      for _, items in gaps_df[ID_COLUMNS].iterrows()])
+                      for _, items in gaps_df[NSLC].iterrows()])
         gaps_df['sampling_rate'] = np.round(gaps_df.samples/gaps_df.duration)
         gaps_df.starttime = gaps_df.starttime.apply(
             lambda item: pd.to_datetime(item.datetime))
@@ -809,7 +833,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
             lambda item: pd.to_datetime(item.datetime))
     else:
         gaps_df = pd.DataFrame(
-            columns=['id'] + ID_COLUMNS + GAP_COLUMNS + ['sampling_rate'])
+            columns=['id'] + NSLC + GAP_COLUMNS + ['sampling_rate'])
 
     if not trace_ids:
         trace_ids = sorted(set(trace.id for trace in stream))
@@ -991,3 +1015,40 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
                 '%s: %s start of %.3g %s gap (%s)'
                 % (gap.id, str(gap.starttime)[:-3],
                    gap[column], gap_unit, gap.note))
+
+
+def inventory2df(inventory):
+    '''
+    Summarize obspy.Inventory in pandas.DataFrame.
+    '''
+    def get(key, item):
+        try:
+            return attrgetter(key)(item)
+        except AttributeError:
+            return None
+
+    def items(inventory):
+        for network in inventory:
+            for station in network:
+                for channel in station:
+                    yield network, station, channel
+
+    df = pd.DataFrame()
+    for key, column in NETWORK_KEYS:
+        df[column] = [
+            get(key, network) for network, _, _ in items(inventory)]
+    for key, column in STATION_KEYS:
+        df[column] = [
+            get(key, station) for _, station, _ in items(inventory)]
+    for key, column in CHANNEL_KEYS:
+        df[column] = [
+            get(key, channel) for _, _, channel in items(inventory)]
+
+    for column in df.columns.values:
+        if column.endswith('date'):
+            df[column] = pd.to_datetime(df[column])
+
+    df.dropna(axis='columns', how='all', inplace=True)
+    df.set_index(NSLC, inplace=True)
+
+    return df
