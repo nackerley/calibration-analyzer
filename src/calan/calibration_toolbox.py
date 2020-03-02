@@ -6,43 +6,46 @@ A collection of functions useful for seismograph calibration.
 from __future__ import absolute_import, division, print_function
 
 import os
-import wave
-import gzip
+import lzma
 import logging
 from warnings import warn
 from operator import mul
 from functools import reduce
-from struct import pack, unpack, calcsize
+from struct import calcsize
 from math import log10, floor, ceil
-from io import BytesIO
+from copy import deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.signal as sp
-from scipy import stats
+from scipy import stats, signal
 from scipy.special import erfinv
 import statsmodels.api as sm
 
-from obspy import read, UTCDateTime, Trace, Stream
+from obspy import read, read_inventory, Trace, Stream
 from obspy.signal.invsim import simulate_seismometer
 from obspy.signal.konnoohmachismoothing import konno_ohmachi_smoothing
 
 from catalogue_tools.utilities import (
     pretty_duration, pretty_voltage, pretty_bytes,
     parse_duration, parse_voltage, round_sig,
-    prepend_docstring, logspace, get_logger)
+    logspace, get_logger)
 
 from calan.core import (
-    dataless2inventory, Stft,
-    factor_names, subplots_squeeze,
+    Stft, factor_names, subplots_squeeze, inventory_items,
     lti_from_zpsf, minreal, unwrap_mid, truncnorm_shape,
     len_fft_welch, num_windows_welch, fft_frequencies,
     extract_decimation_coefficients, compute_decim_delay, multi_decim)
 from calan.stream_analyzer import StreamAnalyzer
 
-
+# %% constants
 FILE_NAME = os.path.basename(__file__)
 LOG_FILE_NAME = os.path.splitext(FILE_NAME)[0] + '.log'
+
+# defaults
+DEFAULT_LEAD_IN = 600
+DEFAULT_LEAD_OUT = 600
+DEFAULT_PRE_TIME = 10
+DEFAULT_POST_TIME = 10
 
 # Nanometrics Centaur User Guide 17935R5, 2016-11-02
 CALIBRATION_SAMPLE_RATE = 30e3
@@ -50,6 +53,7 @@ FULL_SCALE_VOLTAGE = 5
 DAC_BITS = 16
 DAC_GAIN = FULL_SCALE_VOLTAGE/(2**(DAC_BITS - 1) - 1)
 SAMPLE_FORMAT = '<h'  # little-endian short (16-bit) integer
+CALIBRATION_DTYPE = 'int16'
 
 # Nanometrics Trillium 120Q/QA User Guide 17751R2, 2015-10-05
 CAL_ZEROS = ()  # rad/s
@@ -60,6 +64,8 @@ CAL_FREQ = 0.001  # Hz
 # other handy constants
 NP_DTYPE = np.dtype('int%d' % DAC_BITS)
 
+
+# %% definitions
 
 def seismometer_calibration_lti(zeros=CAL_ZEROS, poles=CAL_POLES,
                                 sensitivity=CAL_SENS, frequency=CAL_FREQ):
@@ -124,7 +130,7 @@ def expected_wav_size(duration):
 
 def make_random_signal_file_name(
         style, duration_seconds, pp_voltage=0, rms_voltage=0, mean_voltage=0,
-        t_on=0, t_off=0, sample_rate=100):
+        lead_in=0, lead_out=0, sample_rate=100):
     '''
     Generate a gaussian white noise calibration signal file name.
     '''
@@ -139,12 +145,12 @@ def make_random_signal_file_name(
     file_name += '_%s' % pretty_duration(duration_seconds)
     if sample_rate != CALIBRATION_SAMPLE_RATE:
         file_name += '_%gsps' % sample_rate
-    if t_on != 0:
-        file_name += '_on%s' % pretty_duration(t_on)
-    if t_off != 0:
-        file_name += '_off%s' % pretty_duration(t_off)
+    if lead_in != 0:
+        file_name += '_on%s' % pretty_duration(lead_in)
+    if lead_out != 0:
+        file_name += '_off%s' % pretty_duration(lead_out)
     if mean_voltage != 0:
-        file_name += '_mean%s' % pretty_voltage(t_on)
+        file_name += '_mean%s' % pretty_voltage(lead_in)
 
     return file_name
 
@@ -155,7 +161,7 @@ def parse_random_signal_file_name(file_name):
 
     :rtype: tuple
     :returns: style, duration_seconds, pp_voltage, rms_voltage, mean_voltage,
-            t_on, t_off, sample_rate
+            lead_in, lead_out, sample_rate
     '''
 
     file_name = file_name.replace('.wav', '').replace('.gz', '')
@@ -184,21 +190,22 @@ def parse_random_signal_file_name(file_name):
         warn('Not parsed: %s' % '_'.join(parts))
 
     # pylint:disable=unbalanced-tuple-unpacking
-    (pp_voltage, rms_voltage, mean_voltage, t_on, t_off, sample_rate) = extras
+    (pp_voltage, rms_voltage, mean_voltage, lead_in, lead_out,
+     sample_rate) = extras
 
     return (style, duration_seconds, pp_voltage, rms_voltage, mean_voltage,
-            t_on, t_off, sample_rate)
+            lead_in, lead_out, sample_rate)
 
 
-def _add_turn_on_off_times(signal, t_on, t_off):
-    len_on = int(round(t_on*CALIBRATION_SAMPLE_RATE))
-    len_off = int(round(t_off*CALIBRATION_SAMPLE_RATE))
+def _add_turn_on_off_times(signal, lead_in, lead_out):
+    len_on = int(round(lead_in*CALIBRATION_SAMPLE_RATE))
+    len_off = int(round(lead_out*CALIBRATION_SAMPLE_RATE))
     return np.concatenate(
         (np.zeros((len_on, )), signal, np.zeros((len_off, ))))
 
 
 def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
-                      t_on=300, t_off=300,
+                      lead_in=300, lead_out=300,
                       sample_rate=CALIBRATION_SAMPLE_RATE):
     '''
     Generate a gaussian white noise calibration signal.
@@ -209,14 +216,14 @@ def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
     The output sample_rate effectively acts as a low-pass filter and gives the
     resulting signal good compressibility, since most of the first-differences
     will be zero. Note that duration_seconds is forced to a multiple of
-    1/sample_rate and does not include t_on and t_off (also in seconds).
+    1/sample_rate and does not include lead_in and lead_out (also in seconds).
     '''
     logger = logging.getLogger(__name__)
     file_name = make_random_signal_file_name(
         'gaussian', duration_seconds, rms_voltage=rms_voltage,
         sample_rate=sample_rate, mean_voltage=mean_voltage,
-        t_on=t_on, t_off=t_off)
-    file_size = expected_wav_size(duration_seconds + t_on + t_off)
+        lead_in=lead_in, lead_out=lead_out)
+    file_size = expected_wav_size(duration_seconds + lead_in + lead_out)
     logger.debug('Uncompressed output "%s.wav" will be %s.'
                  % (file_name, file_size))
 
@@ -231,13 +238,13 @@ def generate_gaussian(duration_seconds, rms_voltage, mean_voltage=0,
     signal_volts = np.repeat(signal_volts,
                              int(CALIBRATION_SAMPLE_RATE/sample_rate))
 
-    signal_volts = _add_turn_on_off_times(signal_volts, t_on, t_off)
+    signal_volts = _add_turn_on_off_times(signal_volts, lead_in, lead_out)
 
     return signal_volts, file_name
 
 
 def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
-                           t_on=300, t_off=300):
+                           lead_in=300, lead_out=300):
     '''
     Generate a random binary calibration signal.
 
@@ -245,13 +252,13 @@ def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
     signal will always be generated.
 
     Note that duration_seconds is forced to a multiple of
-    1/sample_rate and does not include t_on and t_off (also in seconds).
+    1/sample_rate and does not include lead_in and lead_out (also in seconds).
     '''
     logger = logging.getLogger(__name__)
     file_name = make_random_signal_file_name(
         'binary', duration_seconds, pp_voltage=pp_voltage,
-        sample_rate=sample_rate, t_on=t_on, t_off=t_off)
-    file_size = expected_wav_size(duration_seconds + t_on + t_off)
+        sample_rate=sample_rate, lead_in=lead_in, lead_out=lead_out)
+    file_size = expected_wav_size(duration_seconds + lead_in + lead_out)
     logger.debug('Uncompressed output "%s.wav" will be %s.'
                  % (file_name, file_size))
 
@@ -264,7 +271,7 @@ def generate_random_binary(duration_seconds, pp_voltage, sample_rate,
     signal_volts = np.repeat(signal_volts,
                              int(CALIBRATION_SAMPLE_RATE/sample_rate))
 
-    signal_volts = _add_turn_on_off_times(signal_volts, t_on, t_off)
+    signal_volts = _add_turn_on_off_times(signal_volts, lead_in, lead_out)
 
     return signal_volts, file_name
 
@@ -314,96 +321,6 @@ def plot_calibration(signal,
 
 def _chunk_fmt(len_chunk):
     return '%s%d%s' % (SAMPLE_FORMAT[0], len_chunk, SAMPLE_FORMAT[1])
-
-
-def write_wav_gz(file_name, signal, compresslevel=6):
-    '''
-    Write a single-channel .wav.gz file with fixed encoding for Centaur
-    calibration. Compression is performed in memory, not on disk. Signal must
-    be in counts.
-
-    Default compression level of 6 set to match default behaviour of linux.
-    '''
-    logger = logging.getLogger(__name__)
-
-    if os.path.splitext(file_name)[1].lower() not in ['.gz', '.wav']:
-        file_name += '.wav.gz'
-
-    len_chunk = int(np.sqrt(len(signal)))
-    num_chunks = int(np.ceil(float(len(signal))/len_chunk))
-
-    with BytesIO() as stream:
-        with wave.open(stream, 'w') as wave_buffer:
-            wave_buffer.setnchannels(1)
-            wave_buffer.setsampwidth(int(DAC_BITS/8))
-            wave_buffer.setframerate(CALIBRATION_SAMPLE_RATE)
-
-            for i_start in np.arange(num_chunks)*len_chunk:
-                i_stop = i_start + len_chunk
-                if i_stop > len(signal):
-                    i_stop = len(signal)
-                byte_array = pack(
-                    _chunk_fmt(i_stop - i_start), *signal[i_start:i_stop])
-                wave_buffer.writeframes(byte_array)
-
-        stream.seek(0)
-        with wave.open(stream, 'r') as wave_buffer:
-            assert wave_buffer.getnframes() == len(signal)
-
-        stream.seek(0)
-        if os.path.splitext(file_name)[1].lower() == '.wav':
-            with open(file_name, 'wb') as wav_file:
-                wav_file.write(stream.read())
-        else:
-            with gzip.open(file_name, 'wb',
-                           compresslevel=compresslevel) as gz_file:
-                gz_file.write(stream.read())
-        wav_size = stream.tell()
-
-    out_size = os.path.getsize(file_name)
-    logger.info(
-        'Compressed size %s is %.2f%% of original size %s:\n\t%s'
-        % (pretty_bytes(out_size), 100*out_size/wav_size,
-           pretty_bytes(wav_size), file_name))
-
-
-def read_wav_gz(file_name):
-    '''
-    Read a single-channel .wav or .wav.gz file with fixed encoding for Centaur
-    calibration.
-
-    FIXME: Would it be better to identify filetypes by initial bytes?
-    '''
-    if os.path.splitext(file_name)[1].lower() not in ['.gz', '.wav']:
-        file_name += '.wav.gz'
-
-    with BytesIO() as stream:
-        if os.path.splitext(file_name)[1].lower() == '.gz':
-            with gzip.open(file_name, 'rb') as gzip_file:
-                stream.write(gzip_file.read())
-        else:
-            with open(file_name, 'rb') as wave_buffer:
-                stream.write(wave_buffer.read())
-
-        stream.seek(0)
-        with wave.open(stream, 'rb') as wave_buffer:
-            assert wave_buffer.getnchannels() == 1
-            assert wave_buffer.getsampwidth() == int(DAC_BITS/8)
-            assert wave_buffer.getframerate() == CALIBRATION_SAMPLE_RATE
-            signal = np.zeros((wave_buffer.getnframes(), ))
-
-            len_chunk = int(np.sqrt(len(signal)))
-            num_chunks = int(np.ceil(float(len(signal))/len_chunk))
-
-            for i_start in np.arange(num_chunks)*len_chunk:
-                i_stop = i_start + len_chunk
-                if i_stop > len(signal):
-                    i_stop = len(signal)
-                byte_array = wave_buffer.readframes(int(i_stop - i_start))
-                signal[i_start:i_stop] = unpack(
-                    _chunk_fmt(i_stop - i_start), byte_array)
-
-    return signal
 
 
 def get_times(signal, b_stages=None, factors=None, discard_initial=True):
@@ -463,145 +380,200 @@ def plot_calibration_decimated(sig_in, sig_out, b_stages, factors,
 class CalibrationAnalyzer(StreamAnalyzer):
     '''
     A calibration signal analyzer based on :class:`obspy.Stream`.
-    '''
 
-    def __init__(self, calibration_file, start_time=None, attenuation=1,
-                 duration=None, t_on=None, t_off=None, fdsn_servers=None,
-                 clients=None, cache_format='MSEED', log_level='INFO'):
+    TODO:
+     * Remove ability to request signals from FDSNWS; must provide files
+     * Introduce default lead-in/lead-out/turn-on/turn-off times and use them
+       to infer start_time from data
+     * add CLI
+     * Reuse decimated version of calibration signal for multiple calibrations
+     * Make HHC channel only when it doesn't exist & cache as 4-channel stream
+     * Make savefig a class attribute
+     * require calibration_file and gain only upon load_calibration()
+    '''
+    CACHE_FORMAT = 'MSEED'
+
+    def __init__(self, log_level='INFO', savefig=True):
         '''
         Sets up data server and calibration details for later use.
 
         Arguments
         ---------
-        calibration_file: string
-            an attempt is made to parse for duration, on-time and off-time of
-            calibration signal, for example: 'gaussian_2h_on5m_off5m.wav.gz'
-        start_time: string, optional
-            start time of calibration
-        attenuation: float
-            factor by which output calibration signal is attenuated
-        duration, t_on, t_off: float, optional
-            calibration signal parameters
-        fdsn_server: string, optional
-            `IRIS` or fully-specified URL of another FDSN server, or `None`
-            to work off-line, defaults to GSC FDSN server.
-        cache_format: string, optional
-            any format supported by :func:`obspy.read` and
-            :func:`obspy.Stream.write`
+        str: log_level
+            console logging level
         '''
-        super(CalibrationAnalyzer, self).__init__(fdsn_servers=fdsn_servers,
-                                                  clients=clients)
-        self.logger = get_logger(self.__class__.__name__, LOG_FILE_NAME,
-                                 log_level)
+        get_logger(self.__class__.__name__, LOG_FILE_NAME, log_level)
 
-        assert os.path.exists(calibration_file)
-
-        _, duration_seconds, _, _, _, t_on_seconds, t_off_seconds, _ = \
-            parse_random_signal_file_name(calibration_file)
-        if duration is not None:
-            duration_seconds = duration
-        if t_on is not None:
-            t_on_seconds = duration
-        if t_off is not None:
-            t_off_seconds = duration
-
+        self.stream = Stream()
         self.info = {
-            'file': calibration_file,
-            'attenuation': attenuation,
-            'duration': duration_seconds,
-            't_on': t_on_seconds,
-            't_off': t_off_seconds}
+            'waveform_file': '',
+            'inventory_file': '',
+            'calibration_file': '',
+            'start': None,
+            'end': None}
 
-        if start_time is not None:
-            self.info['start'] = UTCDateTime(start_time)
-        else:
-            self.info['start'] = None
-
-        self.input = None
-        self.response = None
         self.lti = {'cal': None,
                     'sensor': None,
                     'system': None}
         self.stft = Stft()
+        self.savefig = savefig
 
-    @prepend_docstring(StreamAnalyzer.load_stream.__doc__)
-    def load_stream(self, stations,
-                    input_file=None, inventory_dataless=None,
-                    networks=('CN'), locations=(''),
-                    channels=('HHE', 'HHN', 'HHZ')):
-        # pylint:disable=arguments-differ
+    def load_stream(self, waveform_file=None, lead_in=DEFAULT_LEAD_IN,
+                    lead_out=DEFAULT_LEAD_OUT, pre_time=DEFAULT_PRE_TIME,
+                    post_time=DEFAULT_POST_TIME):
         '''
-        Start time and duration are selected to be appropriate for calibration.
+        Load calibration stream.
+
+        Two cases are supported:
+            1.  The stream does not include a calibration signal:
+                The calibration start and end are inferred from lead
+                in/out and event pre/post times.
+            2.  The stream includes a calibration signal:
+                The calibration start and end are that of the stream.
         '''
-        super(CalibrationAnalyzer, self).load_stream(
-            self.info['start'] - self.info['t_on'] - 60,
-            self.info['start'] +
-            self.info['duration'] + self.info['t_off'] + 60,
-            input_file=input_file, inventory_dataless=inventory_dataless,
-            networks=networks, stations=stations, locations=locations,
-            channels=channels)
+        logger = get_logger(__name__)
+        logger.info(waveform_file)
+        self.stream = read(waveform_file)
+        self.info['waveform_file'] = waveform_file
+        self.info['start'] = self.stream[0].stats.starttime
+        self.info['end'] = self.stream[0].stats.endtime
 
-    def load_calibration(self, cal_dataless=None):
+        if not any(trace.id[-1] == 'C' for trace in self.stream):
+            self.info['start'] += lead_in + pre_time
+            self.info['end'] -= lead_out + post_time
+
+    def sampling_rate(self):
+        '''Return stream sampling rate'''
+
+        return self.stream[0].stats.sampling_rate
+
+    def pre_seconds(self):
+        '''Return sum of lead-in and event pre-time.'''
+
+        return self.info['start'] - self.stream[0].stats.starttime
+
+    def post_seconds(self):
+        '''Return sum of lead-out and event post-time'''
+
+        return self.stream[0].stats.endtime - self.info['end']
+
+    def load_response(self, inventory_file, ignore_open_closed=True,
+                      force_first=False):
         '''
-        Calls super-class constructor with calibration start time.
+        Load response file describing the system being calibrated.
+        '''
+        logger = get_logger(__name__)
+        logger.info(inventory_file)
+        inventory = read_inventory(inventory_file)
+        self.info['inventory_file'] = inventory_file
 
-        Optionally specify a dataless SEED file describing the system being
-        calibrated. This is critical when FDSN server response is incorrect.
+        earliest = min(trace.stats.starttime for trace in self.stream)
+        latest = max(trace.stats.endtime for trace in self.stream)
 
+        if force_first:
+            inventory.networks = [inventory[0]]
+            inventory[0].stations = [inventory[0][0]]
+            inventory[0][0].channels = [inventory[0][0][0]]
+            for trace in self.stream:
+                network_code, station_code, location_code, channel_code = \
+                    trace.id.split('.')
+                network = next((network for network in inventory
+                                if network.code == network_code), None)
+                if network is None:
+                    network = deepcopy(inventory[0])
+                    network.code = network_code
+                    inventory.networks.append(network)
+                station = next((station for station in network
+                                if station.code == station_code), None)
+                if station is None:
+                    station = deepcopy(network[0])
+                    station.code = station_code
+                    network.stations.append(station)
+                channel = next((channel for channel in station
+                                if channel.code == channel_code and
+                                channel.location_code == location_code), None)
+                if channel is None:
+                    channel = deepcopy(station[0])
+                    channel.code = channel_code
+                    channel.location_code = location_code
+                    station.channels.append(channel)
+
+        if ignore_open_closed:
+            for _, _, channel in inventory_items(inventory):
+                channel.starttime = earliest
+                channel.endtime = latest
+
+        not_found = self.stream.attach_response(inventory)
+        if not_found:
+            logger.warning(
+                'No response found:' +
+                ', '.join([trace.id for trace in not_found]))
+
+    def _pad_lead_in_out(self, signal, factor):
+        sampling_rate = self.sampling_rate()*factor
+        return np.hstack((
+            np.zeros(int(round(self.pre_seconds()*sampling_rate))),
+            signal,
+            np.zeros(int(round(self.post_seconds()*sampling_rate)))))
+
+    def load_calibration(self, calibration_file):
+        '''
         No attempt is made to match the response to the exact channel used;
         it is assumed that all traces in the calibation stream have the same
         nominal response.
+
+        TODO: Implement caching.
         '''
-        if cal_dataless is None:
-            self.response = self.stream[0].stats.response
-        else:
-            inventory = dataless2inventory(cal_dataless)
-            channel = inventory.networks[0].stations[0].channels[0]
-            self.response = channel.response
+        logger = get_logger(__name__)
+        if any(trace.id[-1] == 'C' for trace in self.stream):
+            logger.error('Waveform data already includes calibration channel')
+            return
+
+        logger.info(calibration_file)
+
+        # cache_file = ('%s_%gsps.%s' %
+        #              (calibration_file.replace('.lzma', ''),
+        #               self.stream[0].stats.sampling_rate,
+        #               self.CACHE_FORMAT.lower()))
+        # if os.path.exists(cache_file):
+        #    logger.info(
+        #        'Found cache: %s' % os.path.basename(cache_file))
+        #    calibration_stream = read(cache_file)
+        #    self.calibration_file
+        #    return
 
         b_stages, factors = extract_decimation_coefficients(
-            self.response.response_stages)
+            self.stream[0].stats.response.response_stages)
+        factor = reduce(mul, factors)
 
-        f_sample = CALIBRATION_SAMPLE_RATE/reduce(mul, factors)
-        cache_file = self.info['file'].replace('.gz', '')
-        cache_file = (cache_file.replace('.wav', '') +
-                      '_decim_%gsps.%s' % (f_sample,
-                                           self.cache_format.lower()))
-        if os.path.exists(cache_file):
-            self.logger.info(
-                'Reading calibration signal from %s file: \n\t%s'
-                % (self.cache_format, os.path.basename(cache_file)))
-            self.input = read(cache_file)
-        else:
-            self.logger.info(
-                'Reading calibration signal from WAV file: \n\t%s'
-                % os.path.basename(self.info['file']))
-            signal = read_wav_gz(self.info['file'])
-            signal = sample_hold_digitize(signal)
-            signal = pad_for_decimation(signal, b_stages, factors)[0]
+        self.info['calibration_file'] = calibration_file
+        signal = np.frombuffer(lzma.open(calibration_file).read(),
+                               dtype=CALIBRATION_DTYPE)
+        signal = sample_hold_digitize(signal)
+        signal = pad_for_decimation(signal, b_stages, factors)[0]
+        signal = self._pad_lead_in_out(signal, factor)
 
-            self.logger.info(
-                'Decimating by %d ...' % reduce(mul, factors))
-            signal = multi_decim(signal, b_stages, factors)[0]
+        logger.info('Decimating by %d ...' % factor)
+        signal = multi_decim(signal, b_stages, factors)[0]
 
-            self.input = Stream([Trace(data=np.ascontiguousarray(signal),
-                                       header={'sampling_rate': f_sample})])
+        if len(signal) != self.stream[0].stats.npts:
+            logger.info(
+                'Expected %d, obtained %d points for calibration signal' %
+                (self.stream[0].stats.npts, len(signal)))
+            logger.error('Check lead-in and lead-out times.')
+            import pdb; pdb.set_trace()
+            return
 
-            self.logger.info(
-                'Writing calibration signal to %s file: \n\t%s'
-                % (self.cache_format, os.path.basename(cache_file)))
-            self.input.write(cache_file, self.cache_format)
+        stats = {key: self.stream[0].stats[key] for key in
+                 ['network', 'station', 'location', 'sampling_rate']}
+        stats['channel'] = self.stream[0].stats['channel'][:2] + 'C'
+        stats['starttime'] = self.stream[0].stats.starttime
+        trace = Trace(data=np.ascontiguousarray(signal), header=stats)
+        self.stream.traces.append(trace)
 
-    def f_sample(self):
-        '''Return stream sampling rate'''
-
-        f_input = self.input[0].stats.sampling_rate
-        if self.stream is not None:
-            f_output = self.stream[0].stats.sampling_rate
-            if f_output != f_input:
-                warn('Output sample rate %g sps does not match' % f_output +
-                     ' input sample rate %g sps.' % f_input)
-        return f_input
+        # logger.info(
+        #     'Caching: %s' % os.path.basename(cache_file))
+        # self.input.write(calibration_stream, format=self.CACHE_FORMAT)
 
     def setup_nominal_response(self, cal_lti=None):
         '''
@@ -628,9 +600,9 @@ class CalibrationAnalyzer(StreamAnalyzer):
         if cal_lti is None:
             self.lti['cal'] = seismometer_calibration_lti()
         else:
-            self.lti['cal'] = sp.lti(cal_lti)
+            self.lti['cal'] = signal.lti(cal_lti)
 
-        stage = self.response.response_stages[0]
+        stage = self.stream[0].stats.response.response_stages[0]
         self.lti['sensor'] = lti_from_zpsf(stage.zeros, stage.poles,
                                            stage.stage_gain,
                                            stage.normalization_frequency)
@@ -641,37 +613,23 @@ class CalibrationAnalyzer(StreamAnalyzer):
         total_poles = (self.lti['cal'].poles.tolist() +
                        self.lti['sensor'].poles.tolist())
         total_gain = self.lti['cal'].gain*self.lti['sensor'].gain
-        nominal_lti = sp.lti(total_zeros, total_poles, total_gain)
+        nominal_lti = signal.lti(total_zeros, total_poles, total_gain)
         self.lti['system'] = minreal(nominal_lti)
 
-    def get_stream(self, which='output', trim=True, like=None):
+    def get_stream(self, which='output', trim=True):
         '''
         Retrieve input or output stream, with padding optionally trimmed.
         '''
         assert which in ['input', 'output', 'simulated']
+        stream = self.stream.copy()
 
-        if which == 'output':
-            stream = self.stream
-            start = self.info['start']
-            duration = self.info['duration']
-            if like == 'input' and not trim:
-                start -= self.info['t_on']
-                duration += self.info['t_off']
-        elif which == 'input':
-            stream = self.input
-            start = UTCDateTime(self.info['t_on'])
-            duration = self.info['duration']
-        elif which == 'simulated':
-            signal = self.simulate_response(trim=trim)
-            signal *= self.get_digitizer_sensitivity()
-
-            stream = Stream([Trace(data=np.ascontiguousarray(signal),
-                                   header={'sampling_rate': self.f_sample()})])
-            start = stream[0].stats.starttime
-            duration = stream[0].stats.npts*stream[0].stats.sampling_rate
+        if which in ['input', 'simulated']:
+            stream.traces = [trace for trace in stream if trace.id[-1] == 'C']
+        else:
+            stream.traces = [trace for trace in stream if trace.id[-1] != 'C']
 
         if trim:
-            stream = stream.copy().trim(start, start + duration)
+            stream = stream.trim(self.info['start'], self.info['end'])
 
         return stream
 
@@ -680,23 +638,24 @@ class CalibrationAnalyzer(StreamAnalyzer):
         Get sensitivity of digitizer for input stream.
         '''
         return float(
-            self.response.instrument_sensitivity.value /
-            self.response.response_stages[0].stage_gain)
+            self.stream[0].stats.response.instrument_sensitivity.value /
+            self.stream[0].stats.response.response_stages[0].stage_gain)
 
-    def output_voltage(self, trim=True, like=None):
+    def output_voltage(self, trim=True):
         '''
         Convert output from stream [counts] to array [V].
 
         Arguments
         ---------
         trim: bool
-            trim padding from output signal
+            trim padding (e.g. turn-on and turn-off times)
+
         Returns
         -------
         signal: :class:`numpy.ndarray`
             output [V], one row per channel
         '''
-        stream = self.get_stream('output', trim=trim, like=like)
+        stream = self.get_stream('output', trim=trim)
         signal = np.row_stack([trace.data[:-1]
                                for trace in stream]).astype(float)
         signal /= self.get_digitizer_sensitivity()
@@ -705,7 +664,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
     def input_voltage(self, trim=True):
         '''
-        Convert input from stream [counts] to array [V], including attenuation.
+        Convert input from stream [counts] to array [V]
 
         Arguments
         ---------
@@ -719,7 +678,6 @@ class CalibrationAnalyzer(StreamAnalyzer):
         '''
         stream = self.get_stream('input', trim=trim)
         signal = convert_counts_to_volts(stream[0].data)
-        signal /= self.info['attenuation']
 
         return signal
 
@@ -736,10 +694,10 @@ class CalibrationAnalyzer(StreamAnalyzer):
         of segments as it is the (actual) number of segments in Welch's method
         which reduces the variance in the result.
         '''
-
+        logger = get_logger(__name__)
         x = self.input_voltage()
         y = self.output_voltage()
-        f_sample = self.f_sample()
+        f_sample = self.sampling_rate()
 
         if len_fft is None:
             len_fft = len_fft_welch(len(x), num_windows, fraction_overlap)
@@ -747,12 +705,12 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         num_windows = num_windows_welch(len(x), len_fft, len_overlap)
         f_expected = fft_frequencies(len_fft, f_sample)
-        self.logger.info(
-            "Computing spectra using Welch's method on " +
+        logger.info(
             '%d segments ' % num_windows +
             'from %g to %g Hz' % (f_expected[1], f_expected[-1]))
 
         self.stft.compute(x, y, f_sample, len_fft, len_overlap)
+        self.stft.trim()
 
     def simulate_response(self, trim=True):
         '''
@@ -765,15 +723,16 @@ class CalibrationAnalyzer(StreamAnalyzer):
         nominal_paz['gain'] = (self.lti['system'].gain /
                                nominal_paz['sensitivity'])
 
-        whole_sig_sim = simulate_seismometer(
-            self.input_voltage(trim=False), self.f_sample(),
+        signal = simulate_seismometer(
+            self.input_voltage(trim=False), self.sampling_rate(),
             paz_simulate=nominal_paz, simulate_sensitivity=True)
-        if trim:
-            i_start = int(self.info['t_on']*self.f_sample())
-            i_end = int(-self.info['t_off']*self.f_sample())
-            whole_sig_sim = whole_sig_sim[i_start:i_end]
 
-        return whole_sig_sim
+        if trim:
+            num_start = int(self.pre_seconds()*self.sampling_rate())
+            num_end = int(self.post_seconds()*self.sampling_rate())
+            signal = signal[num_start:-num_end]
+
+        return signal
 
     def estimate_errors(self, confidence=0.95, variance_threshhold=0.01):
         '''
@@ -825,10 +784,11 @@ class CalibrationAnalyzer(StreamAnalyzer):
         summary: string
             summary of fitting results
         '''
+        logger = get_logger(__name__)
         f = self.stft.f
         tf_estimate = self._mean(self.stft.p_xy)/self._mean(self.stft.p_xx)
         with np.errstate(divide='ignore', invalid='ignore'):
-            tf_estimate /= sp.freqresp(self.lti['system'], 2*np.pi*f)[1]
+            tf_estimate /= signal.freqresp(self.lti['system'], 2*np.pi*f)[1]
         coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
             self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
         num_sigma = np.sqrt(2)*erfinv(confidence)
@@ -842,9 +802,13 @@ class CalibrationAnalyzer(StreamAnalyzer):
         tf_estimate = tf_estimate[:, keep]
         variance = variance[:, keep]
         f = f[keep]
-        self.logger.info(
+        logger.info(
             'Discarding %d points with variance > %g while fitting'
             % (keep.sum(), variance_threshhold))
+
+        if len(f) < 1:
+            logger.error('No data to fit.')
+            return None, None, None, None, ''
 
         magnitude = np.abs(tf_estimate)
         phase = unwrap_mid(np.angle(tf_estimate), f, axis=1)
@@ -874,39 +838,43 @@ class CalibrationAnalyzer(StreamAnalyzer):
         return (gain.params, num_sigma*gain.bse,
                 timing.params, num_sigma*timing.bse, summary)
 
-    def plot_check(self, where='start', window_seconds=60, save=False):
+    def plot_check(self, where='start', window_seconds=20):
         '''
         Spot check critical times in the calibration
         '''
         assert where in ['start', 'end', 'on', 'off']
 
-        target_time = self.info['start']
-        if where == 'end':
-            target_time += self.info['duration']
-        elif where == 'on':
-            target_time -= self.info['t_on']
+        if where == 'on':
+            target_time = self.stream[0].stats.starttime + window_seconds/2
         elif where == 'off':
-            target_time += self.info['duration']
-            target_time += self.info['t_off']
+            target_time = self.stream[0].stats.endtime - window_seconds/2
+        else:
+            target_time = self.info[where]
 
         stream = self.stream.copy().trim(target_time - window_seconds/2,
                                          target_time + window_seconds/2)
-        stream[-1].plot(handle=True)
+        fig = stream.plot(handle=True, equal_scale=False)
+        if where in ['start', 'end']:
+            for ax in fig.axes:
+                ax.axvline(target_time.datetime, linestyle='--', linewidth=0.5,
+                           label=where)
+        fig.axes[-1].legend(loc='lower left')
 
-        if save:
+        if self.savefig:
             self.save_image(option_list=where)
 
     # pylint: disable=arguments-differ
-    def plot_stream(self, which='output', trim=True, save=False):
+    def plot_stream(self, which='output', trim=True):
         '''
         Quick plot of calibration input
         '''
-        self.get_stream(which=which, trim=trim).plot(handle=True)
+        self.get_stream(which=which, trim=trim).plot(handle=True,
+                                                     method='full')
 
-        if save:
+        if self.savefig:
             self.save_image(option_list=[which, 'trimmed'*trim])
 
-    def plot_response(self, model='system', f_limits=None, save=False):
+    def plot_response(self, model='system', f_limits=None):
         '''
         Plot nominal transfer function between specified frequency limits.
 
@@ -922,9 +890,9 @@ class CalibrationAnalyzer(StreamAnalyzer):
         save: bool, optional
             whether to save plot as PNG
         '''
-
+        logger = get_logger(__name__)
         if model not in self.lti.keys():
-            self.logger.warning(
+            logger.warning(
                 "'%s' not among supported models: %s."
                 % (model, ', '.join("'%s'" % key for key in self.lti)))
             return
@@ -932,14 +900,14 @@ class CalibrationAnalyzer(StreamAnalyzer):
         if f_limits is None:
             f_limits = [(self.stft.f)[1], (self.stft.f)[-1]]
         f_plot = logspace(f_limits[0], f_limits[1])
-        tf_model = sp.freqresp(self.lti[model], 2*np.pi*f_plot)[1]
+        tf_model = signal.freqresp(self.lti[model], 2*np.pi*f_plot)[1]
 
         width = plt.rcParams['figure.figsize'][0]
         fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
         axes[0].semilogx(f_plot, 20*np.log10(np.abs(tf_model)), label=model)
         axes[1].semilogx(f_plot, np.angle(tf_model, deg=True), label=model)
-        axes[0].axvline(self.f_sample()/2, linestyle='--', color='0.5')
-        axes[1].axvline(self.f_sample()/2, linestyle='--', color='0.5')
+        axes[0].axvline(self.sampling_rate()/2, linestyle='--', color='0.5')
+        axes[1].axvline(self.sampling_rate()/2, linestyle='--', color='0.5')
         if np.any(np.abs(axes[1].get_ylim()) > 180):
             axes[1].set_ylim([-180, 180])
             axes[1].set_yticks(np.arange(-180, 180 + 1, 45.))
@@ -950,35 +918,36 @@ class CalibrationAnalyzer(StreamAnalyzer):
         axes[1].set_xlabel('Frequency [Hz]')
         subplots_squeeze(fig, hspace=0)
 
-        if save:
+        if self.savefig:
             self.save_image(fig, model)
 
-    def plot_simulated(self, trim=True, save=False):
+    def plot_simulated(self, trim=True):
         '''
         Plot simulated calibration response in time domain.
         '''
         simulated = self.simulate_response(trim=trim)
-        t_out = np.arange(len(simulated))/self.f_sample()
 
         fig, ax = plt.subplots()
         if self.stream is not None:
             labels = factor_names(self.stream)[1]
             for output, label in zip(self.output_voltage(), labels):
-                ax.plot(t_out, output, label=label)
-        ax.plot(t_out, simulated, label='simulated')
+                ax.plot(np.arange(len(output))/self.sampling_rate(), output,
+                        label=label)
+        ax.plot(np.arange(len(simulated))/self.sampling_rate(), simulated,
+                label='simulated')
         ax.set_ylabel('Voltage [V]')
         ax.set_xlabel('Time [s]')
-        ax.legend()
+        ax.legend(loc='upper left')
 
-        if save:
+        if self.savefig:
             self.save_image(fig)
 
-    def plot_signal_to_noise(self, save=False):
+    def plot_signal_to_noise(self):
         '''
         Plot estimated signal-to-noise ratio.
         '''
         if self.stft.f is None:
-            self.compute()
+            raise RuntimeError('Use compute() method first.')
 
         labels = factor_names(self.stream)[1]
         coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
@@ -991,26 +960,26 @@ class CalibrationAnalyzer(StreamAnalyzer):
         ax.set_ylabel('SNR [dB]')
         ax.legend(loc='upper left')
 
-        if save:
+        if self.savefig:
             self.save_image(fig)
 
-    def plot_spectrogram(self, save=False):
+    def plot_spectrogram(self):
         '''
         Plot input and output spectrograms, referred to sensor input [V].
         '''
         if self.stft.f is None:
-            self.compute()
+            raise RuntimeError('Use compute() method first.')
 
         labels = ['input'] + factor_names(self.stream)[1]
 
         # convert to volts and make stackable
-        f = self.stft.f[1:]
+        f = self.stft.f
         t = self.stft.t
-        tf_system = sp.freqresp(self.lti['system'], 2*np.pi*f)[1]
+        tf_system = signal.freqresp(self.lti['system'], 2*np.pi*f)[1]
         tf_system = tf_system.reshape((1, -1, 1))
         p_dbs = 10*np.log10(np.concatenate(
-            (self.stft.p_xx[1:].reshape(-1, len(f), len(t)),
-             self.stft.p_yy[:, 1:, :]/np.abs(tf_system)**2), axis=0))
+            (self.stft.p_xx.reshape(-1, len(f), len(t)),
+             self.stft.p_yy/np.abs(tf_system)**2), axis=0))
         max_db = p_dbs.max()
 
         width = plt.rcParams['figure.figsize'][0]
@@ -1030,10 +999,10 @@ class CalibrationAnalyzer(StreamAnalyzer):
         fig.colorbar(image, ax=axes.ravel().tolist(), shrink=0.7,
                      label='Power Spectral Density [dB wrt $V^2/Hz$]')
 
-        if save:
+        if self.savefig:
             self.save_image(fig)
 
-    def plot_variance(self, scale='log', save=False):
+    def plot_variance(self, scale='log'):
         '''
         Plot variance on log or linear scale.
 
@@ -1044,7 +1013,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         '''
 
         if self.stft.f is None:
-            self.compute()
+            raise RuntimeError('Use compute() method first.')
 
         labels = factor_names(self.stream)[1]
 
@@ -1061,7 +1030,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         ax.set_yscale(scale)
         ax.legend(loc='upper left')
 
-        if save:
+        if self.savefig:
             self.save_image(fig)
 
     def plot_transfer_function(self, scale='log', model='system',
@@ -1079,15 +1048,15 @@ class CalibrationAnalyzer(StreamAnalyzer):
         scale: str, optional
             selects 'log' or 'linear' scaling for x-axis
         '''
-
+        logger = get_logger(__name__)
         if model not in self.lti.keys():
-            self.logger.warning(
+            logger.warning(
                 "'%s' not among supported models: %s."
                 % (model, ', '.join("'%s'" % key for key in self.lti)))
             return
 
         if self.stft.f is None:
-            self.compute()
+            raise RuntimeError('Use compute() method first.')
 
         option_list = []
         labels = factor_names(self.stream)[1]
@@ -1100,7 +1069,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
         f = self.stft.f
 
         if remove_nominal:
-            tf_remove = sp.freqresp(self.lti[model], 2*np.pi*f)[1]
+            tf_remove = signal.freqresp(self.lti[model], 2*np.pi*f)[1]
             with np.errstate(divide='ignore', invalid='ignore'):
                 tf_estimate /= tf_remove
             option_list += ['nominal_' + model + '_removed']
@@ -1108,12 +1077,14 @@ class CalibrationAnalyzer(StreamAnalyzer):
             tf_remove = np.ones(f.shape)
 
         with np.errstate(divide='ignore', invalid='ignore'):
-            tf_nominal = sp.freqresp(self.lti['system'],
-                                     2*np.pi*f)[1]/tf_remove
+            tf_nominal = signal.freqresp(self.lti['system'],
+                                         2*np.pi*f)[1]/tf_remove
 
         if treat_errors in ['estimate', 'correct']:
             gain_error, _, time_error, _, message = \
                 self.estimate_errors(confidence=confidence)
+            if gain_error is None:
+                return
             tf_error = tf_nominal*np.exp(1j*2*np.pi*f*time_error)
             tf_error *= gain_error
         if treat_errors == 'correct':
@@ -1184,5 +1155,5 @@ class CalibrationAnalyzer(StreamAnalyzer):
         axes[0].legend(loc='best')
         subplots_squeeze(fig, hspace=0)
 
-        if save:
+        if self.savefig:
             self.save_image(fig, option_list)

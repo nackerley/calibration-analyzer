@@ -712,7 +712,7 @@ class Stft():
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
         # pylint: enable=protected-access
 
-    def trim(self, low_frequency_points=5, high_frequency_fraction=0.8):
+    def trim(self, low_frequency_points=3, high_frequency_fraction=0.8):
         '''
         Trim low- and high-frequency points.
 
@@ -1017,6 +1017,16 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
                    gap[column], gap_unit, gap.note))
 
 
+def inventory_items(inventory):
+    '''
+    Iterate through contents of an inventory
+    '''
+    for network in inventory:
+        for station in network:
+            for channel in station:
+                yield network, station, channel
+
+
 def inventory2df(inventory):
     '''
     Summarize obspy.Inventory in pandas.DataFrame.
@@ -1027,22 +1037,16 @@ def inventory2df(inventory):
         except AttributeError:
             return None
 
-    def items(inventory):
-        for network in inventory:
-            for station in network:
-                for channel in station:
-                    yield network, station, channel
-
     df = pd.DataFrame()
     for key, column in NETWORK_KEYS:
         df[column] = [
-            get(key, network) for network, _, _ in items(inventory)]
+            get(key, network) for network, _, _ in inventory_items(inventory)]
     for key, column in STATION_KEYS:
         df[column] = [
-            get(key, station) for _, station, _ in items(inventory)]
+            get(key, station) for _, station, _ in inventory_items(inventory)]
     for key, column in CHANNEL_KEYS:
         df[column] = [
-            get(key, channel) for _, _, channel in items(inventory)]
+            get(key, channel) for _, _, channel in inventory_items(inventory)]
 
     for column in df.columns.values:
         if column.endswith('date'):
