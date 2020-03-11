@@ -339,6 +339,8 @@ class SynchronousCalibrationAnalyzer():
         result['f_min [Hz]'] = self.f_lim[0]
         result['f_max [Hz]'] = self.f_lim[1]
         result['windows'] = self.stft.p_xx.shape[1]
+        result['f_peak [Hz]'] = self.stft.f[
+            np.mean(self.stft.p_xx, axis=1).argmax()]
         result['gain [dB]'] = 20*np.log10(self.gain_coherent)
         result['phase [°]'] = self.phase_coherent
         result['normalized error'] = np.sqrt(self.peak_variance)
@@ -457,8 +459,9 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     # clean up column data types - not strictly necessary
     df['duration [s]'] = df['duration [s]'].astype(float)
     df['f_min [Hz]'] = df['f_min [Hz]'].astype(float)
-    df['f_max [Hz] '] = df['f_max [Hz]'].astype(float)
+    df['f_max [Hz]'] = df['f_max [Hz]'].astype(float)
     df['windows'] = df['windows'].astype(int)
+    df['f_peak [Hz]'] = df['f_peak [Hz]'].astype(float)
     df['gain [dB]'] = df['gain [dB]'].astype(float).round(4)
     df['phase [°]'] = df['phase [°]'].astype(float).round(3)
     df['normalized error'] = [float('%.1e' % item)
