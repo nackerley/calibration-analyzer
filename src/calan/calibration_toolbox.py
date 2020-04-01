@@ -6,6 +6,7 @@ A collection of functions useful for seismograph calibration.
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 import lzma
 import logging
 from warnings import warn
@@ -31,6 +32,7 @@ from catalogue_tools.utilities import (
     pretty_duration, pretty_voltage, pretty_bytes,
     parse_duration, parse_voltage, round_sig,
     logspace, get_logger)
+from catalogue_tools.core import short_utc
 
 from calan.core import (
     Stft, factor_names, subplots_squeeze, inventory_items,
@@ -889,6 +891,43 @@ class CalibrationAnalyzer():
 
         self.fit.gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
         self.fit.timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
+
+    def save_image(self, fig=None, option_list=None):
+        '''
+        Save a figure with an automatically descriptive file name.
+        options: comma-separated string or list of strings, optional
+            'system' or 'cal' divides out that part of the nominal response
+        '''
+
+        if fig is None:
+            fig = plt.gcf()
+        if isinstance(option_list, str):
+            option_list = option_list.split(',')
+
+        # pylint:disable=protected-access
+        caller_name = sys._getframe(1).f_code.co_name
+        plot_type = caller_name.replace('plot_', '')
+
+        file_parts = [plot_type]
+
+        if option_list is not None:
+            file_parts += [option for option in option_list if option]
+
+        if self.stream is not None:
+            start_string = short_utc(np.max([trace.stats.starttime
+                                             for trace in self.stream]))
+            start_string = (start_string.replace(' ', '.').replace(':', '')
+                            .replace('-', ''))
+
+            common_name = factor_names(self.stream)[0]
+
+            file_parts += [common_name, start_string]
+
+        file_name = '_'.join(file_parts) + '.png'
+
+        logger = get_logger(__name__)
+        logger.info(file_name)
+        plt.savefig(file_name, dpi=300, bbox_inches='tight')
 
     def plot_check(self, where='start', window_seconds=20):
         '''
