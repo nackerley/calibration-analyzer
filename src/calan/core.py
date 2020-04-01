@@ -8,6 +8,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
+import re
 import queue
 import inspect
 from glob import glob
@@ -31,6 +32,7 @@ from calan import chis_archive
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 PACKAGE = os.path.basename(os.path.dirname(__file__))
+NEDB_STACHAN_FILE = os.path.join(ROOT, 'data', 'stachans.txt')
 
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
@@ -644,9 +646,8 @@ def subplots_squeeze(fig, hspace=None, wspace=None):
     For now this just supports the case of multiple axes stacked vertically,
     removing space between them and removing tick labels which would overlap.
     '''
-
-    axes_indices = [[child.colNum, child.rowNum]
-                    for child in fig.get_children()[1:]]
+    axes_indices = [[ax.get_subplotspec().colspan.start,
+                     ax.get_subplotspec().rowspan.start] for ax in fig.axes]
     num_cols, num_rows = np.max(axes_indices, axis=0) + 1
     axes = np.reshape(fig.axes, (num_rows, num_cols))
 
@@ -672,6 +673,17 @@ class Stft():
         self.p_xx = p_xx
         self.p_yy = p_yy
         self.p_xy = p_xy
+
+    def __str__(self):
+        lines = [self.__class__.__name__ + ':']
+        if self.p_xy is None:
+            lines[0] = lines[0] + ' None'
+        else:
+            lines.append('\tt: %d from %g to %g s' %
+                         (len(self.t), self.t[0], self.t[-1]))
+            lines.append('\tf  %d from %g to %g Hz' %
+                         (len(self.f), self.f[0], self.f[-1]))
+        return '\n'.join(lines)
 
     @staticmethod
     def _mean(p_xy):
@@ -712,7 +724,7 @@ class Stft():
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
         # pylint: enable=protected-access
 
-    def trim(self, low_frequency_points=3, high_frequency_fraction=0.8):
+    def trim(self, low_frequency_points=1, high_frequency_fraction=0.8):
         '''
         Trim low- and high-frequency points.
 
@@ -727,20 +739,26 @@ class Stft():
         self.p_yy = self.p_yy[..., keep, :]
         self.p_xy = self.p_xy[..., keep, :]
 
-    def get_transfer_function(self, alpha=0):
+    def coherence_squared(self):
+        '''
+        Return Welch's method squared coherence.
+        '''
+        return np.abs(self._mean(self.p_xy))**2/(
+            self._mean(self.p_xx)*self._mean(self.p_yy))
+
+    def variance(self):
+        '''
+        Return Welch's method variance.
+        '''
+        return (1/self.coherence_squared() - 1)/(2*len(self.t))
+
+    def tf_estimate(self, alpha=0):
         '''
         Return transfer function estimate (from input, x, to output, y),
         differentiated alpha times.
         '''
         return (self._mean(self.p_xy) /
                 self._mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha
-
-    def get_coherence_squared(self):
-        '''
-        Return squared coherence.
-        '''
-        return (np.abs(self._mean(self.p_xy))**2 /
-                (self._mean(self.p_xx)*self._mean(self.p_yy)))
 
 
 def _missing_samples(delta, sampling_rate):
@@ -1055,4 +1073,21 @@ def inventory2df(inventory):
     df.dropna(axis='columns', how='all', inplace=True)
     df.set_index(NSLC, inplace=True)
 
+    return df
+
+
+def read_sql(file_name):
+    with open(file_name) as file:
+        for line in file:
+            if '|' in line:
+                break
+    pipes = np.array([match.start() for match in re.finditer(r'\|', line)])
+    colspecs = list(zip([0] + list(pipes + 1), list(pipes) + [len(line)]))
+    df = pd.read_fwf(file_name, sep='|', skiprows=[0, 1, 3], skipfooter=2,
+                     colspecs=colspecs, parse_dates=['start', 'end'],
+                     dtype={'count': int})
+
+    df['sta'], df['chan'] = df.stachan.str.split('.', n=1).str
+    df.drop(columns='stachan', inplace=True)
+    df.set_index(['sta', 'chan'], inplace=True, verify_integrity=True)
     return df
