@@ -214,11 +214,11 @@ class SynchronousCalibrationAnalyzer():
         p_xx = np.mean(self.stft.p_xx, axis=1)
         p_yy = np.mean(self.stft.p_yy, axis=1)
         # H(f) = Y(f)/X(f) = voltage/acceleration = (voltage/velocity)/omega
-        tfe = self.stft.get_transfer_function(alpha=0)
+        tfe = self.stft.tf_estimate(alpha=0)
         gain = np.abs(tfe)
         phase = np.angle(tfe, deg=True)
-        coherence = np.sqrt(self.stft.get_coherence_squared())
-        variance = (1/coherence**2 - 1)/(2*self.stft.p_xx.shape[1])
+        coherence = np.sqrt(self.stft.coherence_squared())
+        variance = self.stft.variance()
 
         peak = p_xx.argmax()
         coherent = range(
