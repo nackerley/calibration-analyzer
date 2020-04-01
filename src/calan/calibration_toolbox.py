@@ -13,7 +13,9 @@ from operator import mul
 from functools import reduce
 from struct import calcsize
 from math import log10, floor, ceil
+from collections import OrderedDict
 from copy import deepcopy
+from tempfile import gettempdir
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,19 +35,19 @@ from catalogue_tools.utilities import (
 from calan.core import (
     Stft, factor_names, subplots_squeeze, inventory_items,
     lti_from_zpsf, minreal, unwrap_mid, truncnorm_shape,
-    len_fft_welch, num_windows_welch, fft_frequencies,
+    len_fft_welch, num_windows_welch,
     extract_decimation_coefficients, compute_decim_delay, multi_decim)
-from calan.stream_analyzer import StreamAnalyzer
 
 # %% constants
 FILE_NAME = os.path.basename(__file__)
 LOG_FILE_NAME = os.path.splitext(FILE_NAME)[0] + '.log'
 
 # defaults
-DEFAULT_LEAD_IN = 600
-DEFAULT_LEAD_OUT = 600
+DEFAULT_LEAD_IN = 360
+DEFAULT_LEAD_OUT = 360
 DEFAULT_PRE_TIME = 10
 DEFAULT_POST_TIME = 10
+DEFAULT_ADJUST_START = 0
 
 # Nanometrics Centaur User Guide 17935R5, 2016-11-02
 CALIBRATION_SAMPLE_RATE = 30e3
@@ -377,7 +379,52 @@ def plot_calibration_decimated(sig_in, sig_out, b_stages, factors,
     ax.legend()
 
 
-class CalibrationAnalyzer(StreamAnalyzer):
+class Fit():
+    '''
+    Container for transfer function fits.
+    '''
+    def __init__(self):
+        self.timing = None
+        self.gain = None
+
+    def __str__(self, confidence=0.95):
+        lines = [self.__class__.__name__ + ':']
+        lines.append('\t' + self.timing_summary(confidence=confidence))
+        lines.append('\t' + self.gain_summary(confidence=confidence))
+        return '\n'.join(lines)
+
+    @staticmethod
+    def _num_sigma(confidence=0.95):
+        return np.sqrt(2)*erfinv(confidence)
+
+    def timing_summary(self, confidence=0.95):
+        if self.timing is None:
+            return 'timing fit: None'
+        timing_digits = round(log10(
+            abs(self.timing.params) /
+            (self._num_sigma()*self.timing.bse))) + 1
+        return (
+            'timing error %s ±%s\n' %
+            (pretty_duration(self.timing.params, fmt=timing_digits,
+                             thresh=0.05),
+             pretty_duration(self._num_sigma()*self.timing.bse, fmt=1,
+                             thresh=0.05)) +
+            '(%.0f%% confidence)' % (100*confidence))
+
+    def gain_summary(self, confidence=0.95):
+        if self.gain is None:
+            return 'gain fit: None'
+        gain_digits = round(log10(
+            abs(self.timing.params - 1) /
+            (self._num_sigma()*self.timing.bse))) + 1
+        return (
+            'Gain error %g%% ±%g%%\n' %
+            (round_sig(100*(self.timing.params - 1), gain_digits),
+             round_sig(100*self._num_sigma()*self.timing.bse, 1)) +
+            '(%.0f%% confidence)' % (100*confidence))
+
+
+class CalibrationAnalyzer():
     '''
     A calibration signal analyzer based on :class:`obspy.Stream`.
 
@@ -404,23 +451,46 @@ class CalibrationAnalyzer(StreamAnalyzer):
         '''
         get_logger(self.__class__.__name__, LOG_FILE_NAME, log_level)
 
+        self.info = OrderedDict((
+            ('waveform_file', ''),
+            ('inventory_file', ''),
+            ('calibration_file', ''),
+            ('start', None),
+            ('end', None)))
         self.stream = Stream()
-        self.info = {
-            'waveform_file': '',
-            'inventory_file': '',
-            'calibration_file': '',
-            'start': None,
-            'end': None}
 
-        self.lti = {'cal': None,
-                    'sensor': None,
-                    'system': None}
+        self.lti = OrderedDict((
+            ('sensor', None),
+            ('cal', None),
+            ('system', None)))
         self.stft = Stft()
         self.savefig = savefig
 
+        self.fit = Fit()
+
+    def __str__(self):
+        lines = [self.__class__.__name__ + ':']
+        lines += ['\tInfo:']
+        for key, value in self.info.items():
+            lines.append('\t\t%s: %s' % (key, value))
+        lines += ['\t' + line
+                  for line in self.stream.__str__().strip().split('\n')]
+        lines += ['\tNominal:']
+        for key, value in self.lti.items():
+            lines.append('\t\t%s: %s' % (key, value))
+        lines += ['\t' + line
+                  for line in self.stft.__str__().strip().split('\n')]
+        lines += ['\t' + line
+                  for line in self.fit.__str__().strip().split('\n')]
+        return '\n'.join(lines)
+
+    def __repr__(self):
+        return self.__str__()
+
     def load_stream(self, waveform_file=None, lead_in=DEFAULT_LEAD_IN,
                     lead_out=DEFAULT_LEAD_OUT, pre_time=DEFAULT_PRE_TIME,
-                    post_time=DEFAULT_POST_TIME):
+                    post_time=DEFAULT_POST_TIME,
+                    adjust_start=DEFAULT_ADJUST_START):
         '''
         Load calibration stream.
 
@@ -439,8 +509,8 @@ class CalibrationAnalyzer(StreamAnalyzer):
         self.info['end'] = self.stream[0].stats.endtime
 
         if not any(trace.id[-1] == 'C' for trace in self.stream):
-            self.info['start'] += lead_in + pre_time
-            self.info['end'] -= lead_out + post_time
+            self.info['start'] += lead_in + pre_time + adjust_start
+            self.info['end'] -= lead_out + post_time - adjust_start
 
     def sampling_rate(self):
         '''Return stream sampling rate'''
@@ -521,8 +591,6 @@ class CalibrationAnalyzer(StreamAnalyzer):
         No attempt is made to match the response to the exact channel used;
         it is assumed that all traces in the calibation stream have the same
         nominal response.
-
-        TODO: Implement caching.
         '''
         logger = get_logger(__name__)
         if any(trace.id[-1] == 'C' for trace in self.stream):
@@ -530,50 +598,58 @@ class CalibrationAnalyzer(StreamAnalyzer):
             return
 
         logger.info(calibration_file)
-
-        # cache_file = ('%s_%gsps.%s' %
-        #              (calibration_file.replace('.lzma', ''),
-        #               self.stream[0].stats.sampling_rate,
-        #               self.CACHE_FORMAT.lower()))
-        # if os.path.exists(cache_file):
-        #    logger.info(
-        #        'Found cache: %s' % os.path.basename(cache_file))
-        #    calibration_stream = read(cache_file)
-        #    self.calibration_file
-        #    return
+        self.info['calibration_file'] = calibration_file
 
         b_stages, factors = extract_decimation_coefficients(
             self.stream[0].stats.response.response_stages)
         factor = reduce(mul, factors)
+        phase_suffix = ''
+        if factors[-1] == 2:
+            if len(b_stages[-1]) == 223:
+                phase_suffix = '_linear'
+            elif len(b_stages[-1]) == 110:
+                phase_suffix = '_minimum'
+        if not phase_suffix:
+            logger.warning('Cannot determine whether decimation filters are '
+                           'minimum or linear phase.')
 
-        self.info['calibration_file'] = calibration_file
-        signal = np.frombuffer(lzma.open(calibration_file).read(),
-                               dtype=CALIBRATION_DTYPE)
-        signal = sample_hold_digitize(signal)
-        signal = pad_for_decimation(signal, b_stages, factors)[0]
-        signal = self._pad_lead_in_out(signal, factor)
+        cache_file = os.path.join(
+            gettempdir(),
+            '%s_%gsps%s.%s' % (
+                calibration_file.replace('.lzma', ''),
+                self.stream[0].stats.sampling_rate, phase_suffix,
+                self.CACHE_FORMAT.lower()))
+        if os.path.isfile(cache_file):
+            logger.info('Found cache: %s' % cache_file)
+            signal = read(cache_file)[0].data
+        else:
+            logger.info('Reading: ' % calibration_file)
+            signal = np.frombuffer(lzma.open(calibration_file).read(),
+                                   dtype=CALIBRATION_DTYPE)
+            signal = sample_hold_digitize(signal)
+            signal = pad_for_decimation(signal, b_stages, factors)[0]
+            signal = self._pad_lead_in_out(signal, factor)
 
-        logger.info('Decimating by %d ...' % factor)
-        signal = multi_decim(signal, b_stages, factors)[0]
+            logger.info('Decimating by %d ...' % factor)
+            signal = multi_decim(signal, b_stages, factors)[0]
 
         if len(signal) != self.stream[0].stats.npts:
-            logger.info(
+            logger.error(
                 'Expected %d, obtained %d points for calibration signal' %
                 (self.stream[0].stats.npts, len(signal)))
-            logger.error('Check lead-in and lead-out times.')
-            import pdb; pdb.set_trace()
-            return
+            raise RuntimeError('Check lead-in and lead-out times.')
 
         stats = {key: self.stream[0].stats[key] for key in
                  ['network', 'station', 'location', 'sampling_rate']}
         stats['channel'] = self.stream[0].stats['channel'][:2] + 'C'
         stats['starttime'] = self.stream[0].stats.starttime
         trace = Trace(data=np.ascontiguousarray(signal), header=stats)
-        self.stream.traces.append(trace)
+        stream = Stream([trace])
 
-        # logger.info(
-        #     'Caching: %s' % os.path.basename(cache_file))
-        # self.input.write(calibration_stream, format=self.CACHE_FORMAT)
+        if not os.path.isfile(cache_file):
+            logger.info('Caching: %s' % cache_file)
+            stream.write(cache_file, format=self.CACHE_FORMAT)
+        self.stream += stream
 
     def setup_nominal_response(self, cal_lti=None):
         '''
@@ -694,7 +770,6 @@ class CalibrationAnalyzer(StreamAnalyzer):
         of segments as it is the (actual) number of segments in Welch's method
         which reduces the variance in the result.
         '''
-        logger = get_logger(__name__)
         x = self.input_voltage()
         y = self.output_voltage()
         f_sample = self.sampling_rate()
@@ -704,10 +779,6 @@ class CalibrationAnalyzer(StreamAnalyzer):
         len_overlap = int(fraction_overlap*len_fft)
 
         num_windows = num_windows_welch(len(x), len_fft, len_overlap)
-        f_expected = fft_frequencies(len_fft, f_sample)
-        logger.info(
-            '%d segments ' % num_windows +
-            'from %g to %g Hz' % (f_expected[1], f_expected[-1]))
 
         self.stft.compute(x, y, f_sample, len_fft, len_overlap)
         self.stft.trim()
@@ -734,7 +805,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         return signal
 
-    def estimate_errors(self, confidence=0.95, variance_threshhold=0.01):
+    def estimate_errors(self, variance_threshhold=0.01):
         '''
         Least-squares estimation of gain and timing errors.
 
@@ -786,14 +857,11 @@ class CalibrationAnalyzer(StreamAnalyzer):
         '''
         logger = get_logger(__name__)
         f = self.stft.f
-        tf_estimate = self._mean(self.stft.p_xy)/self._mean(self.stft.p_xx)
+        tf_estimate = self.stft.tf_estimate()
         with np.errstate(divide='ignore', invalid='ignore'):
             tf_estimate /= signal.freqresp(self.lti['system'], 2*np.pi*f)[1]
-        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
-            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
-        num_sigma = np.sqrt(2)*erfinv(confidence)
 
-        variance = (1/coherence_squared - 1)/(2*len(self.stft.t))
+        variance = self.stft.variance()
         if variance_threshhold is not None:
             keep = (variance < variance_threshhold).any(axis=0)
         else:
@@ -819,24 +887,8 @@ class CalibrationAnalyzer(StreamAnalyzer):
         variance = np.reshape(variance, (-1, 1))
         weights = np.sqrt(1/variance)
 
-        gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
-        timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
-
-        gain_digits = round(log10(
-            abs(gain.params - 1)/(num_sigma*gain.bse))) + 1
-        timing_digits = round(log10(
-            abs(timing.params)/(num_sigma*timing.bse))) + 1
-        summary = (
-            'Gain error %g%% ±%g%%\n' %
-            (round_sig(100*(gain.params - 1), gain_digits),
-             round_sig(100*num_sigma*gain.bse, 1)) +
-            'Timing error %s ±%s\n' %
-            (pretty_duration(timing.params, fmt=timing_digits, thresh=0.05),
-             pretty_duration(num_sigma*timing.bse, fmt=1, thresh=0.05)) +
-            '(%.0f%% confidence)' % (100*confidence))
-
-        return (gain.params, num_sigma*gain.bse,
-                timing.params, num_sigma*timing.bse, summary)
+        self.fit.gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
+        self.fit.timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
 
     def plot_check(self, where='start', window_seconds=20):
         '''
@@ -950,8 +1002,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
             raise RuntimeError('Use compute() method first.')
 
         labels = factor_names(self.stream)[1]
-        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
-            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
+        coherence_squared = self.stft.coherence_squared()
 
         fig, ax = plt.subplots()
         for snr, label in zip(10*np.log10(1/(1 - coherence_squared)), labels):
@@ -1017,16 +1068,13 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         labels = factor_names(self.stream)[1]
 
-        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
-            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
-        variances = (1/coherence_squared - 1)/(2*len(self.stft.t))
+        variances = self.stft.variance()
 
         fig, ax = plt.subplots()
         for snr, label in zip(variances, labels):
             ax.semilogx(self.stft.f, snr, label=label)
         ax.set_xlabel('Frequency [Hz]')
         ax.set_ylabel('Relative Transfer Function Variance')
-        ax.set_ylim((0, 0.01))
         ax.set_yscale(scale)
         ax.legend(loc='upper left')
 
@@ -1034,7 +1082,7 @@ class CalibrationAnalyzer(StreamAnalyzer):
             self.save_image(fig)
 
     def plot_transfer_function(self, scale='log', model='system',
-                               remove_nominal=True, treat_errors='correct',
+                               remove_nominal=True, treat_errors=None,
                                save=False, confidence=0.95,
                                variance_threshhold=None, smooth=False):
         '''
@@ -1060,11 +1108,8 @@ class CalibrationAnalyzer(StreamAnalyzer):
 
         option_list = []
         labels = factor_names(self.stream)[1]
-        tf_estimate = self._mean(self.stft.p_xy)/self._mean(self.stft.p_xx)
-
-        coherence_squared = np.abs(self._mean(self.stft.p_xy))**2/(
-            self._mean(self.stft.p_xx)*self._mean(self.stft.p_yy))
-        variance = (1/coherence_squared - 1)/(2*len(self.stft.t))
+        tf_estimate = self.stft.tf_estimate()
+        variance = self.stft.variance()
 
         f = self.stft.f
 
@@ -1081,16 +1126,16 @@ class CalibrationAnalyzer(StreamAnalyzer):
                                          2*np.pi*f)[1]/tf_remove
 
         if treat_errors in ['estimate', 'correct']:
-            gain_error, _, time_error, _, message = \
-                self.estimate_errors(confidence=confidence)
-            if gain_error is None:
-                return
-            tf_error = tf_nominal*np.exp(1j*2*np.pi*f*time_error)
-            tf_error *= gain_error
+
+            if self.fit.gain is None or self.fit.timing is None:
+                raise RuntimeError('Run estimate_errors() first.')
+
+            tf_error = tf_nominal*np.exp(1j*2*np.pi*f*self.fit.timing.params)
+            tf_error *= self.fit.gain.params
         if treat_errors == 'correct':
             with np.errstate(divide='ignore', invalid='ignore'):
-                tf_estimate /= gain_error
-            tf_estimate /= np.exp(1j*2*np.pi*f*time_error)
+                tf_estimate /= self.fit.gain.params
+            tf_estimate /= np.exp(1j*2*np.pi*f*self.fit.timing.params)
 
         if variance_threshhold is not None:
             tf_estimate[variance > variance_threshhold] = np.nan
@@ -1144,9 +1189,10 @@ class CalibrationAnalyzer(StreamAnalyzer):
                          label='error')
 
         if treat_errors in ['estimate', 'correct']:
-            axes[1].text(0.05, 0.9, message, transform=axes[1].transAxes,
-                         horizontalalignment='left',
-                         verticalalignment='top')
+            axes[0].annotate(self.fit.gain_summary(), (0.05, 0.9),
+                             xycoords='axes fraction', ha='left', va='top')
+            axes[1].annotate(self.fit.timing_summary(), (0.05, 0.9),
+                             xycoords='axes fraction', ha='left', va='top')
 
         axes[0].set_xscale(scale)
         if scale != 'log':
