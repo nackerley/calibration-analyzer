@@ -761,7 +761,7 @@ class CalibrationAnalyzer():
             (self.stft.f <= test_band_hz[1]), axis=1)
 
         get_logger(__name__).info('Result: ' + ', '.join(
-            ['%s: %s' for channel, result in zip(
+            [': '.join(items) for items in zip(
                 [trace.id[-1] for trace in self.stream],
                 ['pass' if in_spec else 'fail'
                  for in_spec in self.info['in_spec']])]))
