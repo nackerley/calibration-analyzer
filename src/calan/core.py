@@ -646,8 +646,15 @@ def subplots_squeeze(fig, hspace=None, wspace=None):
     For now this just supports the case of multiple axes stacked vertically,
     removing space between them and removing tick labels which would overlap.
     '''
-    axes_indices = [[ax.get_subplotspec().colspan.start,
-                     ax.get_subplotspec().rowspan.start] for ax in fig.axes]
+    try:
+        axes_indices = [[ax.get_subplotspec().colspan.start,
+                         ax.get_subplotspec().rowspan.start]
+                        for ax in fig.axes]
+    except AttributeError:
+        axes_indices = [[ax.get_subplotspec().get_rows_columns()[4],
+                         ax.get_subplotspec().get_rows_columns()[2]]
+                        for ax in fig.axes]
+
     num_cols, num_rows = np.max(axes_indices, axis=0) + 1
     axes = np.reshape(fig.axes, (num_rows, num_cols))
 
@@ -666,6 +673,7 @@ class Stft():
     Short-term fourier auto- and cross-spectra between input (x) and output
     (y) signals.
     '''
+
     def __init__(self, f=None, t=None, p_xx=None, p_yy=None, p_xy=None):
 
         self.f = f
@@ -705,6 +713,10 @@ class Stft():
         logger = get_logger(self.__class__.__name__ + ':' + __name__)
         f_expected = fft_frequencies(len_fft, f_sample)
         num_samples = x.shape[0]
+        if y.shape[1] != num_samples:
+            raise ValueError(
+                'Signal length of output %d does not match input %d',
+                (y.shape[1], num_samples))
         num_windows = num_windows_welch(num_samples, len_fft, len_overlap)
         logger.info(
             '%d segments from %g to %g Hz' %
@@ -733,7 +745,7 @@ class Stft():
         filter corner are not useful.
         '''
         keep = ((self.f >= self.f[low_frequency_points]) &
-                (self.f < self.f[-1]*high_frequency_fraction))
+                (self.f <= self.f[-1]*high_frequency_fraction))
         self.f = self.f[keep]
         self.p_xx = self.p_xx[..., keep, :]
         self.p_yy = self.p_yy[..., keep, :]

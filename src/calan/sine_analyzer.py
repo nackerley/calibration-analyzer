@@ -5,6 +5,8 @@ Analyzer for sinusoidal calibrations of seismometers.
 Temperature data can be appended with provision of a weather station ID.
 Use this inventory to look up the nearest wether station:
 ftp://client_climate@ftp.tor.ec.gc.ca/Pub/Get_More_Data_Plus_de_donnees/Station%20Inventory%20EN.csv
+
+Author: Nick Ackerley
 """
 import os
 import sys
