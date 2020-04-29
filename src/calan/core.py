@@ -26,8 +26,7 @@ from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
 from obspy.core.inventory import CoefficientsTypeResponseStage
 
-from catalogue_tools.utilities import get_logger, string_list, preferred_number
-
+from calan.utilities import get_logger, string_list, preferred_number
 from calan import chis_archive
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))

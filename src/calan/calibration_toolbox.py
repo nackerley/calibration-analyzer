@@ -10,7 +10,7 @@ from warnings import warn
 import numpy as np
 import matplotlib.pyplot as plt
 
-from catalogue_tools.utilities import parse_duration, parse_voltage
+from calan.utilities import parse_duration, parse_voltage
 from calan.core import compute_decim_delay
 
 # %% constants

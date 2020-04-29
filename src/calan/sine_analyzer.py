@@ -27,7 +27,7 @@ from obspy.core.inventory.response import \
     PolesZerosResponseStage, CoefficientsTypeResponseStage
 
 from calan.core import Stft, get_clients, PACKAGE
-from catalogue_tools.utilities import (
+from calan.utilities import (
     MyArgumentParser, MyFormatter, get_logger)
 
 # calibration circuit parameter estimates

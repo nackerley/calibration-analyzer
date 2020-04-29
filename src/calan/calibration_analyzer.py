@@ -30,16 +30,13 @@ import statsmodels.api as sm
 from obspy import read, read_inventory, Trace, Stream, UTCDateTime
 from obspy.signal.invsim import simulate_seismometer
 
-from catalogue_tools.core import PACKAGE, short_utc
-from catalogue_tools.utilities import (
+from calan.core import (
+    PACKAGE, Stft, factor_names, subplots_squeeze, inventory_items,
+    lti_from_zpsf, minreal, unwrap_mid, len_fft_welch, num_windows_welch,
+    extract_decimation_coefficients, multi_decim)
+from calan.utilities import (
     pretty_duration, round_sig, logspace, get_logger,
     MyArgumentParser, MyFormatter)
-
-from calan.core import (
-    Stft, factor_names, subplots_squeeze, inventory_items,
-    lti_from_zpsf, minreal, unwrap_mid,
-    len_fft_welch, num_windows_welch,
-    extract_decimation_coefficients, multi_decim)
 from calan.calibration_toolbox import (
     sample_hold_digitize, pad_for_decimation)
 
@@ -945,10 +942,9 @@ class CalibrationAnalyzer():
             file_parts += [option for option in option_list if option]
 
         if self.stream is not None:
-            start_string = short_utc(np.max([trace.stats.starttime
-                                             for trace in self.stream]))
-            start_string = (start_string.replace(' ', '.').replace(':', '')
-                            .replace('-', ''))
+            start_string = np.max([
+                trace.stats.starttime for trace in self.stream]
+                ).strftime('%Y%m%d.%H%M')
 
             common_name = factor_names(self.stream)[0]
 
