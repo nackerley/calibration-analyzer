@@ -284,7 +284,8 @@ class CalibrationAnalyzer():
             console logging level
         '''
         logger = get_logger(self.__class__.__name__, LOG_FILE_NAME, log_level)
-        logger.info('%s: %s' % (PACKAGE, get_distribution(PACKAGE).version))
+        logger.info('Version: %s v%s' % (PACKAGE,
+                                         get_distribution(PACKAGE).version))
 
         self.info = OrderedDict((
             ('waveform_file', ''),
@@ -408,13 +409,18 @@ class CalibrationAnalyzer():
             if all('response' in trace.stats for trace in self.stream):
                 break
 
+        missing_ids = {trace.id for trace in self.stream
+                       if 'response' not in trace.stats}
+        if missing_ids:
+            missing_id_list = ', '.join(sorted(missing_ids))
+            logger.warning('No station metadata found: ' + missing_id_list)
+
+        self.stream = Stream([trace for trace in self.stream
+                              if trace.id not in missing_ids])
+        if not len(self.stream):
+            raise RuntimeError('No waveforms with station metadata')
         self.info['response_file'] = [
             response_files[trace.id] for trace in self.stream]
-
-        missing_ids = ', '.join(sorted({trace.id for trace in self.stream
-                                        if 'response' not in trace.stats}))
-        if missing_ids:
-            raise RuntimeError('No station metadata found: ' + missing_ids)
 
     def _pad_lead_in_out(self, signal, factor):
         sampling_rate = self.sampling_rate()*factor
