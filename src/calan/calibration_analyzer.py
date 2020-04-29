@@ -17,7 +17,6 @@ from operator import mul
 from functools import reduce
 from math import log10, floor, ceil
 from collections import OrderedDict
-from copy import deepcopy
 from tempfile import gettempdir
 from scipy import signal
 from scipy.special import erfinv
@@ -31,7 +30,7 @@ from obspy import read, read_inventory, Trace, Stream, UTCDateTime
 from obspy.signal.invsim import simulate_seismometer
 
 from calan.core import (
-    PACKAGE, Stft, factor_names, subplots_squeeze, inventory_items,
+    PACKAGE, Stft, factor_names, subplots_squeeze,
     lti_from_zpsf, minreal, unwrap_mid, len_fft_welch, num_windows_welch,
     extract_decimation_coefficients, multi_decim)
 from calan.utilities import (
@@ -382,67 +381,40 @@ class CalibrationAnalyzer():
         Load response file describing the system being calibrated.
         '''
         logger = get_logger(__name__)
-        logger.info(response_pattern)
-        response_files = glob(response_pattern)
+        response_files = {trace.id: '' for trace in self.stream}
+        logger.info(
+            'Searching %s for: %s' %
+            (response_pattern, ', '.join(sorted(response_files.keys()))))
+        for response_file in glob(response_pattern):
+            inventory = read_inventory(response_file)
+            for trace in [trace for trace in self.stream
+                          if 'response' not in trace.stats]:
 
-        self.info['response_file'] = []
-        inventory = None
-        for trace in self.stream:
-            for response_file in response_files:
                 try:
-                    trace.attach_response(read_inventory(response_file))
-                    logger.info('Found %s: %s' % (trace.id, response_file))
-                    self.info['response_file'].append(response_file)
-
-                    if inventory is None:
-                        inventory = read_inventory(response_file)
-                    else:
-                        inventory += read_inventory(response_file)
-                    break
+                    trace.attach_response(inventory)
                 except ValueError:
-                    continue
+                    pass
 
-        earliest = min(trace.stats.starttime for trace in self.stream)
-        latest = max(trace.stats.endtime for trace in self.stream)
+            found_ids = (
+                {tr.id for tr in self.stream if 'response' in tr.stats} -
+                {tr_id for tr_id, file in response_files.items() if file})
 
-        if force_first:
-            inventory.networks = [inventory[0]]
-            inventory[0].stations = [inventory[0][0]]
-            inventory[0][0].channels = [inventory[0][0][0]]
-            for trace in self.stream:
-                network_code, station_code, location_code, channel_code = \
-                    trace.id.split('.')
-                network = next((network for network in inventory
-                                if network.code == network_code), None)
-                if network is None:
-                    network = deepcopy(inventory[0])
-                    network.code = network_code
-                    inventory.networks.append(network)
-                station = next((station for station in network
-                                if station.code == station_code), None)
-                if station is None:
-                    station = deepcopy(network[0])
-                    station.code = station_code
-                    network.stations.append(station)
-                channel = next((channel for channel in station
-                                if channel.code == channel_code and
-                                channel.location_code == location_code), None)
-                if channel is None:
-                    channel = deepcopy(station[0])
-                    channel.code = channel_code
-                    channel.location_code = location_code
-                    station.channels.append(channel)
+            if found_ids:
+                logger.info('%s: %s' % (response_file,
+                                        ', '.join(sorted(found_ids))))
+                for trace_id in found_ids:
+                    response_files[trace_id] = response_file
 
-        if ignore_open_closed:
-            for _, _, channel in inventory_items(inventory):
-                channel.starttime = earliest
-                channel.endtime = latest
+            if all('response' in trace.stats for trace in self.stream):
+                break
 
-        not_found = self.stream.attach_response(inventory)
-        if not_found:
-            logger.warning(
-                'No response found:' +
-                ', '.join([trace.id for trace in not_found]))
+        self.info['response_file'] = [
+            response_files[trace.id] for trace in self.stream]
+
+        missing_ids = ', '.join(sorted({trace.id for trace in self.stream
+                                        if 'response' not in trace.stats}))
+        if missing_ids:
+            raise RuntimeError('No station metadata found: ' + missing_ids)
 
     def _pad_lead_in_out(self, signal, factor):
         sampling_rate = self.sampling_rate()*factor
@@ -518,6 +490,8 @@ class CalibrationAnalyzer():
 
     def _sensor_stage(self):
         '''
+        Return sensor response stage.
+
         Note assumption that sensor is a single stage.
         '''
         return self.stream[0].stats.response.response_stages[0]
