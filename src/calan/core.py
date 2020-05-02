@@ -11,6 +11,8 @@ import os
 import re
 import queue
 import inspect
+import logging
+from logging.config import dictConfig
 from glob import glob
 from time import time
 from tempfile import gettempdir
@@ -19,18 +21,18 @@ from operator import attrgetter
 import requests
 import numpy as np
 import pandas as pd
-from scipy import fftpack
 import scipy.signal as sp
 
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
 from obspy.core.inventory import CoefficientsTypeResponseStage
 
-from calan.utilities import get_logger, string_list, preferred_number
+from calan.utilities import string_list
 from calan import chis_archive
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 PACKAGE = os.path.basename(os.path.dirname(__file__))
+VERSION = '1.0.2'
 NEDB_STACHAN_FILE = os.path.join(ROOT, 'data', 'stachans.txt')
 
 CHIS_FDSN_SERVERS = (
@@ -355,26 +357,30 @@ def flip(ndarray, axis):
     return ndarray[tuple(indexer)]
 
 
-def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1):
+def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1, discont=np.pi):
     '''
     Unwraps phase data in the range starting at midband
 
-    Unwrapping is done from -pi to pi starting at a specified midband
-    frequency and working outwards.
+    Unwrapping is done from -discont to discont starting at a specified
+    midband frequency and working outwards.
 
     Parameters
     ----------
     phase_in: :class:`~numpy.array` or list
-        phase data
+        Phase data.
     f_in: :class:`~numpy.array` or list
-        frequencies corresponding to phases
+        Frequencies corresponding to phases.
     f_midband: float, optional
-        midband frequency at which to start unwrapping
+        Midband frequency at which to start unwrapping. Default is 1.
+    axis: int, optional
+        Axis along which to unwrap. Default is last axis.
+    discont: float, optional
+        Maximum value at which to unwrap discontinueties. Default is pi.
 
     Returns
     -------
     phase_out: :class:`~numpy.array`
-        unwrapped phase data
+        Unwrapped phase data.
     '''
 
     assert f_in.ndim == 1
@@ -383,8 +389,9 @@ def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1):
     phase_below = phase_in.take(np.arange(i_mid), axis)
     phase_above = phase_in.take(np.arange(i_mid, phase_in.shape[axis]), axis)
 
-    phase_below = flip(np.unwrap(flip(phase_below, axis), axis), axis)
-    phase_above = np.unwrap(phase_above, axis)
+    phase_below = flip(
+        np.unwrap(flip(phase_below, axis), discont=discont, axis=axis), axis)
+    phase_above = np.unwrap(phase_above, discont=discont, axis=axis)
 
     return np.concatenate((phase_below, phase_above), axis)
 
@@ -420,66 +427,6 @@ def factor_names(stream):
                           if same)
     common_name = '.'.join(part.strip() for part in common_name.split('.'))
     return common_name, short_names
-
-
-def num_windows_welch(len_signal, len_fft, len_overlap=None):
-    '''Number of windows resulting from Welch's method'''
-    if len_overlap is None:
-        len_overlap = int(len_fft/2)
-
-    return int((len_signal - len_fft)/(len_fft - len_overlap)) + 1
-
-
-def len_fft_welch(len_signal, num_windows=None, fraction_overlap=None):
-    '''
-    Recommended FFT length to achieve target number of windows using Welch's
-    method
-    '''
-    if num_windows is None:
-        num_windows = 30
-    if fraction_overlap is None:
-        fraction_overlap = 0.5
-
-    return int(preferred_number(
-        len_signal / ((num_windows - 0.5) * (1 - fraction_overlap) + 1)))
-
-
-def window_times_welch(len_signal, len_fft, f_sample, len_overlap=None):
-    '''
-    Array of times of centers of windows resulting from Welch's method.
-
-    Nearly verbatim from scipy.signal._spectral_helper().
-    '''
-    if len_overlap is None:
-        len_overlap = int(len_fft/2)
-
-    return np.arange(len_fft/2, len_signal - len_fft/2 + 1,
-                     len_fft - len_overlap)/f_sample
-
-
-def fft_frequencies(len_fft, f_sample, sides='onesided'):
-    '''
-    Array of frequencies expected from an FFT calculation.
-
-    Nearly verbatim from scipy.signal._spectral_helper().
-    '''
-
-    len_fft = int(len_fft)
-    if sides == 'twosided':
-        num_freqs = len_fft
-    elif sides == 'onesided':
-        if len_fft % 2:
-            num_freqs = int((len_fft + 1)/2)
-        else:
-            num_freqs = int(len_fft/2 + 1)
-
-    frequencies = fftpack.fftfreq(len_fft, 1/f_sample)[:num_freqs]
-
-    if sides != 'twosided' and not len_fft % 2:
-        # get the last value correctly, it is negative otherwise
-        frequencies[-1] *= -1
-
-    return frequencies
 
 
 def compute_decim_delay(b_stages, factors):
@@ -665,111 +612,6 @@ def subplots_squeeze(fig, hspace=None, wspace=None):
                 ax.yaxis.get_major_ticks()[-1].label.set_visible(False)
             if i < num_rows - 1:
                 ax.yaxis.get_major_ticks()[0].label.set_visible(False)
-
-
-class Stft():
-    '''
-    Short-term fourier auto- and cross-spectra between input (x) and output
-    (y) signals.
-    '''
-
-    def __init__(self, f=None, t=None, p_xx=None, p_yy=None, p_xy=None):
-
-        self.f = f
-        self.t = t
-        self.p_xx = p_xx
-        self.p_yy = p_yy
-        self.p_xy = p_xy
-
-    def __str__(self):
-        lines = [self.__class__.__name__ + ':']
-        if self.p_xy is None:
-            lines[0] = lines[0] + ' None'
-        else:
-            lines.append('\tt: %d from %g to %g s' %
-                         (len(self.t), self.t[0], self.t[-1]))
-            lines.append('\tf  %d from %g to %g Hz' %
-                         (len(self.f), self.f[0], self.f[-1]))
-        return '\n'.join(lines)
-
-    @staticmethod
-    def _mean(p_xy):
-        '''
-        Finishing touch of Welch's method when deriving results.
-        '''
-        if len(p_xy.shape) >= 2 and p_xy.size > 0:
-            if p_xy.shape[-1] > 1:
-                p_xy = p_xy.mean(axis=-1)
-            else:
-                p_xy = np.reshape(p_xy, p_xy.shape[:-1])
-        return p_xy
-
-    def compute(self, x, y, f_sample, len_fft, len_overlap, window='hann'):
-        '''
-        Each segment is detrended by removing a constant value before
-        application of a window.
-        '''
-        logger = get_logger(self.__class__.__name__ + ':' + __name__)
-        f_expected = fft_frequencies(len_fft, f_sample)
-        num_samples = x.shape[0]
-        if y.shape[1] != num_samples:
-            raise ValueError(
-                'Signal length of output %d does not match input %d',
-                (y.shape[1], num_samples))
-        num_windows = num_windows_welch(num_samples, len_fft, len_overlap)
-        logger.info(
-            '%d segments from %g to %g Hz' %
-            (num_windows, f_expected[1], f_expected[-1]))
-
-        # pylint: disable=protected-access
-        self.f, self.t, self.p_xy = sp.spectral._spectral_helper(
-            x, y, window=window,
-            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')
-
-        self.p_xx = sp.spectral._spectral_helper(
-            x, x, window=window,
-            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
-
-        self.p_yy = sp.spectral._spectral_helper(
-            y, y, window=window,
-            fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
-        # pylint: enable=protected-access
-
-    def trim(self, low_frequency_points=1, high_frequency_fraction=0.8):
-        '''
-        Trim low- and high-frequency points.
-
-        Typically low-frequency measurements are spoiled by imperfect DC
-        removal. Similarly high-frequency measurements beyond the decimation
-        filter corner are not useful.
-        '''
-        keep = ((self.f >= self.f[low_frequency_points]) &
-                (self.f <= self.f[-1]*high_frequency_fraction))
-        self.f = self.f[keep]
-        self.p_xx = self.p_xx[..., keep, :]
-        self.p_yy = self.p_yy[..., keep, :]
-        self.p_xy = self.p_xy[..., keep, :]
-
-    def coherence_squared(self):
-        '''
-        Return Welch's method squared coherence.
-        '''
-        return np.abs(self._mean(self.p_xy))**2/(
-            self._mean(self.p_xx)*self._mean(self.p_yy))
-
-    def variance(self):
-        '''
-        Return Welch's method variance.
-        '''
-        return (1/self.coherence_squared() - 1)/(2*len(self.t))
-
-    def tf_estimate(self, alpha=0):
-        '''
-        Return transfer function estimate (from input, x, to output, y),
-        differentiated alpha times.
-        '''
-        return (self._mean(self.p_xy) /
-                self._mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha
 
 
 def _missing_samples(delta, sampling_rate):
@@ -1102,3 +944,130 @@ def read_sql(file_name):
     df.drop(columns='stachan', inplace=True)
     df.set_index(['sta', 'chan'], inplace=True, verify_integrity=True)
     return df
+
+
+# %% logging
+FILE_NAME = os.path.basename(__file__)
+LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+LOG_SETTINGS = {
+    'version': 1,  # logging schema
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'simple',
+            },
+        'file': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'when': 'midnight',
+            'utc': True,
+            'filename': '',
+            'level': 'DEBUG',
+            'formatter': 'detailed',
+            },
+        },
+    'formatters': {
+        'simple': {
+            'format':
+            '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - %(message)s'
+            },
+        'detailed': {
+            'format': '%(asctime)s - '
+                      '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - '
+                      '%(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+            },
+        },
+    'loggers': {
+        '': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file']
+            },
+        }
+    }
+
+SIMPLE_LOG_SETTINGS = {
+    'version': 1,  # logging schema
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'simple',
+            },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': '',
+            'level': 'DEBUG',
+            'formatter': 'simple',
+            'mode': 'w',
+            },
+        },
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)-8s - %(message)s'
+            },
+        },
+    'loggers': {
+        '': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file']
+            },
+        }
+    }
+
+
+def get_logger(name, log_file_name='', log_console_level='INFO'):
+    '''
+    Return named logger which logs to console and file.
+
+    Configures root logger for log_file_name and log_console_level.
+    Logging to file is always at DEBUG level.
+    '''
+    assert log_console_level in LOG_LEVELS
+
+    handlers = logging.getLogger().handlers
+    not_previously_configured = len(handlers) == 0
+
+    if not_previously_configured:
+        LOG_SETTINGS['handlers']['console'].update(
+            {'level': log_console_level})
+        LOG_SETTINGS['handlers']['file'].update(
+            {'filename': log_file_name})
+        dictConfig(LOG_SETTINGS)
+
+    logger = logging.getLogger(name)
+    if not_previously_configured:
+        logger.info('Logfile: ' + os.path.abspath(log_file_name))
+        logger.info('Package: %s v%s' % (PACKAGE, VERSION))
+    return logger
+
+
+class LoggerWriter:
+    '''
+    Class for making a logger behave like a file.
+
+    A typical usage is to us a LoggerWriter as an argument to
+    contextlib.redirect_stdout() so that anything emitted to stdout
+    (within python) is logged at the specified level.
+    '''
+
+    def __init__(self, logger, level, name=None):
+        self.logger = logger
+        if isinstance(level, str):
+            level = getattr(logging, level.upper())
+        self.level = level
+        self.name = name
+
+    def write(self, message):
+        '''
+        Simulate file.write().
+        '''
+        if message != '\n':
+            if self.name:
+                message = self.name + ' - ' + message
+            self.logger.log(self.level, message)
+
+    def flush(self):
+        '''
+        Simulate file.flush().
+        '''
