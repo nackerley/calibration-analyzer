@@ -751,11 +751,11 @@ class CalibrationAnalyzer():
                 'Integrating %d times, from %s to %s' %
                 (integration_order, cal.input_units, sensor.input_units))
             poles = np.array([0]*integration_order + list(poles))
-            gain /= (2*np.pi*cal.normalization_frequency)**integration_order
+            # TODO: verify minus sign
+            gain /= (-2*np.pi*cal.normalization_frequency)**integration_order
 
-        # TODO: figure out why the gain needs to be inverted!
         self.lti['cal'] = lti_from_zpsf(
-            zeros, poles, -gain, cal.normalization_frequency)
+            zeros, poles, gain, cal.normalization_frequency)
         self.logger.debug('Cal: ' + str(self.lti['cal']))
 
         self.lti['sensor'] = lti_from_zpsf(
@@ -850,7 +850,8 @@ class CalibrationAnalyzer():
             trace.stats.response.instrument_sensitivity.value /
             trace.stats.response.response_stages[0].stage_gain
             for trace in stream]).reshape((-1, 1))
-        self.logger.debug(digitizer_sensitivity.squeeze())
+        self.logger.debug(
+            'Digitizer sensitivities: ' + str(digitizer_sensitivity.squeeze()))
         signal /= digitizer_sensitivity
 
         return signal
