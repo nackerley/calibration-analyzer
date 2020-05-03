@@ -681,6 +681,8 @@ class CalibrationAnalyzer():
                 'recalculated value %.6g %s by more than %g%%.' %
                 (instrument_sensitivity, units,
                  response.instrument_sensitivity.value, units, CHECK_PERCENT))
+
+        motion = MOTION[response.response_stages[0].input_units]
         normalization_factor = response.response_stages[0].normalization_factor
         for stage in response.response_stages:
             if not hasattr(stage, 'normalization_factor'):
@@ -688,7 +690,7 @@ class CalibrationAnalyzer():
             stage.normalization_factor *= np.abs(
                 response.get_evalresp_response_for_frequencies(
                     np.array([stage.normalization_frequency]),
-                    'ACC',
+                    motion,
                     start_stage=stage.stage_sequence_number,
                     end_stage=stage.stage_sequence_number)
                 )[0]/abs(stage.stage_gain)
@@ -732,44 +734,34 @@ class CalibrationAnalyzer():
         the conversion from ground motion to voltage, so to convert voltage to
         ground motion it is inverted.
         '''
-        cal = self._cal_stage()
         sensor = self._sensor_stage()
-
-        zeros, poles, gain = cal.poles, cal.zeros, 1/cal.stage_gain
-        if sensor.input_units.lower() == cal.input_units.lower():
-            integration_order = 0
-        elif sensor.input_units.lower() == 'm/s':
-            integration_order = 1
-        else:
-            self.logger.warning(
-                'Unsure how to convert calibration output [%s] to sensor '
-                'input [%s]: ' % (cal.input_units, sensor.input_units))
-            integration_order = 0
-
-        if integration_order:
-            self.logger.debug(
-                'Integrating %d times, from %s to %s' %
-                (integration_order, cal.input_units, sensor.input_units))
-            poles = np.array([0]*integration_order + list(poles))
-            # TODO: verify minus sign
-            gain /= (-2*np.pi*cal.normalization_frequency)**integration_order
-
-        self.lti['cal'] = lti_from_zpsf(
-            zeros, poles, gain, cal.normalization_frequency)
-        self.logger.debug('Cal: ' + str(self.lti['cal']))
-
         self.lti['sensor'] = lti_from_zpsf(
             sensor.zeros, sensor.poles, sensor.stage_gain,
             sensor.normalization_frequency)
         self.logger.debug('Sensor: ' + str(self.lti['sensor']))
 
-        all_zeros = (self.lti['cal'].zeros.tolist() +
-                     self.lti['sensor'].zeros.tolist())
-        all_poles = (self.lti['cal'].poles.tolist() +
-                     self.lti['sensor'].poles.tolist())
-        total_gain = self.lti['cal'].gain*self.lti['sensor'].gain
+        cal = self._cal_stage()
+        cal_zeros, cal_poles, cal_gain = cal.poles, cal.zeros, 1/cal.stage_gain
+        integrations = (ORDER[MOTION[sensor.input_units]] -
+                        ORDER[MOTION[cal.input_units]])
+        if integrations:
+            self.logger.debug(
+                'Integrating %d times, from %s to %s' %
+                (integrations, cal.input_units, sensor.input_units))
+            cal_poles = np.array([0]*integrations + list(cal_poles))
+            # TODO: verify minus sign
+            cal_gain /= (-2*np.pi*cal.normalization_frequency)**integrations
+        self.lti['cal'] = lti_from_zpsf(
+            cal_zeros, cal_poles, cal_gain, cal.normalization_frequency)
+        self.logger.debug('Cal: ' + str(self.lti['cal']))
+
+        system_zeros = (self.lti['cal'].zeros.tolist() +
+                        self.lti['sensor'].zeros.tolist())
+        system_poles = (self.lti['cal'].poles.tolist() +
+                        self.lti['sensor'].poles.tolist())
+        system_gain = self.lti['cal'].gain*self.lti['sensor'].gain
         self.lti['system'] = minreal(
-            sig.lti(all_zeros, all_poles, total_gain))
+            sig.lti(system_zeros, system_poles, system_gain))
         self.logger.debug('System: ' + str(self.lti['system']))
 
     def tf_nominal(self, model, f=None):
@@ -809,7 +801,7 @@ class CalibrationAnalyzer():
         #         2*np.pi*f, 'ACC', end_stage=1)
         #     tf_cal *= (2j*np.pi*f)**ORDER[motion]
         # if model in ['sensor', 'system']:
-        #     tf_sensor = output_response.get_evalresp_response_for_frequencies(
+        #   tf_sensor = output_response.get_evalresp_response_for_frequencies(
         #         2*np.pi*f, motion, end_stage=1)
 
         if model == 'cal':
