@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from calan.utilities import parse_duration, parse_voltage
-from calan.core import compute_decim_delay
+from calan.core import compute_decim_delay, get_logger
 
 # %% constants
 
@@ -20,6 +20,28 @@ CALIBRATION_SAMPLE_RATE = 30e3
 
 
 # %% definitions
+def generate_piecewise_constant(durations, voltages):
+    '''
+    Generate a piecewise constant calibration signal in volts.
+    '''
+    logger = get_logger(__name__)
+    durations = np.asarray(durations)
+    voltages = np.asarray(voltages)
+
+    file_name = 'step_%s' % '_'.join(
+        ['%gV_%ss' % (voltage, duration)
+         for voltage, duration in zip(voltages, durations)])
+    file_size = expected_wav_size(durations.sum())
+    logger.debug('Uncompressed output "%s.wav" will be %s.'
+                 % (file_name, file_size))
+
+    times = durations.cumsum()
+    t = np.arange(0, durations.sum(), 1/CALIBRATION_SAMPLE_RATE).reshape(-1, 1)
+    indices = np.argmax(t < times, axis=1)
+
+    return voltages[indices], file_name
+
+
 def parse_signal_file_name(file_name):
     '''
     Parse a calibration signal file name.
