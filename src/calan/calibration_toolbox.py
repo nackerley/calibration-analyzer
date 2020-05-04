@@ -7,16 +7,18 @@ from __future__ import absolute_import, division, print_function
 
 import os
 from warnings import warn
+from struct import calcsize
 import numpy as np
 import matplotlib.pyplot as plt
 
-from calan.utilities import parse_duration, parse_voltage
+from calan.utilities import parse_duration, parse_voltage, pretty_bytes
 from calan.core import compute_decim_delay, get_logger
 
 # %% constants
 
 # Nanometrics Centaur User Guide 17935R5, 2016-11-02
 CALIBRATION_SAMPLE_RATE = 30e3
+SAMPLE_FORMAT = '<h'  # little-endian short (16-bit) integer
 
 
 # %% definitions
@@ -40,6 +42,14 @@ def generate_piecewise_constant(durations, voltages):
     indices = np.argmax(t < times, axis=1)
 
     return voltages[indices], file_name
+
+
+def expected_wav_size(duration):
+    '''
+    Compute expected size before compression.
+    '''
+    return pretty_bytes(
+        calcsize(SAMPLE_FORMAT)*duration*CALIBRATION_SAMPLE_RATE)
 
 
 def parse_signal_file_name(file_name):
