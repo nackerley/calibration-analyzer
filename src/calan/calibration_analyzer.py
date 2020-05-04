@@ -274,16 +274,16 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
             analyzer.estimate_errors()
 
         if plot or diagnostic:
-            analyzer.plot_transfer_function()
-            analyzer.plot_transfer_function(remove='cal')
+            analyzer.plot_transfer_function(remove='system', errors='estimate')
+            analyzer.plot_transfer_function(remove='cal', errors='estimate')
             analyzer.plot_variance()
 
         if diagnostic:
-            analyzer.plot_transfer_function(remove='')
-            analyzer.plot_transfer_function(scale='linear',
-                                            treat_errors='estimate')
-            analyzer.plot_transfer_function(scale='log',
-                                            treat_errors='correct')
+            analyzer.plot_transfer_function(remove='', errors='')
+            analyzer.plot_transfer_function(remove='system', errors='estimate',
+                                            scale='linear')
+            analyzer.plot_transfer_function(remove='system', errors='correct',
+                                            scale='log')
             analyzer.plot_signal_to_noise()
             analyzer.plot_response('sensor', f_limits=[1e-3, 1e2])
             analyzer.plot_response('system', f_limits=[1e-3, 1e2])
@@ -367,7 +367,7 @@ class Fit():
         return (
             'gain error %g%% ±%g%% (%.0f%% conf.)' %
             (round_sig(100*(self.gain.params - 1), digits),
-             round_sig(100*self._num_sigma()*self.timing.bse, 1),
+             round_sig(100*self._num_sigma()*self.gain.bse, 1),
              100*self.confidence))
 
 
@@ -1061,7 +1061,7 @@ class CalibrationAnalyzer():
 
         return signal
 
-    def estimate_errors(self, variance_threshhold=0.01):
+    def estimate_errors(self, variance_threshhold=0.03):
         '''
         Least-squares estimation of gain and timing errors.
 
@@ -1144,7 +1144,9 @@ class CalibrationAnalyzer():
         weights = np.sqrt(1/variance)
 
         self.fit.gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
+        self.logger.info(self.fit.gain_summary())
         self.fit.timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
+        self.logger.info(self.fit.timing_summary())
 
     def _save_image(self, fig, option_list=None):
         '''
@@ -1358,7 +1360,7 @@ class CalibrationAnalyzer():
 
         self._save_image(fig)
 
-    def plot_transfer_function(self, remove='system', treat_errors='',
+    def plot_transfer_function(self, remove='system', errors='estimate',
                                scale='log', variance_threshhold=None):
         '''
         Plot calibration transfer function on log or linear scale.
@@ -1370,9 +1372,9 @@ class CalibrationAnalyzer():
             * 'linear'
         remove: str, optional, which nominal response to remove:
             * '': no response removal
-            * 'cal': remove nominal calibration input response
             * 'system': remove nominal system resposne (default)
-        treat_errors : str, optional, how to treat gain and phase errors:
+            * 'cal': remove nominal calibration input response
+        errors : str, optional, how to treat gain and phase errors:
             * '': no estimation or correction
             * 'estimate': estimate only (default)
             * 'correct': estimate and correct
@@ -1382,8 +1384,8 @@ class CalibrationAnalyzer():
         if remove and remove not in ['cal', 'system']:
             raise ValueError(
                 "Removal of '%s' response not supported" % remove)
-        if treat_errors and treat_errors not in ['estimate', 'correct']:
-            raise ValueError("Cannot '%s' errors" % treat_errors)
+        if errors and errors not in ['estimate', 'correct']:
+            raise ValueError("Cannot '%s' errors" % errors)
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
 
@@ -1406,13 +1408,13 @@ class CalibrationAnalyzer():
                 tf_estimate /= tf_remove
                 tf_nominal /= tf_remove
 
-        if treat_errors:
+        if errors:
             if self.fit.gain is None or self.fit.timing is None:
                 raise RuntimeError('Run estimate_errors() first.')
 
             tf_error = tf_nominal*np.exp(1j*2*np.pi*f*self.fit.timing.params)
             tf_error *= self.fit.gain.params
-        if treat_errors == 'correct':
+        if errors == 'correct':
             with np.errstate(divide='ignore', invalid='ignore'):
                 tf_estimate /= self.fit.gain.params
             tf_estimate /= np.exp(1j*2*np.pi*f*self.fit.timing.params)
@@ -1441,11 +1443,11 @@ class CalibrationAnalyzer():
             axes[0].plot(f, gain_nominal, label='nominal')
         axes[0].set_ylim((floor(gain_spec.min()) - 1,
                           ceil(gain_spec.max()) + 1))
-        if treat_errors == 'estimate':
+        if errors == 'estimate':
             axes[0].plot(f, 20*np.log10(np.abs(tf_error)), label='error')
 
         for phase, label in zip(phase_estimate, labels):
-            axes[1].plot(f, unwrap_mid(phase, f, discont=180), label=label)
+            axes[1].plot(f, phase, label=label)
 
         axes[1].set_xlabel('Frequency [Hz]')
 
@@ -1454,8 +1456,8 @@ class CalibrationAnalyzer():
                          label='nominal')
         axes[1].set_ylim((floor(phase_spec.min()) - 10,
                           ceil(phase_spec.max()) + 10))
-        if treat_errors == 'estimate':
-            axes[1].plot(f, np.degrees(np.angle(tf_error)), label='error')
+        if errors == 'estimate':
+            axes[1].plot(f, np.angle(tf_error, deg=True), label='error')
 
         max_mag_db = 20*np.log10((1 + self.info['spec_max_amp_pct']/100))
         max_phase_deg = self.info['spec_max_phase_deg']
@@ -1486,13 +1488,13 @@ class CalibrationAnalyzer():
             axes[0].set_ylabel('Gain [dB]')
         axes[1].set_ylabel('Phase [°]')
 
-        if treat_errors:
+        if errors:
             axes[0].annotate(self.fit.gain_summary(), (0.025, 0.95),
                              xycoords='axes fraction', ha='left', va='top')
             axes[1].annotate(self.fit.timing_summary(), (0.025, 0.95),
                              xycoords='axes fraction', ha='left', va='top')
-        if treat_errors:
-            option_list.append(treat_errors + '_errors')
+        if errors:
+            option_list.append(errors + '_errors')
 
         axes[0].set_xscale(scale)
         if scale != 'log':
