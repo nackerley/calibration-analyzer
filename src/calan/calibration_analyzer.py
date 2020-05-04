@@ -269,9 +269,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
         analyzer.test(test_band_hz=test_band_hz,
                       max_amplitude_percent=test_limits[0],
                       max_phase_degrees=test_limits[1])
-
-        if diagnostic:
-            analyzer.estimate_errors()
+        analyzer.estimate_errors()
 
         if plot or diagnostic:
             analyzer.plot_transfer_function(remove='system', errors='estimate')
