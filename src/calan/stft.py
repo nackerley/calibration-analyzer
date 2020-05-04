@@ -123,7 +123,9 @@ class Stft():
         '''
         f_expected = fft_frequencies(len_fft, f_sample)
         if len(x.shape) == 1:
-            x = x.reshape((-1, 1))
+            x = x.reshape((1, -1))
+        if len(y.shape) == 1:
+            y = y.reshape((1, -1))
         num_samples = x.shape[1]
         if y.shape[1] != num_samples:
             raise ValueError(

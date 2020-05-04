@@ -6,6 +6,10 @@ Temperature data can be appended with provision of a weather station ID.
 Use this inventory to look up the nearest wether station:
 ftp://client_climate@ftp.tor.ec.gc.ca/Pub/Get_More_Data_Plus_de_donnees/Station%20Inventory%20EN.csv
 
+Limitations
+-----------
+Currently only supports calibration of one channel at at time.
+
 Author: Nick Ackerley
 """
 import os
@@ -18,7 +22,6 @@ import pytz
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
-from pkg_resources import get_distribution
 from urllib.parse import urlencode, urlunsplit
 from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
@@ -26,9 +29,9 @@ from obspy import read, read_inventory
 from obspy.core.inventory.response import \
     PolesZerosResponseStage, CoefficientsTypeResponseStage
 
-from calan.core import Stft, get_clients, PACKAGE
-from calan.utilities import (
-    MyArgumentParser, MyFormatter, get_logger)
+from calan.core import PACKAGE, VERSION, get_clients, get_logger
+from calan.utilities import MyArgumentParser, MyFormatter
+from calan.stft import Stft
 
 # calibration circuit parameter estimates
 MASS_KG = 5
@@ -85,10 +88,10 @@ class SynchronousCalibrationAnalyzer():
 
     TIME_ZONE_FINDER = TimezoneFinder()
 
-    def __init__(self, log_file_name=LOG_FILE_NAME, plot=False, dpi=DPI):
+    def __init__(self, plot=False, dpi=DPI):
 
         # helpers
-        self.logger = get_logger(__name__, log_file_name)
+        self.logger = get_logger(__name__, LOG_FILE_NAME)
         self.plot = plot
         self.dpi = dpi
         self.client = get_clients()[0]
@@ -117,10 +120,10 @@ class SynchronousCalibrationAnalyzer():
         self.test_name = (os.path.splitext(output_file)[0]
                           .replace(output_label, ''))
 
-        self.logger.info(output_file)
+        self.logger.info('Output: ' + output_file)
         output_stream = read(output_file)
 
-        self.logger.info(input_file)
+        self.logger.info('Input: ' + input_file)
         input_stream = read(input_file)
 
         self.stream = input_stream + output_stream
@@ -202,7 +205,7 @@ class SynchronousCalibrationAnalyzer():
         self.stream.attach_response(inventory)
 
     def compute_peak_response(self, len_fft=LEN_FFT, len_overlap=LEN_OVERLAP,
-                              min_coherence=MIN_COHERENCE, window=WINDOW):
+                              min_rel_power=1e-4, window=WINDOW):
         '''
         Compute relative transfer function estimate at spectral peak.
         '''
@@ -213,19 +216,18 @@ class SynchronousCalibrationAnalyzer():
         self.f_lim = (self.stft.f[1], self.stft.f[-1])
         self.stft.trim()
         f = self.stft.f
-        p_xx = np.mean(self.stft.p_xx, axis=1)
-        p_yy = np.mean(self.stft.p_yy, axis=1)
-        # H(f) = Y(f)/X(f) = voltage/acceleration = (voltage/velocity)/omega
-        tfe = self.stft.tf_estimate(alpha=0)
+        p_xx = self.stft._mean(self.stft.p_xx).squeeze()
+        p_yy = self.stft._mean(self.stft.p_yy).squeeze()
+        tfe = self.stft.tf_estimate(alpha=0).squeeze()
         gain = np.abs(tfe)
         phase = np.angle(tfe, deg=True)
-        coherence = np.sqrt(self.stft.coherence_squared())
-        variance = self.stft.variance()
+        coherence = np.sqrt(self.stft.coherence_squared()).squeeze()
+        variance = self.stft.variance().squeeze()
 
         peak = p_xx.argmax()
         coherent = range(
-            peak - (coherence[peak::-1] > min_coherence).argmin() + 1,
-            peak + (coherence[peak:] > min_coherence).argmin())
+            peak - (p_xx[peak::-1]/p_xx[peak] > min_rel_power).argmin() + 1,
+            peak + (p_xx[peak:]/p_xx[peak] > min_rel_power).argmin())
 
         self.peak_variance = variance[peak]
         self.gain_coherent = (
@@ -276,7 +278,7 @@ class SynchronousCalibrationAnalyzer():
             axes[3].semilogx(f, coherence, color='black')
             axes[3].set_xlabel('Frequecy [Hz]')
 
-            for i, ax in enumerate(axes):
+            for ax in axes:
                 ax.axvline(f[peak],
                            linestyle='--', color='black', linewidth=0.5)
                 ax.axvspan(f[coherent[0]], f[coherent[-1]],
@@ -290,7 +292,7 @@ class SynchronousCalibrationAnalyzer():
                 'spectra_%g-%gHz_%s.png' % tuple(
                     list(self.f_lim) + [os.path.basename(self.test_name)]))
 
-            self.logger.info('Saving: ' + summary_png)
+            get_logger(__name__).info('Saving: ' + summary_png)
             fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
 
     def get_temperature(self, dt_utc, station_id=WEATHER_STATION_ID,
@@ -298,7 +300,6 @@ class SynchronousCalibrationAnalyzer():
         '''
         Get temperature near station at given time.
         '''
-        logger = get_logger(__name__)
         tz = pytz.timezone(time_zone)
         dt_local = tz.fromutc(dt_utc)
 
@@ -326,7 +327,7 @@ class SynchronousCalibrationAnalyzer():
             self.logger.error(repr(ex))
             result = np.NaN
 
-        logger.info('Temperature: %g°C' % result)
+        self.logger.info('Temperature: %g°C' % result)
         return result
 
     def summary(self, station_id=WEATHER_STATION_ID,
@@ -342,7 +343,7 @@ class SynchronousCalibrationAnalyzer():
         result['f_max [Hz]'] = self.f_lim[1]
         result['windows'] = self.stft.p_xx.shape[1]
         result['f_peak [Hz]'] = self.stft.f[
-            np.mean(self.stft.p_xx, axis=1).argmax()]
+            np.mean(self.stft.p_xx, axis=2).squeeze().argmax()]
         result['gain [dB]'] = 20*np.log10(self.gain_coherent)
         result['phase [°]'] = self.phase_coherent
         result['normalized error'] = np.sqrt(self.peak_variance)
@@ -396,7 +397,7 @@ def _argparser():
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
         '-v', '--version', action='version',
-        version='%s %s' % (PACKAGE, get_distribution(PACKAGE).version))
+        version='%s %s' % (PACKAGE, VERSION))
     return parser
 
 
@@ -421,8 +422,8 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
 
     if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
             not os.access(summary_csv, os.W_OK):
-        analyzer.logger.error('Will not be able to write summary to %s.' %
-                              summary_csv)
+        analyzer.logger.error(
+            'Will not be able to write summary to %s.' % summary_csv)
         return ''
 
     calibration_files = sorted([item for item in glob(pattern)
