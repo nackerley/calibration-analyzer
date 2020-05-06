@@ -32,7 +32,7 @@ from calan import chis_archive
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 PACKAGE = os.path.basename(os.path.dirname(__file__))
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 NEDB_STACHAN_FILE = os.path.join(ROOT, 'data', 'stachans.txt')
 
 CHIS_FDSN_SERVERS = (

@@ -949,7 +949,7 @@ class CalibrationAnalyzer():
         info['pre_s'] = self._pre_seconds()
         info['post_s'] = self._post_seconds()
         info['sampling_rate_sps'] = self._sampling_rate()
-        info['windows'] = self.stft.p_xx.shape[0]
+        info['windows'] = self.stft.num_windows()
         info['windows'] = info['windows'].astype(int)
         info['timing error estimate [s]'] = self.fit.timing.params[0]
         info['timing error uncertainty [s]'] = (

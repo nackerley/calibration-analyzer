@@ -116,6 +116,12 @@ class Stft():
                 p_xy = np.reshape(p_xy, p_xy.shape[:-1])
         return p_xy
 
+    def num_windows(self):
+        '''
+        Returns the number of windows used.
+        '''
+        return self.p_xx.shape[2]
+
     def compute(self, x, y, f_sample, len_fft, len_overlap, window='hann'):
         '''
         Each segment is detrended by removing a constant value before
