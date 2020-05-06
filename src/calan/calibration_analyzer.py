@@ -951,12 +951,13 @@ class CalibrationAnalyzer():
         info['sampling_rate_sps'] = self._sampling_rate()
         info['windows'] = self.stft.num_windows()
         info['windows'] = info['windows'].astype(int)
-        info['timing error estimate [s]'] = self.fit.timing.params[0]
-        info['timing error uncertainty [s]'] = (
-            self.fit._num_sigma()*self.fit.timing.bse[0])
-        info['gain error estimate [%]'] = 100*(self.fit.gain.params[0] - 1)
-        info['gain error uncertainty [%]'] = 100*(
-            self.fit._num_sigma()*self.fit.gain.bse[0])
+        info['timing error estimate [s]'] = round(self.fit.timing.params[0], 6)
+        info['timing error uncertainty [s]'] = round(
+            self.fit._num_sigma()*self.fit.timing.bse[0], 6)
+        info['gain error estimate [%]'] = round(
+            100*(self.fit.gain.params[0] - 1), 4)
+        info['gain error uncertainty [%]'] = round(
+            100*(self.fit._num_sigma()*self.fit.gain.bse[0]), 4)
         info['confidence [%]'] = self.fit.confidence
 
         # now append row for calibration input
