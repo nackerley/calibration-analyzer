@@ -831,20 +831,6 @@ class CalibrationAnalyzer():
         tf_sensor = sig.freqresp(self.lti['sensor'], 2*np.pi*f)[1]
         tf_cal = sig.freqresp(self.lti['cal'], 2*np.pi*f)[1]
 
-        # this approach isn't working but would lead to major simplification
-        #
-        # input_response = self._input_stream()[0].stats.response
-        # output_response = self._output_stream()[0].stats.response
-        # motion = MOTION[output_response.response_stages[0].input_units]
-
-        # if model in ['cal', 'system']:
-        #     tf_cal = 1/input_response.get_evalresp_response_for_frequencies(
-        #         2*np.pi*f, 'ACC', end_stage=1)
-        #     tf_cal *= (2j*np.pi*f)**ORDER[motion]
-        # if model in ['sensor', 'system']:
-        #   tf_sensor = output_response.get_evalresp_response_for_frequencies(
-        #         2*np.pi*f, motion, end_stage=1)
-
         if model == 'cal':
             return tf_cal
         elif model == 'sensor':
