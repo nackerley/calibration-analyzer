@@ -151,6 +151,7 @@ ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
 
 CHECK_PERCENT = 0.01
 CHECK_CLIP = 8000000
+PLOT_CHOICES = ['basic', 'diagnostic']
 
 
 # %% definitions
@@ -205,12 +206,9 @@ def _argparser():
         '--write_ims', action='store_true',
         help='write IMS2.0 CALIBRATE_RESULT message with FAP2 payload')
     parser.add_argument(
-        '-p', '--plot', action='store_true',
-        help='generate basic plots (start-check, transfer function and '
-        'variance) for each analysis')
-    parser.add_argument(
-        '--diagnostic', action='store_true',
-        help='generate extra diagnostic plots for each analysis')
+        '-p', '--plot', default='none', choices=PLOT_CHOICES,
+        help='generate basic (start & end check, transfer function and '
+        'variance) or diagnostic plots for each calibration')
     parser.add_argument(
         '--dpi', default=DEFAULT_DPI, type=int,
         help='resolution to use for plots in dots per inch')
@@ -230,7 +228,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
                          write_ims=False, test_band_hz=TEST_BAND_HZ,
                          test_limits=(MAX_AMPLITUDE_PERCENT,
                                       MAX_PHASE_DEGREES),
-                         plot=False, diagnostic=False, dpi=DEFAULT_DPI):
+                         plot='', dpi=DEFAULT_DPI):
     '''
     Entry point for CalibrationAnalyzer.
     '''
@@ -241,7 +239,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
         output_parts += pattern_slug.split('_')
     summary_csv = '_'.join(output_parts) + '.csv'
 
-    analyzer = CalibrationAnalyzer(savefig=plot or diagnostic, dpi=dpi)
+    analyzer = CalibrationAnalyzer(savefig=plot != '', dpi=dpi)
     logger = get_logger(__name__)
     if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
             not os.access(summary_csv, os.W_OK):
@@ -265,7 +263,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
         analyzer.check_stream()
         analyzer.setup_nominal_responses()
 
-        if plot or diagnostic:
+        if plot:
             analyzer.plot_check('start')
             analyzer.plot_check('end')
 
@@ -276,12 +274,12 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
                       max_phase_degrees=test_limits[1])
         analyzer.estimate_errors()
 
-        if plot or diagnostic:
+        if plot:
             analyzer.plot_transfer_function(remove='system', errors='estimate')
             analyzer.plot_transfer_function(remove='cal', errors='estimate')
             analyzer.plot_variance()
 
-        if diagnostic:
+        if plot == 'diagnostic':
             analyzer.plot_transfer_function(remove='', errors='')
             analyzer.plot_transfer_function(remove='system', errors='estimate',
                                             scale='linear')
