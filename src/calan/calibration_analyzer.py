@@ -89,6 +89,7 @@ DEFAULT_LEAD_OUT = 360
 DEFAULT_PRE_TIME = 10
 DEFAULT_POST_TIME = 10
 DEFAULT_DELAY_START = 0
+DEFAULT_DISCARD = 0
 
 # %% constants
 THIS_FILE_NAME = os.path.basename(__file__)
@@ -193,6 +194,9 @@ def _argparser():
         '-d', '--delay_start', default=DEFAULT_DELAY_START, type=float,
         help='amount to delay calibration start time, in seconds')
     parser.add_argument(
+        '--discard_s', default=DEFAULT_DISCARD, type=float,
+        help='duration to discard from start and end, in seconds')
+    parser.add_argument(
         '-b', '--test_band_hz', nargs=2, type=float, default=TEST_BAND_HZ,
         metavar=('MIN_FREQUENCY_HZ', 'MAX_FREQUENCY_HZ'),
         help='frequency band, in Hz, over which to apply test limits')
@@ -225,6 +229,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
                          calibration_signal_file=DEFAULT_CAL_SIGNAL_FILE,
                          calibration_response_file=DEFAULT_CAL_RESPONSE_FILE,
                          delay_start=DEFAULT_DELAY_START,
+                         discard_s=DEFAULT_DISCARD,
                          write_ims=False, test_band_hz=TEST_BAND_HZ,
                          test_limits=(MAX_AMPLITUDE_PERCENT,
                                       MAX_PHASE_DEGREES),
@@ -260,7 +265,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
         analyzer.load_response(response_pattern)
         analyzer.load_calibration_signal(calibration_signal_file)
         analyzer.load_calibration_response(calibration_response_file)
-        analyzer.check_stream()
+        analyzer.check_stream(discard_s=discard_s)
         analyzer.setup_nominal_responses()
 
         if plot:
@@ -397,6 +402,7 @@ class CalibrationAnalyzer():
             ('response_file', []),
             ('calibration_signal_file', ''),
             ('calibration_response_file', ''),
+            ('delay_start', 0.0),
             ('start', None),
             ('end', None),
             ('spec_min_freq_hz', np.NaN),
@@ -481,8 +487,15 @@ class CalibrationAnalyzer():
                 trace for trace in self.stream
                 if trace.id != calibration_trace.id] + [calibration_trace]
         else:
+            self.logger.debug(
+                'lead in, out [s]: %g, %g' % (lead_in, lead_out))
+            self.logger.debug(
+                'Pre, post-event [s]: %g, %g' % (pre_time, post_time))
+            self.logger.info(
+                'Delay start [s]: %g' % delay_start)
             self.info['start'] += lead_in + pre_time + delay_start
             self.info['end'] -= lead_out + post_time - delay_start
+            self.info['delay_start'] = delay_start
 
     def _sampling_rate(self):
         '''Return stream sampling rate'''
@@ -593,9 +606,9 @@ class CalibrationAnalyzer():
 
         cache_file = os.path.join(
             gettempdir(),
-            '%s_%gsps%s.%s' % (
+            '%s_%gsps%s_delay%gs.%s' % (
                 calibration_signal_file.replace('.lzma', ''),
-                self._sampling_rate(), phase_suffix,
+                self._sampling_rate(), phase_suffix, self.info['delay_start'],
                 self.CACHE_FORMAT.lower()))
         if os.path.isfile(cache_file):
             self.logger.info('Found cache: %s' % cache_file)
@@ -630,7 +643,7 @@ class CalibrationAnalyzer():
 
         self.stream += stream
 
-    def check_stream(self, discard_s=5):
+    def check_stream(self, discard_s=DEFAULT_DISCARD):
         '''
         Check for: clipping, gaps, misaligned start & end.
 
@@ -936,7 +949,7 @@ class CalibrationAnalyzer():
         info['pre_s'] = self._pre_seconds()
         info['post_s'] = self._post_seconds()
         info['sampling_rate_sps'] = self._sampling_rate()
-        info['windows'] = self.stft.p_xx.shape[1]
+        info['windows'] = self.stft.p_xx.shape[0]
         info['windows'] = info['windows'].astype(int)
         info['timing error estimate [s]'] = self.fit.timing.params[0]
         info['timing error uncertainty [s]'] = (
