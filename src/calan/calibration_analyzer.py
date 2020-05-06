@@ -33,6 +33,8 @@ Nick Ackerley
 import os
 import sys
 import lzma
+from io import StringIO
+from contextlib import redirect_stdout
 from glob import glob
 from operator import mul
 from functools import reduce
@@ -139,12 +141,16 @@ OUTPUT_UNIT_MAP = {
     "ACC": ["M/S**2", "M/(S**2)", "M/SEC**2", "M/(SEC**2)",
             "M/S/S"]}
 MOTION = {}
-UNIT = {}
+UNITS = {}
 for motion, units in OUTPUT_UNIT_MAP.items():
-    UNIT[motion] = units[0]
+    UNITS[motion] = units[0]
     for unit in units:
         MOTION[unit] = motion
 ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
+
+
+CHECK_PERCENT = 0.01
+CHECK_CLIP = 8000000
 
 
 # %% definitions
@@ -256,12 +262,11 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
         analyzer.load_response(response_pattern)
         analyzer.load_calibration_signal(calibration_signal_file)
         analyzer.load_calibration_response(calibration_response_file)
+        analyzer.check_stream()
         analyzer.setup_nominal_responses()
 
         if plot or diagnostic:
             analyzer.plot_check('start')
-
-        if diagnostic:
             analyzer.plot_check('end')
 
         analyzer.compute(num_windows=num_windows, len_fft=len_fft or None,
@@ -374,8 +379,6 @@ class CalibrationAnalyzer():
     A calibration signal analyzer based on :class:`obspy.Stream`.
     '''
     CACHE_FORMAT = 'MSEED'
-    SUPPORTED_CAL_INPUT_UNITS = ['m/s**2']
-    SUPPORTED_SENSOR_INPUT_UNITS = ['m/s', 'm/s**2']
 
     def __init__(self, log_level='INFO', savefig=True, dpi=DEFAULT_DPI):
         '''
@@ -431,14 +434,14 @@ class CalibrationAnalyzer():
         for key, value in self.info.items():
             lines.append('\t\t%s: %s' % (key, value))
         lines += ['\t' + line
-                  for line in self.stream.__str__().strip().split('\n')]
+                  for line in str(self.stream).strip().split('\n')]
         lines += ['\tNominal:']
         for key, value in self.lti.items():
             lines.append('\t\t%s: %s' % (key, value))
         lines += ['\t' + line
-                  for line in self.stft.__str__().strip().split('\n')]
+                  for line in str(self.stft).strip().split('\n')]
         lines += ['\t' + line
-                  for line in self.fit.__str__().strip().split('\n')]
+                  for line in str(self.fit).strip().split('\n')]
         return '\n'.join(lines)
 
     def __repr__(self):
@@ -471,8 +474,6 @@ class CalibrationAnalyzer():
         self.info['waveform_file'] = waveform_file
         self.info['start'] = self.stream[0].stats.starttime
         self.info['end'] = self.stream[0].stats.endtime
-
-        # TODO: check for gaps & clipping
 
         self.stream.sort()
         calibration_trace = next((trace for trace in self.stream
@@ -557,11 +558,12 @@ class CalibrationAnalyzer():
             for trace in self.stream]
 
         sensor = self._sensor_stage()
-        if sensor.input_units.lower() not in self.SUPPORTED_SENSOR_INPUT_UNITS:
+        if sensor.input_units.upper() not in MOTION:
             self.logger.error(
                 'Sensor input units %s not among supported: ' %
-                (sensor.input_units,
-                 ', '.join(self.SUPPORTED_SENSOR_INPUT_UNITS)))
+                (sensor.input_units, ', '.join(sorted(MOTION.keys()))))
+
+        self.logger.debug(str(self._output_stream()[0].stats.response))
 
     def load_calibration_signal(self, calibration_signal_file):
         '''
@@ -570,8 +572,8 @@ class CalibrationAnalyzer():
         nominal response.
         '''
         if self._input_stream().traces:
-            self.logger.error(
-                'Waveform data already includes calibration channel')
+            self.logger.warning(
+                'Waveform data already includes calibration channel.')
             return
 
         self.logger.info(calibration_signal_file)
@@ -630,6 +632,44 @@ class CalibrationAnalyzer():
 
         self.stream += stream
 
+    def check_stream(self, discard_s=2):
+        '''
+        Check for: clipping, gaps, misaligned start & end.
+
+        An additional, small amount of data is discarded from start and end,
+        before checking.
+        '''
+        self.info['start'] = self.info['start'] + discard_s
+        self.info['end'] = self.info['end'] - discard_s
+
+        last_start = max([trace.stats.starttime for trace in self.stream])
+        if self.info['start'] < last_start:
+            self.logger.warning(
+                'Data missing, delaying start to %s' % last_start)
+            self.info['start'] = last_start + discard_s
+
+        first_end = min([trace.stats.endtime for trace in self.stream])
+        if self.info['end'] < first_end:
+            self.logger.warning(
+                'Data missing, advancing end to %s' % first_end)
+            self.info['end'] = first_end - discard_s
+        self.logger.debug(str(self.stream))
+
+        if self.stream.get_gaps():
+            with StringIO() as buffer, redirect_stdout(buffer):
+                self.stream.print_gaps()
+                self.logger.warning(buffer.getvalue())
+            raise RuntimeError('Cannot process waveforms with gaps.')
+
+        for trace in self._output_stream():
+            clipping = np.abs(trace.data) > CHECK_CLIP
+            if any(clipping):
+                i = np.argmax(clipping)
+                self.logger.warning(
+                    'Potential clipping (|%d| > %d) counts on %s at %s' %
+                    (trace.data[i], CHECK_CLIP, trace.id,
+                     trace.stats.starttime + i*trace.stats.delta))
+
     def _pad_lead_in_out(self, samples, factor):
         sampling_rate = self._sampling_rate()*factor
         return np.hstack((
@@ -668,30 +708,31 @@ class CalibrationAnalyzer():
         # takes the absolute value!
         response.instrument_sensitivity.value = np.prod([
             stage.stage_gain for stage in response.response_stages])
-        CHECK_PERCENT = 0.01
 
         if not np.isclose(response.instrument_sensitivity.value,
                           instrument_sensitivity, rtol=CHECK_PERCENT/100):
-            units = '%s/(%s)' % (response.instrument_sensitivity.output_units,
-                                 response.instrument_sensitivity.input_units)
+            units = '%s/(%s)' % (
+                response.instrument_sensitivity.output_units,
+                response.instrument_sensitivity.input_units.lower())
             self.logger.warning(
                 'Instrument sensitivity %.6g %s in file differs from '
                 'recalculated value %.6g %s by more than %g%%.' %
                 (instrument_sensitivity, units,
                  response.instrument_sensitivity.value, units, CHECK_PERCENT))
 
-        motion = MOTION[response.response_stages[0].input_units]
-        normalization_factor = response.response_stages[0].normalization_factor
         for stage in response.response_stages:
-            if not hasattr(stage, 'normalization_factor'):
+            try:
+                normalization_factor = stage.normalization_factor
+            except AttributeError:
                 continue
-            stage.normalization_factor *= np.abs(
-                response.get_evalresp_response_for_frequencies(
-                    np.array([stage.normalization_frequency]),
-                    motion,
-                    start_stage=stage.stage_sequence_number,
-                    end_stage=stage.stage_sequence_number)
-                )[0]/abs(stage.stage_gain)
+            stage_lti = lti_from_zpsf(
+                stage.zeros, stage.poles, stage.stage_gain,
+                stage.normalization_frequency)
+            stage_gain = sig.freqresp(
+                stage_lti,
+                2*np.pi*stage.normalization_frequency)[1][0]
+            stage.normalization_factor *= (np.abs(stage_gain) /
+                                           abs(stage.stage_gain))
             if np.isclose(stage.normalization_factor,
                           normalization_factor, rtol=CHECK_PERCENT/100):
                 continue
@@ -701,26 +742,28 @@ class CalibrationAnalyzer():
                 (stage.stage_sequence_number, normalization_factor,
                  stage.normalization_factor, CHECK_PERCENT))
 
+        if MOTION[response.response_stages[0].input_units.upper()] != 'ACC':
+            self.logger.warning(
+                'Expected calibration input [%s] to be acceleration [%s]: ' %
+                (response.response_stages[0].input_unit, UNITS['ACC']))
+
         decimation_stages = [
             stage for stage in self.stream[0].stats.response.response_stages
             if stage.decimation_factor and stage.decimation_factor > 1]
+        input_stages = [
+            stage for stage in response.response_stages
+            if not stage.decimation_factor or stage.decimation_factor == 1]
 
         self._input_stream()[0].stats.response = Response(
-            response_stages=response.response_stages[:2] + decimation_stages,
+            response_stages=input_stages + decimation_stages,
             instrument_sensitivity=response.instrument_sensitivity)
         for i, stage in enumerate(
                 self._input_stream()[0].stats.response.response_stages,
                 start=1):
             stage.stage_sequence_number = i
 
-        if self._cal_stage().input_units.lower() \
-                not in self.SUPPORTED_CAL_INPUT_UNITS:
-            self.logger.error(
-                'Calibration input units %s not among supported: ' %
-                (self._cal_stage().input_units,
-                 ', '.join(self.SUPPORTED_CAL_INPUT_UNITS)))
-
         self.info['calibration_response_file'] = response_file
+        self.logger.debug(str(self._input_stream()[0].stats.response))
 
     def setup_nominal_responses(self):
         '''
@@ -740,8 +783,8 @@ class CalibrationAnalyzer():
 
         cal = self._cal_stage()
         cal_zeros, cal_poles, cal_gain = cal.poles, cal.zeros, 1/cal.stage_gain
-        integrations = (ORDER[MOTION[sensor.input_units]] -
-                        ORDER[MOTION[cal.input_units]])
+        integrations = (ORDER[MOTION[sensor.input_units.upper()]] -
+                        ORDER[MOTION[cal.input_units.upper()]])
         if integrations:
             self.logger.debug(
                 'Integrating %d times, from %s to %s' %
@@ -787,20 +830,6 @@ class CalibrationAnalyzer():
 
         tf_sensor = sig.freqresp(self.lti['sensor'], 2*np.pi*f)[1]
         tf_cal = sig.freqresp(self.lti['cal'], 2*np.pi*f)[1]
-
-        # this approach isn't working but would lead to major simplification
-        #
-        # input_response = self._input_stream()[0].stats.response
-        # output_response = self._output_stream()[0].stats.response
-        # motion = MOTION[output_response.response_stages[0].input_units]
-
-        # if model in ['cal', 'system']:
-        #     tf_cal = 1/input_response.get_evalresp_response_for_frequencies(
-        #         2*np.pi*f, 'ACC', end_stage=1)
-        #     tf_cal *= (2j*np.pi*f)**ORDER[motion]
-        # if model in ['sensor', 'system']:
-        #   tf_sensor = output_response.get_evalresp_response_for_frequencies(
-        #         2*np.pi*f, motion, end_stage=1)
 
         if model == 'cal':
             return tf_cal
@@ -869,7 +898,7 @@ class CalibrationAnalyzer():
         num_windows = num_windows_welch(num_samples, len_fft, len_overlap)
 
         self.stft.compute(x, y, f_sample, len_fft, len_overlap, window)
-        self.stft.trim()
+        self.stft.trim(low_frequency_points=2)
 
     def summary(self):
         '''
@@ -901,13 +930,23 @@ class CalibrationAnalyzer():
         for key, value in pd.Series(self.info).drop(
                 ['start', 'end', 'calibration_signal_file',
                  'calibration_response_file']).items():
-            info[key] = value
+            try:
+                info[key] = value
+            except ValueError:
+                info[key] = value[:info.shape[0]]
         info['duration_s'] = self.info['end'] - self.info['start']
         info['pre_s'] = self._pre_seconds()
         info['post_s'] = self._post_seconds()
         info['sampling_rate_sps'] = self._sampling_rate()
         info['windows'] = self.stft.p_xx.shape[1]
         info['windows'] = info['windows'].astype(int)
+        info['timing error estimate [s]'] = self.fit.timing.params[0]
+        info['timing error uncertainty [s]'] = (
+            self.fit._num_sigma()*self.fit.timing.bse[0])
+        info['gain error estimate [%]'] = 100*(self.fit.gain.params[0] - 1)
+        info['gain error uncertainty [%]'] = 100*(
+            self.fit._num_sigma()*self.fit.gain.bse[0])
+        info['confidence [%]'] = self.fit.confidence
 
         # now append row for calibration input
         info = info.append(pd.Series(
@@ -1179,7 +1218,7 @@ class CalibrationAnalyzer():
         self.logger.info(output_png)
         fig.savefig(output_png, dpi=self.dpi, bbox_inches='tight')
 
-    def plot_check(self, where='start', window_seconds=5):
+    def plot_check(self, where='start', window_seconds=10):
         '''
         Spot check critical times in the calibration
         '''

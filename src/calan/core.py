@@ -419,6 +419,8 @@ def factor_names(stream):
     The first item in the tuple is the part which is common to all traces;
     the second item in the tuple is a list of the parts which differ.
     '''
+    if len(stream) == 1:
+        return stream[0].id[:-1], stream[0].id[-1]
     full_names = long_names(stream)
     sames = [letters[1:] == letters[:-1] for letters in zip(*full_names)]
     short_names = [''.join(letter for letter, same in zip(name, sames)
