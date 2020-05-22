@@ -31,9 +31,9 @@ from calan.utilities import string_list
 from calan import chis_archive
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 PACKAGE = os.path.basename(os.path.dirname(__file__))
 VERSION = '1.0.3'
-NEDB_STACHAN_FILE = os.path.join(ROOT, 'data', 'stachans.txt')
 
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
@@ -892,7 +892,7 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
 
 def inventory_items(inventory):
     '''
-    Iterate through contents of an inventory
+    Iterate through network, station, channel of an inventory.
     '''
     for network in inventory:
         for station in network:
@@ -942,7 +942,7 @@ def read_sql(file_name):
                      colspecs=colspecs, parse_dates=['start', 'end'],
                      dtype={'count': int})
 
-    df['sta'], df['chan'] = df.stachan.str.split('.', n=1).str
+    df[['sta', 'chan']] = df.stachan.str.split('.', n=1, expand=True)
     df.drop(columns='stachan', inplace=True)
     df.set_index(['sta', 'chan'], inplace=True, verify_integrity=True)
     return df
