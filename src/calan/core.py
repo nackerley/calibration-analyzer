@@ -1006,7 +1006,7 @@ SIMPLE_LOG_SETTINGS = {
         },
     'formatters': {
         'simple': {
-            'format': '%(levelname)-8s - %(message)s'
+            'format': '%(levelname)-8s %(message)s'
             },
         },
     'loggers': {
