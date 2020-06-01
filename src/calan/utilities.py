@@ -14,6 +14,9 @@ from operator import mul
 from functools import reduce
 import argparse
 import numpy as np
+from pdb import post_mortem
+from functools import wraps
+from traceback import print_exception
 
 # for Python 2 & 3 compatible unicode support
 from past.builtins import basestring
@@ -455,3 +458,25 @@ def logspace(start, stop, num=12):
     n_total = int(num*(log_stop-log_start)) + 1
     temp = stdval(np.logspace(log_start, log_stop, num=n_total), num=num)
     return temp[np.bitwise_and(temp >= start, temp <= stop)]
+
+
+# %% debugging
+def debug_on(*exceptions):
+    '''
+    Unittest decorator which invokes debugger when an Exception is encountered.
+    '''
+    if not exceptions:
+        exceptions = (AssertionError, )
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except exceptions:
+                info = sys.exc_info()
+                print_exception(*info)
+                post_mortem(info[2])
+        return wrapper
+
+    return decorator
