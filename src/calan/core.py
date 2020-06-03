@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-A collection of utilities useful for station quality analysis.
-"""
+'A collection of utilities useful for station quality analysis.'
 # pylint: disable=logging-not-lazy
 # for Python 2 & 3 compatibility
 from __future__ import (absolute_import, division, print_function,
@@ -12,6 +10,7 @@ import re
 import queue
 import inspect
 import logging
+from os import linesep
 from logging.config import dictConfig
 from glob import glob
 from time import time
@@ -72,9 +71,7 @@ CHANNEL_KEYS = ((
 
 
 def get_clients(servers=None, test_timeout=2):
-    '''
-    Given a list of URLs, returns a list of FDSN clients.
-    '''
+    'Return a list of FDSN clients given a list of URLs.'
     if servers is None:
         servers = [chis_archive.DEFAULT_ROOT] + list(DEFAULT_FDSN_SERVERS)
     servers = string_list(servers)
@@ -118,10 +115,8 @@ def get_clients(servers=None, test_timeout=2):
 
 
 def fdsn_error_message(ex):
-    '''
-    Cleans up certain obspy.clients.fdsn exception messages.
-    '''
-    lines = ex.args[0].split('\n')
+    'Clean up certain obspy.clients.fdsn exception messages.'
+    lines = ex.args[0].split(linesep)
     if 'No data available' in lines[0]:
         msg = lines[0]
     else:
@@ -139,8 +134,13 @@ if STATIONXML_CONVERTER is None:
 
 def dataless2inventory(inventory_dataless, inventory_source='GSC'):
     '''
-    Convert a dataless SEED to an :class:`~obspy.core.inventory.Inventory`.
+    Convert a dataless SEED to an ObsPy Inventory.
+
     A StationXML file is produced in the same directory as the input file.
+
+    Note
+    ----
+    This should be deprecated; ObsPy does it natively.
     '''
     inventory_xml = dataless2stationxml(inventory_dataless,
                                         inventory_source=inventory_source)
@@ -149,8 +149,13 @@ def dataless2inventory(inventory_dataless, inventory_source='GSC'):
 
 def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
     '''
-    Convert a dataless SEED to an :class:`~obspy.core.inventory.Inventory`.
+    Convert a dataless SEED to StationXML.
+
     A StationXML file is produced in the same directory as the input file.
+
+    Note
+    ----
+    This should be deprecated; ObsPy does it natively.
     '''
     logger = get_logger(__name__)
     if not os.path.isfile(inventory_dataless):
@@ -169,10 +174,7 @@ def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
 
 
 def inventory2dataless(inventory_xml):
-    '''
-    Convert a dataless SEED to an :class:`~obspy.core.inventory.Inventory`.
-    A StationXML file is produced in the same directory as the input file.
-    '''
+    'Convert StationXML inventory to dataless SEED.'
     logger = get_logger(__name__)
     if not os.path.isfile(inventory_xml):
         logger.warning('StationXML file "%s" not found'
@@ -195,7 +197,7 @@ def _elapsed_since(tick):
 def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
                       maxlongitude=-40, minlongitude=-170):
     '''
-    Returns an inventory of all stations for which CHIS has waveform data.
+    Return an inventory of all stations for which CHIS has waveform data.
 
     If a cache is found, it is used, for speedup.
 
@@ -247,7 +249,7 @@ def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
 
 def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     '''
-    Removes (nearly) identical zero-pole pairs from a transfer function.
+    Remove (nearly) identical zero-pole pairs from a transfer function.
 
     The 'octave' method is that used in octave :func:`~control.minreal` and
     python-control :func:`~TransferFunction.minreal`.
@@ -280,7 +282,6 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     lti_out: instance of :class:`~scipy.signal.lti`
         transfer function after cancellation
     '''
-
     assert isinstance(lti_in, sp.lti)
     tolerance = float(tolerance)
     assert tolerance >= 0
@@ -322,7 +323,8 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
 
 def flip(ndarray, axis):
     '''
-    Reverse the order of elements in an array along the given axis.
+    Reverse order of elements in an array along the given axis.
+
     The shape of the array is preserved, but the elements are reordered.
 
     Borrowed from the future, numpy v1.12.dev0
@@ -359,7 +361,7 @@ def flip(ndarray, axis):
 
 def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1, discont=np.pi):
     '''
-    Unwraps phase data in the range starting at midband
+    Unwrap phase data in the range starting at midband.
 
     Unwrapping is done from -discont to discont starting at a specified
     midband frequency and working outwards.
@@ -382,7 +384,6 @@ def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1, discont=np.pi):
     phase_out: :class:`~numpy.array`
         Unwrapped phase data.
     '''
-
     assert f_in.ndim == 1
 
     i_mid = np.argmin(np.abs(np.array(f_in)/f_midband - 1))
@@ -398,7 +399,9 @@ def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1, discont=np.pi):
 
 def lti_from_zpsf(zeros, poles, sensitivity, frequency):
     '''
-    Generate a LinearTimeInvariant model from zeros, poles, sensitivity and
+    Generate a LinearTimeInvariant model.
+
+    Inputs are zeros, poles, sensitivity and
     frequency at which sensitivity is specified.
     '''
     model = sp.lti(zeros, poles, 1)
@@ -407,7 +410,7 @@ def lti_from_zpsf(zeros, poles, sensitivity, frequency):
 
 
 def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
-    '''Construct a list of names for the traces in a stream.'''
+    'Construct a list of names for the traces in a stream.'
     return ['.'.join([('%' + str(width) + 's') % trace.stats[part]
                       for part, width in zip(parts, widths)])
             for trace in stream]
@@ -415,7 +418,8 @@ def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
 
 def factor_names(stream):
     '''
-    Returns a tuple with the factored names for the traces in a stream.
+    Return a tuple with the factored names for the traces in a stream.
+
     The first item in the tuple is the part which is common to all traces;
     the second item in the tuple is a list of the parts which differ.
     '''
@@ -447,10 +451,10 @@ def compute_decim_delay(b_stages, factors):
         :list factors: integer decimation factors for each stage
     :returns: integer number of samples needed to load filters
 
-    Example:
+    Example
+    -------
         n_pad_upsample = compute_decim_delay(b_stages, factors)
     '''
-
     n_pad_upsample = 0
     for i in reversed(range(len(factors))):
         if len(b_stages[i]) % 2 == 0:
@@ -466,10 +470,10 @@ def compute_decim_delay(b_stages, factors):
 def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
                 discard_initial=True):
     '''
-    Applies cascaded FIR filter and decimation stages to a signal.
+    Apply cascaded FIR filter and decimation stages to a signal.
 
-    Example:
-
+    Example
+    -------
     Chunked data is handled as follows:
 
     ```python
@@ -548,10 +552,7 @@ def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
 
 
 def extract_decimation_coefficients(stages):
-    '''
-    Extract decimation factors and filter coefficients from a list of stages.
-    '''
-
+    'Extract decimation factors and filter coefficients from a list of stages.'
     logger = get_logger(__name__)
     b_stages = []
     factors = []
@@ -577,8 +578,9 @@ def extract_decimation_coefficients(stages):
 
 def truncnorm_shape(mean, std, clip_b, clip_a=None):
     '''
-    Convert mean, standard deviation and clip levels to
-    :class:`~scipy.stats.truncnorm' shape parameters.
+    Convert mean, standard deviation and clip levels to shape parameters.
+
+    See :class:`~scipy.stats.truncnorm'.
 
     :returns: a, b
     '''
@@ -591,6 +593,8 @@ def truncnorm_shape(mean, std, clip_b, clip_a=None):
 
 def subplots_squeeze(fig, hspace=None, wspace=None):
     '''
+    Squeeze space ticks and ticklabels from between axes.
+
     For now this just supports the case of multiple axes stacked vertically,
     removing space between them and removing tick labels which would overlap.
     '''
@@ -622,9 +626,7 @@ def _missing_samples(delta, sampling_rate):
 
 def is_complete(stream, trace_ids=(), start=pd.Timestamp(0),
                 end=pd.Timestamp.now(), tolerance=0.5):
-    '''
-    Lightweight test whether stream is complete.
-    '''
+    'Lightweight test whether stream is complete.'
     trace_ids = string_list(trace_ids)
     if trace_ids is None:
         trace_ids = sorted(list(set(trace.id for trace in stream)))
@@ -789,9 +791,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
 
 
 def fraction_available(trace_ids, start, end, gaps_df):
-    '''
-    Compute fraction of requested data which is available.
-    '''
+    'Compute fraction of requested data which is available.'
     trace_ids = string_list(trace_ids)
 
     expected_duration = len(trace_ids)*((UTCDateTime(end) -
@@ -805,9 +805,7 @@ def fraction_available(trace_ids, start, end, gaps_df):
 
 def log_availability(logger, gaps_df, trace_ids, start, end,
                      column='duration'):
-    '''
-    Given a gap listing, summarize availability to a log file.
-    '''
+    'Summarize availability to a log file, given a gap listing.'
     gaps_df = gaps_df.copy()
     num_gaps = gaps_df.shape[0]
     daylong = np.abs((UTCDateTime(end) - UTCDateTime(start)) - 24*60*60) < 3600
@@ -891,9 +889,7 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
 
 
 def inventory_items(inventory):
-    '''
-    Iterate through network, station, channel of an inventory.
-    '''
+    'Iterate through network, station, channel of an inventory.'
     for network in inventory:
         for station in network:
             for channel in station:
@@ -901,9 +897,7 @@ def inventory_items(inventory):
 
 
 def inventory2df(inventory):
-    '''
-    Summarize obspy.Inventory in pandas.DataFrame.
-    '''
+    'Summarize obspy.Inventory in pandas.DataFrame.'
     def get(key, item):
         try:
             return attrgetter(key)(item)
@@ -932,6 +926,7 @@ def inventory2df(inventory):
 
 
 def read_sql(file_name):
+    'Read pipe-delimited SQL query result, ignoring non-pipe-delimited header.'
     with open(file_name) as file:
         for line in file:
             if '|' in line:
@@ -1061,15 +1056,11 @@ class LoggerWriter:
         self.name = name
 
     def write(self, message):
-        '''
-        Simulate file.write().
-        '''
-        if message != '\n':
+        'Simulate file.write().'
+        if message != linesep:
             if self.name:
                 message = self.name + ' - ' + message
             self.logger.log(self.level, message)
 
     def flush(self):
-        '''
-        Simulate file.flush().
-        '''
+        'Simulate file.flush().'

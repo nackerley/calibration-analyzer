@@ -1,21 +1,18 @@
 # -*- coding: utf-8 -*-
-'''
-General-Purpose Utilities
-=========================
-'''
+'General-Purpose utilities.'
 # pylint: disable=logging-not-lazy
 # for Python 2 & 3 compatibility
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import sys
+from os import linesep
 from math import floor, log10
 from operator import mul
-from functools import reduce
+from functools import reduce, wraps
 import argparse
 import numpy as np
 from pdb import post_mortem
-from functools import wraps
 from traceback import print_exception
 
 # for Python 2 & 3 compatible unicode support
@@ -25,25 +22,20 @@ from past.builtins import basestring
 # %% argument parsing
 class MyFormatter(argparse.ArgumentDefaultsHelpFormatter,
                   argparse.RawDescriptionHelpFormatter):
-    '''
-    Preserve linefeeds in docstring and include default values in help.
-    '''
+    'Preserve linefeeds in docstring and include default values in help.'
 
 
 class MyArgumentParser(argparse.ArgumentParser):
-    '''
-    Trigger printing of help on any argument parsing error.
-    '''
+    'Trigger printing of help on any argument parsing error.'
 
     def error(self, message):
+        'Display help and exit.'
         self.print_help()
-        sys.exit('Error parsing arguments: %s\n' % message)
+        sys.exit('Error parsing arguments: ' + message + linesep)
 
 
 def string_list(argument):
-    '''
-    Turns an argument which might be a string or a tuple into a list.
-    '''
+    'Turn an argument which might be a string or a tuple into a list.'
     if isinstance(argument, basestring) or argument is None:
         argument = [argument]
     elif isinstance(argument, tuple):
@@ -54,8 +46,9 @@ def string_list(argument):
 # %% formatting
 def round_sig(value, num_significant=3):
     '''
-    Round to a given number of significant figures (as opposed to rounding
-    to a number of digits).
+    Round to a given number of significant figures.
+
+    Not the same as rounding to a number of digits.
     '''
     if value is None or value == 0 or np.isinf(value) or np.isnan(value):
         return value
@@ -75,12 +68,11 @@ assert round_sig(100*np.pi, 4) == 314.2
 # pylint: disable=too-many-arguments
 def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
     '''
-    Converts a value with specified units to string in related units.
+    Convert a value with specified units to string in related units.
 
     The argument fmt can be a string format specifier,
     or an integer number of significant digits.
     '''
-
     input_unit_index = next((i for i, unit in enumerate(units)
                              if input_unit == unit), None)
     if input_unit_index is None:
@@ -105,10 +97,7 @@ def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
 
 
 def parse_units(string, output_unit, units, factors):
-    '''
-    Converts a string including units to a numeric value in related units.
-    '''
-
+    'Convert a string including units to a numeric value in related units.'
     output_unit_index = next((i for i, unit in enumerate(units)
                               if output_unit == unit), None)
     if output_unit_index is None:
@@ -137,10 +126,7 @@ TIME_FACTORS = [52, 365.25/52, 24, 60, 60, 1e3, 1e3, 1e3]
 
 
 def pretty_duration(value, input_unit='s', fmt=3, thresh=0.95):
-    '''
-    Convert a duration to a string which includes units.
-    '''
-
+    'Convert a duration to a string which includes units.'
     return pretty_units(value, input_unit, TIME_UNITS, TIME_FACTORS, fmt,
                         thresh)
 
@@ -150,10 +136,7 @@ assert pretty_duration(100e6, 'us') == '1.67m'
 
 
 def parse_duration(string, output_unit='s'):
-    '''
-    Convert a string to a duration in specified units.
-    '''
-
+    'Convert a string to a duration in specified units.'
     return parse_units(string, output_unit, TIME_UNITS, TIME_FACTORS)
 
 
@@ -169,9 +152,7 @@ BYTE_FACTORS = [1e3]*(len(BYTE_UNITS) - 1)
 
 
 def pretty_bytes(value, input_unit='B', fmt=3, style='binary'):
-    '''
-    Convert a file size to a string which includes units.
-    '''
+    'Convert a file size to a string which includes units.'
     if style == 'binary':
         return pretty_units(value, input_unit, BINARY_BYTE_UNITS,
                             BINARY_BYTE_FACTORS, fmt)
@@ -188,9 +169,7 @@ VOLTAGE_FACTORS = [1e3]*(len(VOLTAGE_UNITS) - 1)
 
 
 def parse_bytes(string, output_unit='B'):
-    '''
-    Convert a string to a size in specified units.
-    '''
+    'Convert a string to a size in specified units.'
     result = parse_units(string, output_unit, BINARY_BYTE_UNITS,
                          BINARY_BYTE_FACTORS)
     if result is None:
@@ -204,10 +183,7 @@ assert parse_bytes('1.23MB') == 1230000
 
 
 def pretty_voltage(value, input_unit='V', fmt=3):
-    '''
-    Convert a voltage to a string which includes units.
-    '''
-
+    'Convert a voltage to a string which includes units.'
     return pretty_units(value, input_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS, fmt)
 
 
@@ -216,10 +192,7 @@ assert pretty_voltage(60e12, 'uV') == '60MV'
 
 
 def parse_voltage(string, output_unit='V'):
-    '''
-    Convert a string to a voltage in specified units.
-    '''
-
+    'Convert a string to a voltage in specified units.'
     return parse_units(string, output_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS)
 
 
@@ -229,23 +202,22 @@ assert parse_voltage('60MV', 'uV') == 60e12
 
 def to_string_no_index(df, **kwargs):
     '''
-    This is a workaround for a bug in pandas 0.18 whereby if you specifify
-    index=False to pandas.DataFrame.to_string() then column justification is
-    lost.
+    Work around issue with pandas.DataFrame.to_string().
+
+    This is a workaround for a bug in pandas 0.18 whereby if you specify
+    index=False then column justification is lost.
+
     See https://github.com/pydata/pandas/issues/13032
     '''
-
     index_width = max([len(str(i)) for i in df.index]) + 1
-    lines = df.to_string(**kwargs).split('\n')
-    string = '\n'.join([line[index_width:] for line in lines]) + '\n'
+    lines = df.to_string(**kwargs).split(linesep)
+    string = linesep.join([line[index_width:] for line in lines]) + linesep
     return string
 
 
 # %% logarithmic binning
 def preferred_number(value, series=(1, 2, 5), method='nearest'):
-    '''
-    Find nearest value from Renard or E-series.
-    '''
+    'Find nearest value from Renard or E-series.'
     # ensure preferred value series ends a factor of 10 higher than it starts
     if series[-1] != 10*series[0]:
         series = np.hstack((series, 10*series[0]))
@@ -328,7 +300,7 @@ E_SERIES = {
 
 def stdval(value, num=96, bump=0, preferred=None):
     '''
-    Computes nearest values in a standard-value series.
+    Compute nearest values in a standard-value series.
 
     For non-standard E-numbers, Renard numbers are used. Note that the
     standard E-series do not strictly follow the Renard number series,
@@ -337,6 +309,7 @@ def stdval(value, num=96, bump=0, preferred=None):
     down, and is useful for ceiling/floor type operations.
 
     Arguments
+    ---------
     :param value: Values to which the nearest standard values are sought
     :param num: Number of preferred values in standard series,
         e.g. 96 for E96 series
@@ -351,7 +324,6 @@ def stdval(value, num=96, bump=0, preferred=None):
 
     :returns output: Nearest standard values after rounding
     '''
-
     # we're going to need to do some elementwise operations
     x_type = type(value)
     value = np.asarray(value, dtype=float)
@@ -448,11 +420,10 @@ def stdval(value, num=96, bump=0, preferred=None):
 
 def logspace(start, stop, num=12):
     '''
-    Computes logarithmically spaced vector of preferred numbers.
+    Compute logarithmically spaced vector of preferred numbers.
 
     See stdval.
     '''
-
     log_start = np.floor(np.log10(start))
     log_stop = np.ceil(np.log10(stop))
     n_total = int(num*(log_stop-log_start)) + 1
@@ -462,9 +433,7 @@ def logspace(start, stop, num=12):
 
 # %% debugging
 def debug_on(*exceptions):
-    '''
-    Unittest decorator which invokes debugger when an Exception is encountered.
-    '''
+    'Decorate unittest function so that debugger is invoked on exceptions.'
     if not exceptions:
         exceptions = (AssertionError, )
 

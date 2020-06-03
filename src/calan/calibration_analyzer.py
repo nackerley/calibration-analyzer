@@ -33,6 +33,8 @@ Nick Ackerley
 import os
 import sys
 import lzma
+import logging
+from os import linesep
 from io import StringIO
 from contextlib import redirect_stdout
 from glob import glob
@@ -66,7 +68,6 @@ from calan.calibration_toolbox import (
 
 # %% setup
 import warnings
-warnings.simplefilter('error', category=RuntimeWarning)
 warnings.simplefilter('error', category=sig.BadCoefficients)
 pd.plotting.register_matplotlib_converters()
 
@@ -128,13 +129,13 @@ data_type RESPONSE IMS2.0
 ''')
 CAL_BLOCK = (
     'CAL2 {station:5.5s} {channel:3.3s} {aux_id:4.4s} {inst_type:6.6s} '
-    '{calib:15.8e} {calper:7.3f} {sample_rate:11.5f} {start} {end}\n')
+    '{calib:15.8e} {calper:7.3f} {sample_rate:11.5f} {start} {end}' + linesep)
 FAP_HEADER = (
     'FAP2 {stage:2d} {units:1.1s} {decimation:4.4s} {group_correction:8.3f} '
-    '{count:3d} {description:25.25s}\n')
-FAP_DATA = ' {frequency:10.5f} {amplitude:15.8e} {phase:4.0f}\n'
+    '{count:3d} {description:25.25s}' + linesep)
+FAP_DATA = ' {frequency:10.5f} {amplitude:15.8e} {phase:4.0f}' + linesep
 MAX_FAP_LEN = 999
-IMS_FOOTER = 'stop\n'
+IMS_FOOTER = 'stop' + linesep
 
 OUTPUT_UNIT_MAP = {
     "DISP": ["M"],
@@ -157,9 +158,7 @@ PLOT_CHOICES = ['basic', 'diagnostic']
 
 # %% definitions
 def _argparser():
-    '''
-    Command-line arguments for main
-    '''
+    'Command-line interface.'
     # pylint: disable=no-member
     parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
                               description=__doc__,
@@ -234,9 +233,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
                          test_limits=(MAX_AMPLITUDE_PERCENT,
                                       MAX_PHASE_DEGREES),
                          plot='', dpi=DEFAULT_DPI):
-    '''
-    Entry point for CalibrationAnalyzer.
-    '''
+    'Do arbitrary-signal calibration analysis.'
     pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
                            if char.isalnum())
     output_parts = [os.path.splitext(THIS_FILE_NAME)[0]]
@@ -320,9 +317,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
 
 
 class Fit():
-    '''
-    Container for transfer function fits.
-    '''
+    'Container for transfer function fits.'
 
     def __init__(self, confidence=0.95):
         self.confidence = confidence
@@ -330,10 +325,11 @@ class Fit():
         self.gain = None
 
     def __str__(self):
+        'Human-readable representation.'
         lines = [self.__class__.__name__ + ':']
         lines.append('\t' + self.timing_summary())
         lines.append('\t' + self.gain_summary())
-        return '\n'.join(lines)
+        return linesep.join(lines)
 
     def _num_sigma(self):
         return np.sqrt(2)*erfinv(self.confidence)
@@ -378,14 +374,13 @@ class Fit():
 
 
 class CalibrationAnalyzer():
-    '''
-    A calibration signal analyzer based on :class:`obspy.Stream`.
-    '''
+    'An ObsPy Stream-based calibration signal analyzer.'
+
     CACHE_FORMAT = 'MSEED'
 
     def __init__(self, log_level='INFO', savefig=True, dpi=DEFAULT_DPI):
         '''
-        Sets up data server and calibration details for later use.
+        Set up data server and calibration details for later use.
 
         Parameters
         ----------
@@ -425,30 +420,28 @@ class CalibrationAnalyzer():
         self.dpi = dpi
 
     def __del__(self):
-        '''
-        Shut down loggers so that log files are not held open.
-        '''
-        for handler in self.logger.handlers[:]:
-            handler.close()
-            self.logger.removeHandler(handler)
+        'Ensure log files are not held open.'
+        logging.shutdown()
 
     def __str__(self):
+        'Human-readable representation.'
         lines = [self.__class__.__name__ + ':']
         lines += ['\tInfo:']
         for key, value in self.info.items():
             lines.append('\t\t%s: %s' % (key, value))
         lines += ['\t' + line
-                  for line in str(self.stream).strip().split('\n')]
+                  for line in str(self.stream).strip().split(linesep)]
         lines += ['\tNominal:']
         for key, value in self.lti.items():
             lines.append('\t\t%s: %s' % (key, value))
         lines += ['\t' + line
-                  for line in str(self.stft).strip().split('\n')]
+                  for line in str(self.stft).strip().split(linesep)]
         lines += ['\t' + line
-                  for line in str(self.fit).strip().split('\n')]
-        return '\n'.join(lines)
+                  for line in str(self.fit).strip().split(linesep)]
+        return linesep.join(lines)
 
     def __repr__(self):
+        'Unambiguous representation.'
         return self.__str__()
 
     def load_stream(self, waveform_file, lead_in=DEFAULT_LEAD_IN,
@@ -498,18 +491,15 @@ class CalibrationAnalyzer():
             self.info['delay_start'] = delay_start
 
     def _sampling_rate(self):
-        '''Return stream sampling rate'''
-
+        'Return stream sampling rate.'
         return self.stream[0].stats.sampling_rate
 
     def _pre_seconds(self):
-        '''Return sum of lead-in and event pre-time.'''
-
+        'Return sum of lead-in and event pre-time.'
         return self.info['start'] - self.stream[0].stats.starttime
 
     def _post_seconds(self):
-        '''Return sum of lead-out and event post-time'''
-
+        'Return sum of lead-out and event post-time.'
         return self.stream[0].stats.endtime - self.info['end']
 
     def _input_stream(self):
@@ -523,9 +513,7 @@ class CalibrationAnalyzer():
 
     def load_response(self, pattern, ignore_open_closed=True,
                       force_first=False):
-        '''
-        Load response file describing the system being calibrated.
-        '''
+        'Load response file describing the system being calibrated.'
         response_files = {trace.id: '' for trace in self._output_stream()}
         self.logger.info(
             'Searching %s for: %s' %
@@ -578,6 +566,8 @@ class CalibrationAnalyzer():
 
     def load_calibration_signal(self, calibration_signal_file):
         '''
+        Load calibration input signal.
+
         No attempt is made to match the response to the exact channel used;
         it is assumed that all traces in the calibation stream have the same
         nominal response.
@@ -709,9 +699,7 @@ class CalibrationAnalyzer():
         return self._input_stream()[0].stats.response.response_stages[0]
 
     def load_calibration_response(self, response_file=''):
-        '''
-        Set up calibration input response.
-        '''
+        'Set up calibration input response.'
         self.logger.info(response_file)
         response = read_inventory(response_file)[0][0][0].response
         instrument_sensitivity = response.instrument_sensitivity.value
@@ -997,8 +985,9 @@ class CalibrationAnalyzer():
              max_amplitude_percent=MAX_AMPLITUDE_PERCENT,
              max_phase_degrees=MAX_PHASE_DEGREES):
         '''
-        Check whether measured transfer function deviation is within
-        specification, with respect to nominal.
+        Check whether measured transfer function deviation is within spec.
+
+        Specifciation is defined with respect to nominal.
 
         Parameters
         ----------
@@ -1038,9 +1027,7 @@ class CalibrationAnalyzer():
                  for in_spec in self.info['in_spec']])]))
 
     def write_calibrate_result(self):
-        '''
-        Write IMS2.0 CALIBRATE_RESULT message to file with data in FAP2 format.
-        '''
+        'Write IMS2.0 CALIBRATE_RESULT message with data in FAP2 format.'
         keep = ((self.stft.f >= self.info['spec_min_freq_hz']) &
                 (self.stft.f <= self.info['spec_max_freq_hz']))
         f = self.stft.f[keep]
@@ -1091,9 +1078,7 @@ class CalibrationAnalyzer():
             file.write(IMS_FOOTER)
 
     def simulate_response(self, trim=True, model='system'):
-        '''
-        Simulate nominal response of sensor to calibration signal
-        '''
+        'Simulate nominal response of sensor to calibration signal.'
         sensitivity = abs(self.lti[model].freqresp(w=2*np.pi)[1][0])
         nominal_paz = {'zeros': self.lti[model].zeros,
                        'poles': self.lti[model].poles,
@@ -1198,9 +1183,7 @@ class CalibrationAnalyzer():
         self.logger.info(self.fit.timing_summary())
 
     def _save_image(self, fig, option_list=None):
-        '''
-        Save a figure with an automatically descriptive file name.
-        '''
+        'Save a figure with an automatically descriptive file name.'
         if not self.savefig or not self.dpi:
             return
 
@@ -1231,9 +1214,7 @@ class CalibrationAnalyzer():
         fig.savefig(output_png, dpi=self.dpi, bbox_inches='tight')
 
     def plot_check(self, where='start', window_seconds=10):
-        '''
-        Spot check critical times in the calibration
-        '''
+        'Spot check critical times in the calibration.'
         assert where in ['start', 'end', 'on', 'off']
 
         if where == 'on':
@@ -1305,9 +1286,7 @@ class CalibrationAnalyzer():
         self._save_image(fig, model)
 
     def plot_simulated(self, trim=True):
-        '''
-        Plot simulated calibration response in time domain.
-        '''
+        'Plot simulated calibration response in time domain.'
         simulated = self.simulate_response(trim=trim)
 
         fig, ax = plt.subplots()
@@ -1326,9 +1305,7 @@ class CalibrationAnalyzer():
         self._save_image(fig)
 
     def plot_signal_to_noise(self):
-        '''
-        Plot estimated signal-to-noise ratio.
-        '''
+        'Plot estimated signal-to-noise ratio.'
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
 
@@ -1345,9 +1322,7 @@ class CalibrationAnalyzer():
         self._save_image(fig)
 
     def plot_spectrogram(self):
-        '''
-        Plot input and output spectrograms, referred to sensor input [V].
-        '''
+        'Plot input and output spectrograms, referred to sensor input [V].'
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
 
@@ -1391,7 +1366,6 @@ class CalibrationAnalyzer():
         scale: str, optional
             selects 'log' or 'linear' scaling for x-axis
         '''
-
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
 
@@ -1556,9 +1530,7 @@ class CalibrationAnalyzer():
 
 
 def main(argv=None):
-    '''
-    Return zero for successful termination, one otherwise.
-    '''
+    'Run analysis and return system exit code.'
     if argv is None:
         argv = sys.argv
     parser = _argparser()

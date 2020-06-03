@@ -19,6 +19,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pytz
 
+from os import linesep
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
@@ -70,7 +71,9 @@ LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
 
 def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
     '''
-    Estimate time of first zero crossing after first departure from zero
+    Estimate time of first zero crossing.
+
+    This is the time after first departure from zero
     greater than given tolerance relative to peak-to-peak amplitude. Only a
     very crude DC removal is attempted, by subtracting the value of the first
     sample.
@@ -85,6 +88,7 @@ def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
 
 
 class SynchronousCalibrationAnalyzer():
+    'Calibration analyzer for ObsPy stream including calibration signal.'
 
     TIME_ZONE_FINDER = TimezoneFinder()
 
@@ -113,9 +117,7 @@ class SynchronousCalibrationAnalyzer():
 
     def load_waveforms(self, output_file, trim_s=TRIM_S,
                        output_label=OUTPUT_LABEL, input_label=INPUT_LABEL):
-        '''
-        Load and preserve synchronous portions of input and output traces.
-        '''
+        'Load and preserve synchronous portions of input and output traces.'
         input_file = output_file.replace(output_label, input_label)
         self.test_name = (os.path.splitext(output_file)[0]
                           .replace(output_label, ''))
@@ -165,9 +167,7 @@ class SynchronousCalibrationAnalyzer():
 
     def load_response(self, template_station='YKAR1', template_channel='SHZ',
                       motor_ms2v=MOTOR_MS2V, dac_gain=DAC_GAIN):
-        '''
-        Load nominal input and output responses.
-        '''
+        'Load nominal input and output responses.'
         inventory_xml = self.stream[1].id + '.xml'
         # copy response from known station
         if not os.path.isfile(inventory_xml):
@@ -206,9 +206,7 @@ class SynchronousCalibrationAnalyzer():
 
     def compute_peak_response(self, len_fft=LEN_FFT, len_overlap=LEN_OVERLAP,
                               min_rel_power=1e-4, window=WINDOW):
-        '''
-        Compute relative transfer function estimate at spectral peak.
-        '''
+        'Compute relative transfer function estimate at spectral peak.'
         self.stft = Stft()
         self.stft.compute(self.stream[0].data, self.stream[1].data,
                           self.stream[0].stats.sampling_rate,
@@ -297,9 +295,7 @@ class SynchronousCalibrationAnalyzer():
 
     def get_temperature(self, dt_utc, station_id=WEATHER_STATION_ID,
                         time_zone=WEATHER_STATION_TIME_ZONE):
-        '''
-        Get temperature near station at given time.
-        '''
+        'Get temperature near station at given time.'
         tz = pytz.timezone(time_zone)
         dt_local = tz.fromutc(dt_utc)
 
@@ -332,6 +328,7 @@ class SynchronousCalibrationAnalyzer():
 
     def summary(self, station_id=WEATHER_STATION_ID,
                 time_zone=WEATHER_STATION_TIME_ZONE):
+        'Summarize result.'
         result = pd.Series()
         result['test name'] = self.test_name
         result['channel id'] = self.stream[1].id
@@ -354,9 +351,7 @@ class SynchronousCalibrationAnalyzer():
 
 
 def _argparser():
-    '''
-    Command-line arguments for main
-    '''
+    'Command-line interface.'
     # pylint: disable=no-member
     parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
                               description=__doc__,
@@ -407,9 +402,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
                   output_label=OUTPUT_LABEL, input_label=INPUT_LABEL,
                   summary_csv='',
                   plot=False, dpi=DPI):
-    '''
-    Run analysis for all calibration files matching a glob pattern.
-    '''
+    'Run analysis for all calibration files matching a glob pattern.'
     analyzer = SynchronousCalibrationAnalyzer(plot=plot, dpi=dpi)
 
     if not summary_csv:
@@ -447,7 +440,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
             with StringIO() as buf, redirect_stdout(buf):
                 analyzer.stream.print_gaps()
                 gap_summary = buf.getvalue()
-            analyzer.logger.debug('\n' + gap_summary)
+            analyzer.logger.debug(linesep + gap_summary)
         finally:
             plt.close('all')
 
@@ -477,9 +470,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
 
 
 def main(argv=None):
-    '''
-    Return zero for successful termination, one otherwise.
-    '''
+    'Analyze calibrations and return system exit code.'
     if argv is None:
         argv = sys.argv
     parser = _argparser()
