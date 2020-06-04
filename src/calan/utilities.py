@@ -6,7 +6,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import sys
-from os import linesep
 from math import floor, log10
 from operator import mul
 from functools import reduce, wraps
@@ -31,7 +30,7 @@ class MyArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         'Display help and exit.'
         self.print_help()
-        sys.exit('Error parsing arguments: ' + message + linesep)
+        sys.exit('Error parsing arguments: ' + message + '\n')
 
 
 def string_list(argument):
@@ -210,8 +209,8 @@ def to_string_no_index(df, **kwargs):
     See https://github.com/pydata/pandas/issues/13032
     '''
     index_width = max([len(str(i)) for i in df.index]) + 1
-    lines = df.to_string(**kwargs).split(linesep)
-    string = linesep.join([line[index_width:] for line in lines]) + linesep
+    lines = df.to_string(**kwargs).split('\n')
+    string = '\n'.join([line[index_width:] for line in lines]) + '\n'
     return string
 
 

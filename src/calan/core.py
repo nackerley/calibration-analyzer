@@ -10,7 +10,6 @@ import re
 import queue
 import inspect
 import logging
-from os import linesep
 from logging.config import dictConfig
 from glob import glob
 from time import time
@@ -116,7 +115,7 @@ def get_clients(servers=None, test_timeout=2):
 
 def fdsn_error_message(ex):
     'Clean up certain obspy.clients.fdsn exception messages.'
-    lines = ex.args[0].split(linesep)
+    lines = ex.args[0].split('\n')
     if 'No data available' in lines[0]:
         msg = lines[0]
     else:
@@ -1057,7 +1056,7 @@ class LoggerWriter:
 
     def write(self, message):
         'Simulate file.write().'
-        if message != linesep:
+        if message != '\n':
             if self.name:
                 message = self.name + ' - ' + message
             self.logger.log(self.level, message)

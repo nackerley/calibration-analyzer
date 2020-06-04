@@ -34,7 +34,6 @@ import os
 import sys
 import lzma
 import logging
-from os import linesep
 from io import StringIO
 from contextlib import redirect_stdout
 from glob import glob
@@ -129,13 +128,13 @@ data_type RESPONSE IMS2.0
 ''')
 CAL_BLOCK = (
     'CAL2 {station:5.5s} {channel:3.3s} {aux_id:4.4s} {inst_type:6.6s} '
-    '{calib:15.8e} {calper:7.3f} {sample_rate:11.5f} {start} {end}' + linesep)
+    '{calib:15.8e} {calper:7.3f} {sample_rate:11.5f} {start} {end}' + '\n')
 FAP_HEADER = (
     'FAP2 {stage:2d} {units:1.1s} {decimation:4.4s} {group_correction:8.3f} '
-    '{count:3d} {description:25.25s}' + linesep)
-FAP_DATA = ' {frequency:10.5f} {amplitude:15.8e} {phase:4.0f}' + linesep
+    '{count:3d} {description:25.25s}' + '\n')
+FAP_DATA = ' {frequency:10.5f} {amplitude:15.8e} {phase:4.0f}' + '\n'
 MAX_FAP_LEN = 999
-IMS_FOOTER = 'stop' + linesep
+IMS_FOOTER = 'stop' + '\n'
 
 OUTPUT_UNIT_MAP = {
     "DISP": ["M"],
@@ -329,7 +328,7 @@ class Fit():
         lines = [self.__class__.__name__ + ':']
         lines.append('\t' + self.timing_summary())
         lines.append('\t' + self.gain_summary())
-        return linesep.join(lines)
+        return '\n'.join(lines)
 
     def _num_sigma(self):
         return np.sqrt(2)*erfinv(self.confidence)
@@ -430,15 +429,15 @@ class CalibrationAnalyzer():
         for key, value in self.info.items():
             lines.append('\t\t%s: %s' % (key, value))
         lines += ['\t' + line
-                  for line in str(self.stream).strip().split(linesep)]
+                  for line in str(self.stream).strip().split('\n')]
         lines += ['\tNominal:']
         for key, value in self.lti.items():
             lines.append('\t\t%s: %s' % (key, value))
         lines += ['\t' + line
-                  for line in str(self.stft).strip().split(linesep)]
+                  for line in str(self.stft).strip().split('\n')]
         lines += ['\t' + line
-                  for line in str(self.fit).strip().split(linesep)]
-        return linesep.join(lines)
+                  for line in str(self.fit).strip().split('\n')]
+        return '\n'.join(lines)
 
     def __repr__(self):
         'Unambiguous representation.'

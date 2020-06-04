@@ -19,7 +19,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pytz
 
-from os import linesep
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
@@ -440,7 +439,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
             with StringIO() as buf, redirect_stdout(buf):
                 analyzer.stream.print_gaps()
                 gap_summary = buf.getvalue()
-            analyzer.logger.debug(linesep + gap_summary)
+            analyzer.logger.debug('\n' + gap_summary)
         finally:
             plt.close('all')
 

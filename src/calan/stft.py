@@ -2,7 +2,6 @@
 'Short-term Fourier Transform.'
 import os
 import numpy as np
-from os import linesep
 from scipy import fftpack
 import scipy.signal as sp
 
@@ -93,7 +92,7 @@ class Stft():
                          (len(self.t), self.t[0], self.t[-1]))
             lines.append('\tf  %d from %g to %g Hz' %
                          (len(self.f), self.f[0], self.f[-1]))
-        return linesep.join(lines)
+        return '\n'.join(lines)
 
     @staticmethod
     def _mean(p_xy):
