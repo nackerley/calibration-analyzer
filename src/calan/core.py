@@ -40,6 +40,7 @@ CHIS_FDSN_SERVERS = (
 DEFAULT_FDSN_SERVERS = tuple(list(CHIS_FDSN_SERVERS) + ['IRIS'])
 
 NSLC = ['network', 'station', 'location', 'channel']
+NSLCSE = NSLC + ['start', 'end']
 GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
 
 NETWORK_KEYS = ((
@@ -894,6 +895,12 @@ def inventory_items(inventory):
             for channel in station:
                 yield network, station, channel
 
+def inventory_stations(inventory):
+    'Iterate through network, station of an inventory.'
+    for network in inventory:
+        for station in network:
+            yield network, station
+
 
 def inventory2df(inventory):
     'Summarize obspy.Inventory in pandas.DataFrame.'
@@ -923,8 +930,106 @@ def inventory2df(inventory):
 
     return df
 
+def channels2df(inventory):
+    '''
+    Create table of channels in inventory.
 
-def read_sql(file_name):
+    TODO: consider merging contiguous time ranges, but carefully!
+
+    Parameters
+    ----------
+    inventory : obspy.Inventory
+        station inventory
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        station table with index 'network', 'station','location' 'channel'
+        and columns 'start' and 'end'.
+    '''
+    df = pd.DataFrame()
+    df['network'] = [network.code
+                     for network, _, _ in inventory_items(inventory)]
+    df['station'] = [station.code
+                     for _, station, _ in inventory_items(inventory)]
+    df['location'] = [channel.location_code
+                      for _, _, channel in inventory_items(inventory)]
+    df['channel'] = [channel.code
+                     for _, _, channel in inventory_items(inventory)]
+
+    df['start'] = pd.to_datetime([
+        channel.start_date.datetime if channel.start_date else pd.NaT
+        for _, _, channel in inventory_items(inventory)])
+    df['start'] = df['start'].dt.date
+    df['end'] = pd.to_datetime([
+        channel.end_date.datetime if channel.end_date else pd.NaT
+        for _, _, channel in inventory_items(inventory)])
+    df['end'] = df['end'].dt.date
+
+    df['latitude'] = [station.latitude
+                      for _, station, _ in inventory_items(inventory)]
+    df['longitude'] = [station.longitude
+                       for _, station, _ in inventory_items(inventory)]
+    df['elevation_km'] = [channel.elevation * 1e-3
+                          for _, _, channel in inventory_items(inventory)]
+    df['depth_km'] = [channel.depth * 1e-3
+                      for _, _, channel in inventory_items(inventory)]
+    df['name'] = [station.site.name
+                  for _, station, _ in inventory_items(inventory)]
+
+    df.set_index(NSLCSE, verify_integrity=True, inplace=True)
+    df.sort_index(inplace=True)
+
+    return df
+
+def stations2df(inventory):
+    '''
+    Create table of stations in inventory.
+
+    TODO: consider merging contiguous time ranges, but carefully!
+
+    Parameters
+    ----------
+    inventory : obspy.Inventory
+        station inventory
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        station table with index 'network', 'station','location' 'channel'
+        and columns 'start' and 'end'.
+    '''
+    df = pd.DataFrame()
+    df['network'] = [network.code
+                     for network, _ in inventory_stations(inventory)]
+    df['station'] = [station.code
+                     for _, station in inventory_stations(inventory)]
+
+    df['start'] = pd.to_datetime([
+        station.start_date.datetime if station.start_date else pd.NaT
+        for _, station in inventory_stations(inventory)])
+    df['start'] = df['start'].dt.date
+    df['end'] = pd.to_datetime([
+        station.end_date.datetime if station.end_date else pd.NaT
+        for _, station in inventory_stations(inventory)])
+    df['end'] = df['end'].dt.date
+
+    df['latitude'] = [station.latitude
+                      for _, station in inventory_stations(inventory)]
+    df['longitude'] = [station.longitude
+                       for _, station in inventory_stations(inventory)]
+    df['elevation_km'] = [station.elevation * 1e-3
+                          for _, station in inventory_stations(inventory)]
+    df['name'] = [station.site.name
+                  for _, station in inventory_stations(inventory)]
+
+    df.set_index(NSLCSE[:2] + NSLCSE[-2:], verify_integrity=True, inplace=True)
+    df.sort_index(inplace=True)
+
+    return df
+
+def read_sql(file_name, parse_dates=('start', 'end'), dtype={'count': int}, 
+             stachan=True, skiprows=[0, 1, 3]):
     'Read pipe-delimited SQL query result, ignoring non-pipe-delimited header.'
     with open(file_name) as file:
         for line in file:
@@ -932,13 +1037,14 @@ def read_sql(file_name):
                 break
     pipes = np.array([match.start() for match in re.finditer(r'\|', line)])
     colspecs = list(zip([0] + list(pipes + 1), list(pipes) + [len(line)]))
-    df = pd.read_fwf(file_name, sep='|', skiprows=[0, 1, 3], skipfooter=2,
-                     colspecs=colspecs, parse_dates=['start', 'end'],
-                     dtype={'count': int})
+    df = pd.read_fwf(file_name, sep='|', skiprows=skiprows, skipfooter=2,
+                     colspecs=colspecs, parse_dates=parse_dates,
+                     dtype=dtype)
 
-    df[['sta', 'chan']] = df.stachan.str.split('.', n=1, expand=True)
-    df.drop(columns='stachan', inplace=True)
-    df.set_index(['sta', 'chan'], inplace=True, verify_integrity=True)
+    if stachan:
+        df[['sta', 'chan']] = df.stachan.str.split('.', n=1, expand=True)
+        df.drop(columns=drop, inplace=True)
+        df.set_index(['sta', 'chan'], inplace=True, verify_integrity=True)
     return df
 
 
