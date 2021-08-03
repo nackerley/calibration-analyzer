@@ -36,7 +36,7 @@ VERSION = '1.0.3'
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
     'http://sc3-stage.seismo.nrcan.gc.ca',  # staging, seisComP3
-    )
+)
 DEFAULT_FDSN_SERVERS = tuple(list(CHIS_FDSN_SERVERS) + ['IRIS'])
 
 NSLC = ['network', 'station', 'location', 'channel']
@@ -46,12 +46,12 @@ GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
 NETWORK_KEYS = ((
     ('code', 'network'),
     ('description', 'network_description'),
-    ))
+))
 STATION_KEYS = ((
     ('code', 'station'),
     ('site.name', 'site_name'),
     ('creation_date.datetime', 'creation_date'),
-    ))
+))
 CHANNEL_KEYS = ((
     ('location_code', 'location'),
     ('code', 'channel'),
@@ -67,7 +67,7 @@ CHANNEL_KEYS = ((
     ('restricted_status', 'restricted_status'),
     ('start_date.datetime', 'start_date'),
     ('end_date.datetime', 'end_date',),
-    ))
+))
 
 
 def get_clients(servers=None, test_timeout=2):
@@ -295,9 +295,9 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     condition = np.abs(z_mat - p_mat)
     if method == 'damping':
         with np.errstate(divide='ignore', invalid='ignore'):
-            condition /= np.sqrt(np.abs(p_mat)*np.abs(z_mat)) / \
-                         np.sqrt(np.cos(np.angle(p_mat)) *
-                                 np.cos(np.angle(z_mat)))
+            condition /= (np.sqrt(np.abs(p_mat)*np.abs(z_mat)) /
+                          np.sqrt(np.cos(np.angle(p_mat)) *
+                                  np.cos(np.angle(z_mat))))
 
         # deal with NaNs produced by 0/0
         condition[z_mat == p_mat] = 0
@@ -353,9 +353,9 @@ def flip(ndarray, axis):
     indexer = [slice(None)] * ndarray.ndim
     try:
         indexer[axis] = slice(None, None, -1)
-    except IndexError:
+    except IndexError as ex:
         raise ValueError('axis=%i is invalid for %i-dimensional input array'
-                         % (axis, ndarray.ndim))
+                         % (axis, ndarray.ndim)) from ex
     return ndarray[tuple(indexer)]
 
 
@@ -730,7 +730,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
                 'duration': duration,
                 'samples': -1,
                 'sampling_rate': np.NaN,
-                })
+            })
             gaps_df = gaps_df.append(series, ignore_index=True)
 
     for trace_id in trace_ids:
@@ -755,7 +755,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
                 'duration': duration,
                 'samples': _missing_samples(duration, sampling_rate),
                 'sampling_rate': sampling_rate,
-                })
+            })
             gaps_df = gaps_df.append(series, ignore_index=True)
 
     for trace_id in trace_ids:
@@ -780,7 +780,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
                 'duration': duration,
                 'samples': _missing_samples(duration, sampling_rate),
                 'sampling_rate': sampling_rate,
-                })
+            })
             gaps_df = gaps_df.append(series, ignore_index=True)
 
         gaps_df.sort_values(by=['starttime', 'endtime'],
@@ -895,6 +895,7 @@ def inventory_items(inventory):
             for channel in station:
                 yield network, station, channel
 
+
 def inventory_stations(inventory):
     'Iterate through network, station of an inventory.'
     for network in inventory:
@@ -929,6 +930,7 @@ def inventory2df(inventory):
     df.set_index(NSLC, inplace=True)
 
     return df
+
 
 def channels2df(inventory):
     '''
@@ -982,6 +984,7 @@ def channels2df(inventory):
 
     return df
 
+
 def stations2df(inventory):
     '''
     Create table of stations in inventory.
@@ -1028,9 +1031,12 @@ def stations2df(inventory):
 
     return df
 
-def read_sql(file_name, parse_dates=('start', 'end'), dtype={'count': int}, 
-             stachan=True, skiprows=[0, 1, 3]):
+
+def read_sql(file_name, parse_dates=('start', 'end'), dtype=None,
+             stachan=True, skiprows=(0, 1, 3)):
     'Read pipe-delimited SQL query result, ignoring non-pipe-delimited header.'
+    if dtype is None:
+        dtype = {'count': int}
     with open(file_name) as file:
         for line in file:
             if '|' in line:
@@ -1043,7 +1049,7 @@ def read_sql(file_name, parse_dates=('start', 'end'), dtype={'count': int},
 
     if stachan:
         df[['sta', 'chan']] = df.stachan.str.split('.', n=1, expand=True)
-        df.drop(columns=drop, inplace=True)
+        df.drop(columns='stachan', inplace=True)
         df.set_index(['sta', 'chan'], inplace=True, verify_integrity=True)
     return df
 
@@ -1058,7 +1064,7 @@ LOG_SETTINGS = {
             'class': 'logging.StreamHandler',
             'level': 'INFO',
             'formatter': 'simple',
-            },
+        },
         'file': {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'when': 'midnight',
@@ -1066,27 +1072,27 @@ LOG_SETTINGS = {
             'filename': '',
             'level': 'DEBUG',
             'formatter': 'detailed',
-            },
         },
+    },
     'formatters': {
         'simple': {
             'format':
             '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - %(message)s'
-            },
+        },
         'detailed': {
             'format': '%(asctime)s - '
                       '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - '
                       '%(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            },
         },
+    },
     'loggers': {
         '': {
             'level': 'DEBUG',
             'handlers': ['console', 'file']
-            },
-        }
+        },
     }
+}
 
 SIMPLE_LOG_SETTINGS = {
     'version': 1,  # logging schema
@@ -1095,27 +1101,27 @@ SIMPLE_LOG_SETTINGS = {
             'class': 'logging.StreamHandler',
             'level': 'INFO',
             'formatter': 'simple',
-            },
+        },
         'file': {
             'class': 'logging.FileHandler',
             'filename': '',
             'level': 'DEBUG',
             'formatter': 'simple',
             'mode': 'w',
-            },
         },
+    },
     'formatters': {
         'simple': {
             'format': '%(levelname)-8s %(message)s'
-            },
         },
+    },
     'loggers': {
         '': {
             'level': 'DEBUG',
             'handlers': ['console', 'file']
-            },
-        }
+        },
     }
+}
 
 
 def get_logger(name, log_file_name='', log_console_level='INFO'):
