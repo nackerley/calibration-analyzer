@@ -360,28 +360,28 @@ def _argparser():
         '-g', '--pattern', default=PATTERN,
         help='glob pattern matching calibration files')
     parser.add_argument(
-        '-l', '--len_fft', default=LEN_FFT, type=int,
+        '-l', '--len-fft', default=LEN_FFT, type=int,
         help='length of FFT')
     parser.add_argument(
-        '-t', '--trim_s', default=TRIM_S, type=float,
+        '-t', '--trim-s', default=TRIM_S, type=float,
         help='time to trim off beginning and end of signal, in seconds')
     parser.add_argument(
         '-w', '--window', default=WINDOW,
         help="window function to be used for Welch's method")
     parser.add_argument(
-        '-i', '--input_label', default=INPUT_LABEL,
+        '-i', '--input-label', default=INPUT_LABEL,
         help='string to be found in input waveform file names')
     parser.add_argument(
-        '-o', '--output_label', default=OUTPUT_LABEL,
+        '-o', '--output-label', default=OUTPUT_LABEL,
         help='string to be found in output waveform file names')
     parser.add_argument(
-        '--summary_csv', default='',
+        '--summary-csv', default='',
         help='by default a file name is generated from --pattern')
     parser.add_argument(
-        '-s', '--station_id', default=WEATHER_STATION_ID,
+        '-s', '--station-id', default=WEATHER_STATION_ID,
         help='weather station id for temperature lookup')
     parser.add_argument(
-        '-z', '--time_zone', default=WEATHER_STATION_TIME_ZONE,
+        '-z', '--time-zone', default=WEATHER_STATION_TIME_ZONE,
         help='time zone of weather station')
     parser.add_argument(
         '-p', '--plot', action='store_true',

@@ -168,44 +168,44 @@ def _argparser():
         help='glob pattern matching calibration output files, '
         'in any format readable by obspy.read()')
     parser.add_argument(
-        '-n', '--num_windows', default=DEFAULT_NUM_WINDOWS, type=int,
+        '-n', '--num-windows', default=DEFAULT_NUM_WINDOWS, type=int,
         help="number of windows to used for Welch's method")
     parser.add_argument(
-        '--len_fft', default=None, type=int,
+        '--len-fft', default=None, type=int,
         help="window length for Welch's method, overrides num_windows")
     parser.add_argument(
         '-w', '--window', default=DEFAULT_WINDOW,
         help="window function to be used for Welch's method")
     parser.add_argument(
-        '-r', '--response_pattern', default=DEFAULT_RESPONSE_PATTERN,
+        '-r', '--response-pattern', default=DEFAULT_RESPONSE_PATTERN,
         help='station metadata in any format readable by '
         'obspy.read_inventory()')
     parser.add_argument(
-        '-c', '--calibration_signal_file', default=DEFAULT_CAL_SIGNAL_FILE,
+        '-c', '--calibration-signal-file', default=DEFAULT_CAL_SIGNAL_FILE,
         help='calibration input file, lzma compressed')
     parser.add_argument(
-        '-i', '--calibration_response_file',
+        '-i', '--calibration-response-file',
         default=DEFAULT_CAL_RESPONSE_FILE,
         help='calibration input response in any format readable by '
         'obspy.read_inventory().')
     parser.add_argument(
-        '-d', '--delay_start', default=DEFAULT_DELAY_START, type=float,
+        '-d', '--delay-start', default=DEFAULT_DELAY_START, type=float,
         help='amount to delay calibration start time, in seconds')
     parser.add_argument(
-        '--discard_s', default=DEFAULT_DISCARD, type=float,
+        '--discard-s', default=DEFAULT_DISCARD, type=float,
         help='duration to discard from start and end, in seconds')
     parser.add_argument(
-        '-b', '--test_band_hz', nargs=2, type=float, default=TEST_BAND_HZ,
+        '-b', '--test-band-hz', nargs=2, type=float, default=TEST_BAND_HZ,
         metavar=('MIN_FREQUENCY_HZ', 'MAX_FREQUENCY_HZ'),
         help='frequency band, in Hz, over which to apply test limits')
     parser.add_argument(
-        '-t', '--test_limits', nargs=2, type=float,
+        '-t', '--test-limits', nargs=2, type=float,
         default=(MAX_AMPLITUDE_PERCENT, MAX_PHASE_DEGREES),
         metavar=('MAX_AMPLITUDE_PERCENT', 'MAX_PHASE_DEGREES'),
         help='maximum deviation from nominal of amplitude in percent and '
         'phase in degrees')
     parser.add_argument(
-        '--write_ims', action='store_true',
+        '--write-ims', action='store_true',
         help='write IMS2.0 CALIBRATE_RESULT message with FAP2 payload')
     parser.add_argument(
         '-p', '--plot', default='none', choices=PLOT_CHOICES,
