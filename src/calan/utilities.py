@@ -58,12 +58,6 @@ def round_sig(value, num_significant=3):
     return np.round(value, num_digits)
 
 
-assert round_sig(np.pi, 1) == 3
-assert round_sig(0.001*np.pi, 2) == 0.0031
-assert round_sig(0.1*np.pi) == 0.314
-assert round_sig(100*np.pi, 4) == 314.2
-
-
 # pylint: disable=too-many-arguments
 def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
     '''
@@ -130,17 +124,9 @@ def pretty_duration(value, input_unit='s', fmt=3, thresh=0.95):
                         thresh)
 
 
-assert pretty_duration(3600, 's') == '1h'
-assert pretty_duration(100e6, 'us') == '1.67m'
-
-
 def parse_duration(string, output_unit='s'):
     'Convert a string to a duration in specified units.'
     return parse_units(string, output_unit, TIME_UNITS, TIME_FACTORS)
-
-
-assert parse_duration('1h', 's') == 3600
-assert parse_duration('1.67m', 'us') == 1.67*60e6
 
 
 BINARY_BYTE_UNITS = ['TiB', 'GiB', 'MiB', 'KiB', 'B']
@@ -159,10 +145,6 @@ def pretty_bytes(value, input_unit='B', fmt=3, style='binary'):
     return pretty_units(value, input_unit, BYTE_UNITS, BYTE_FACTORS, fmt)
 
 
-assert pretty_bytes(123456789) == '118MiB'
-assert pretty_bytes(1234567, style=None) == '1.23MB'
-
-
 VOLTAGE_UNITS = ['MV', 'kV', 'V', 'mV', 'uV', 'nV']
 VOLTAGE_FACTORS = [1e3]*(len(VOLTAGE_UNITS) - 1)
 
@@ -177,26 +159,14 @@ def parse_bytes(string, output_unit='B'):
     return result
 
 
-assert parse_bytes('118MiB') == 123731968
-assert parse_bytes('1.23MB') == 1230000
-
-
 def pretty_voltage(value, input_unit='V', fmt=3):
     'Convert a voltage to a string which includes units.'
     return pretty_units(value, input_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS, fmt)
 
 
-assert pretty_voltage(np.pi) == '3.14V'
-assert pretty_voltage(60e12, 'uV') == '60MV'
-
-
 def parse_voltage(string, output_unit='V'):
     'Convert a string to a voltage in specified units.'
     return parse_units(string, output_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS)
-
-
-assert parse_voltage('3.14V', 'V') == 3.14
-assert parse_voltage('60MV', 'uV') == 60e12
 
 
 def to_string_no_index(df, **kwargs):
