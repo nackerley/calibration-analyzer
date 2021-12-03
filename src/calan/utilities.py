@@ -10,9 +10,10 @@ from math import floor, log10
 from operator import mul
 from functools import reduce, wraps
 import argparse
-import numpy as np
 from pdb import post_mortem
 from traceback import print_exception
+
+import numpy as np
 
 # for Python 2 & 3 compatible unicode support
 from past.builtins import basestring
