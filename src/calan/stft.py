@@ -13,7 +13,7 @@ LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
 
 
 def num_windows_welch(len_signal, len_fft, len_overlap=None):
-    "Return number of windows resulting from Welch's method."
+    """Return number of windows resulting from Welch's method."""
     if len_overlap is None:
         len_overlap = int(len_fft/2)
 
@@ -21,7 +21,7 @@ def num_windows_welch(len_signal, len_fft, len_overlap=None):
 
 
 def len_fft_welch(len_signal, num_windows=None, fraction_overlap=None):
-    "Recommended FFT length to achieve number of windows using Welch's method."
+    """Recommended FFT length to achieve number of windows using Welch's method."""
     if num_windows is None:
         num_windows = 30
     if fraction_overlap is None:
@@ -45,11 +45,11 @@ def window_times_welch(len_signal, len_fft, f_sample, len_overlap=None):
 
 
 def fft_frequencies(len_fft, f_sample, sides='onesided'):
-    '''
+    """
     Array of frequencies expected from an FFT calculation.
 
     Nearly verbatim from scipy.signal._spectral_helper().
-    '''
+    """
     len_fft = int(len_fft)
     if sides == 'twosided':
         num_freqs = len_fft
@@ -96,7 +96,7 @@ class Stft():
 
     @staticmethod
     def _mean(p_xy):
-        "Finishing touch of Welch's method when deriving results."
+        """Finishing touch of Welch's method when deriving results."""
         if len(p_xy.shape) >= 2 and p_xy.size > 0:
             if p_xy.shape[-1] > 1:
                 p_xy = p_xy.mean(axis=-1)
@@ -140,13 +140,13 @@ class Stft():
         # pylint: enable=protected-access
 
     def trim(self, low_frequency_points=1, high_frequency_fraction=0.8):
-        '''
+        """
         Trim low- and high-frequency points.
 
         Typically low-frequency measurements are spoiled by imperfect DC
         removal. Similarly high-frequency measurements beyond the decimation
         filter corner are not useful.
-        '''
+        """
         keep = ((self.f >= self.f[low_frequency_points]) &
                 (self.f <= self.f[-1]*high_frequency_fraction))
         self.f = self.f[keep]
@@ -155,19 +155,19 @@ class Stft():
         self.p_xy = self.p_xy[..., keep, :]
 
     def coherence_squared(self):
-        "Return Welch's method squared coherence."
+        """Return Welch's method squared coherence."""
         return np.abs(self._mean(self.p_xy))**2/(
             self._mean(self.p_xx)*self._mean(self.p_yy))
 
     def variance(self):
-        "Return Welch's method variance."
+        """Return Welch's method variance."""
         return (1/self.coherence_squared() - 1)/(2*len(self.t))
 
     def tf_estimate(self, alpha=0):
-        '''
+        """
         Return transfer function estimate (from input, x, to output, y).
 
         Optionally, differentiated alpha times.
-        '''
+        """
         return (self._mean(self.p_xy) /
                 self._mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha

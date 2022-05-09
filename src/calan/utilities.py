@@ -22,20 +22,20 @@ from past.builtins import basestring
 # %% argument parsing
 class MyFormatter(argparse.ArgumentDefaultsHelpFormatter,
                   argparse.RawDescriptionHelpFormatter):
-    'Preserve linefeeds in docstring and include default values in help.'
+    """Preserve linefeeds in docstring and include default values in help."""
 
 
 class MyArgumentParser(argparse.ArgumentParser):
-    'Trigger printing of help on any argument parsing error.'
+    """Trigger printing of help on any argument parsing error."""
 
     def error(self, message):
-        'Display help and exit.'
+        """Display help and exit."""
         self.print_help()
         sys.exit('Error parsing arguments: ' + message + '\n')
 
 
 def string_list(argument):
-    'Turn an argument which might be a string or a tuple into a list.'
+    """Turn an argument which might be a string or a tuple into a list."""
     if isinstance(argument, basestring) or argument is None:
         argument = [argument]
     elif isinstance(argument, tuple):
@@ -45,11 +45,11 @@ def string_list(argument):
 
 # %% formatting
 def round_sig(value, num_significant=3):
-    '''
+    """
     Round to a given number of significant figures.
 
     Not the same as rounding to a number of digits.
-    '''
+    """
     if value is None or value == 0 or np.isinf(value) or np.isnan(value):
         return value
 
@@ -61,12 +61,12 @@ def round_sig(value, num_significant=3):
 
 # pylint: disable=too-many-arguments
 def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
-    '''
+    """
     Convert a value with specified units to string in related units.
 
     The argument fmt can be a string format specifier,
     or an integer number of significant digits.
-    '''
+    """
     input_unit_index = next((i for i, unit in enumerate(units)
                              if input_unit == unit), None)
     if input_unit_index is None:
@@ -91,7 +91,7 @@ def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
 
 
 def parse_units(string, output_unit, units, factors):
-    'Convert a string including units to a numeric value in related units.'
+    """Convert a string including units to a numeric value in related units."""
     output_unit_index = next((i for i, unit in enumerate(units)
                               if output_unit == unit), None)
     if output_unit_index is None:
@@ -120,13 +120,13 @@ TIME_FACTORS = [52, 365.25/52, 24, 60, 60, 1e3, 1e3, 1e3]
 
 
 def pretty_duration(value, input_unit='s', fmt=3, thresh=0.95):
-    'Convert a duration to a string which includes units.'
+    """Convert a duration to a string which includes units."""
     return pretty_units(value, input_unit, TIME_UNITS, TIME_FACTORS, fmt,
                         thresh)
 
 
 def parse_duration(string, output_unit='s'):
-    'Convert a string to a duration in specified units.'
+    """Convert a string to a duration in specified units."""
     return parse_units(string, output_unit, TIME_UNITS, TIME_FACTORS)
 
 
@@ -138,7 +138,7 @@ BYTE_FACTORS = [1e3]*(len(BYTE_UNITS) - 1)
 
 
 def pretty_bytes(value, input_unit='B', fmt=3, style='binary'):
-    'Convert a file size to a string which includes units.'
+    """Convert a file size to a string which includes units."""
     if style == 'binary':
         return pretty_units(value, input_unit, BINARY_BYTE_UNITS,
                             BINARY_BYTE_FACTORS, fmt)
@@ -151,7 +151,7 @@ VOLTAGE_FACTORS = [1e3]*(len(VOLTAGE_UNITS) - 1)
 
 
 def parse_bytes(string, output_unit='B'):
-    'Convert a string to a size in specified units.'
+    """Convert a string to a size in specified units."""
     result = parse_units(string, output_unit, BINARY_BYTE_UNITS,
                          BINARY_BYTE_FACTORS)
     if result is None:
@@ -161,24 +161,24 @@ def parse_bytes(string, output_unit='B'):
 
 
 def pretty_voltage(value, input_unit='V', fmt=3):
-    'Convert a voltage to a string which includes units.'
+    """Convert a voltage to a string which includes units."""
     return pretty_units(value, input_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS, fmt)
 
 
 def parse_voltage(string, output_unit='V'):
-    'Convert a string to a voltage in specified units.'
+    """Convert a string to a voltage in specified units."""
     return parse_units(string, output_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS)
 
 
 def to_string_no_index(df, **kwargs):
-    '''
+    """
     Work around issue with pandas.DataFrame.to_string().
 
     This is a workaround for a bug in pandas 0.18 whereby if you specify
     index=False then column justification is lost.
 
     See https://github.com/pydata/pandas/issues/13032
-    '''
+    """
     index_width = max([len(str(i)) for i in df.index]) + 1
     lines = df.to_string(**kwargs).split('\n')
     string = '\n'.join([line[index_width:] for line in lines]) + '\n'
@@ -187,7 +187,7 @@ def to_string_no_index(df, **kwargs):
 
 # %% logarithmic binning
 def preferred_number(value, series=(1, 2, 5), method='nearest'):
-    'Find nearest value from Renard or E-series.'
+    """Find nearest value from Renard or E-series."""
     # ensure preferred value series ends a factor of 10 higher than it starts
     if series[-1] != 10*series[0]:
         series = np.hstack((series, 10*series[0]))
@@ -389,11 +389,11 @@ def stdval(value, num=96, bump=0, preferred=None):
 
 
 def logspace(start, stop, num=12):
-    '''
+    """
     Compute logarithmically spaced vector of preferred numbers.
 
     See stdval.
-    '''
+    """
     log_start = np.floor(np.log10(start))
     log_stop = np.ceil(np.log10(stop))
     n_total = int(num*(log_stop-log_start)) + 1
@@ -403,7 +403,7 @@ def logspace(start, stop, num=12):
 
 # %% debugging
 def debug_on(*exceptions):
-    'Decorate unittest function so that debugger is invoked on exceptions.'
+    """Decorate unittest function so that debugger is invoked on exceptions."""
     if not exceptions:
         exceptions = (AssertionError, )
 

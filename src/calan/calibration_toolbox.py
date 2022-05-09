@@ -23,9 +23,9 @@ SAMPLE_FORMAT = '<h'  # little-endian short (16-bit) integer
 
 # %% definitions
 def generate_piecewise_constant(durations, voltages):
-    '''
+    """
     Generate a piecewise constant calibration signal in volts.
-    '''
+    """
     logger = get_logger(__name__)
     durations = np.asarray(durations)
     voltages = np.asarray(voltages)
@@ -45,21 +45,21 @@ def generate_piecewise_constant(durations, voltages):
 
 
 def expected_wav_size(duration):
-    '''
+    """
     Compute expected size before compression.
-    '''
+    """
     return pretty_bytes(
         calcsize(SAMPLE_FORMAT)*duration*CALIBRATION_SAMPLE_RATE)
 
 
 def parse_signal_file_name(file_name):
-    '''
+    """
     Parse a calibration signal file name.
 
     :rtype: tuple
     :returns: style, duration_seconds, pp_voltage, rms_voltage, mean_voltage,
             lead_in, lead_out, sample_rate
-    '''
+    """
 
     file_name = file_name.replace('.wav', '').replace('.gz', '')
     parts = os.path.split(file_name)[1].split('_')
@@ -95,9 +95,9 @@ def parse_signal_file_name(file_name):
 
 
 def get_times(signal, b_stages=None, factors=None, discard_initial=True):
-    '''
+    """
     Generate an array of times corresponding to a calibration signal.
-    '''
+    """
     i = np.arange(len(signal))
     if factors:
         i = i*np.prod(factors)
@@ -110,10 +110,10 @@ def get_times(signal, b_stages=None, factors=None, discard_initial=True):
 
 
 def pad_for_decimation(signal, b_stages, factors):
-    '''
+    """
     Pad a signal with zeros so that the first sample after decimation will be
     at the same time as the first sample before decimation.
-    '''
+    """
     n_pad_upsample = compute_decim_delay(b_stages, factors)
     signal_padded = np.hstack((np.zeros((int(n_pad_upsample/2), )), signal,
                                np.zeros((int(n_pad_upsample/2), ))))
@@ -122,9 +122,9 @@ def pad_for_decimation(signal, b_stages, factors):
 
 
 def sample_hold_digitize(signal):
-    '''
+    """
     Process signal as if sampled and held by a DAC, then digitized by an ADC.
-    '''
+    """
     signal = np.concatenate((np.zeros((1, )), signal, np.zeros((1, ))))
     signal = signal[:-1]/2 + signal[1:]/2
     return signal
@@ -132,12 +132,12 @@ def sample_hold_digitize(signal):
 
 def plot_calibration(signal,
                      units='counts', file_name=None, sample_rate=100):
-    '''
+    """
     Plot a calibration signal, decimated to given sample rate.
 
     CAUTION: decimation is performed without prior filtering, so resulting
     signal may be strongly aliased.
-    '''
+    """
     t = np.arange(len(signal))/CALIBRATION_SAMPLE_RATE
 
     step = int(CALIBRATION_SAMPLE_RATE/sample_rate)
@@ -153,9 +153,9 @@ def plot_calibration(signal,
 
 def plot_calibration_decimated(sig_in, sig_out, b_stages, factors,
                                discard_initial):
-    '''
+    """
     Utility for comparing timing of signals before/after decimation.
-    '''
+    """
 
     t_in = get_times(sig_in)
     t_out = get_times(sig_out, b_stages=b_stages, factors=factors,
