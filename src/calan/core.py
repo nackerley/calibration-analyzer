@@ -10,6 +10,7 @@ import re
 import queue
 import inspect
 import logging
+from logging import getLogger
 from logging.config import dictConfig
 from glob import glob
 from time import time
@@ -433,6 +434,35 @@ def factor_names(stream):
                           if same)
     common_name = '.'.join(part.strip() for part in common_name.split('.'))
     return common_name, short_names
+
+
+def recompute_normalization_factors(response, rtol=0.0002):
+    """Compare stage normalization factors to computed values."""
+    logger = getLogger(__name__)
+    for stage in response.response_stages:
+        try:
+            normalization_factor = stage.normalization_factor
+        except AttributeError:
+            continue
+        stage_lti = lti_from_zpsf(
+            stage.zeros, stage.poles, stage.stage_gain,
+            stage.normalization_frequency)
+        stage_gain = sp.freqresp(
+            stage_lti,
+            2*np.pi*stage.normalization_frequency)[1][0]
+        adjustment = np.abs(stage_gain)/abs(stage.stage_gain)
+        if np.isnan(adjustment):
+            logger.error('Failed to calculate normalization factor adjustment')
+        else:
+            stage.normalization_factor *= adjustment
+        if np.isclose(stage.normalization_factor,
+                      normalization_factor, rtol=rtol):
+            continue
+        logger.warning(
+            'Stage %d normalization factor %.6g in file differs from '
+            'recalculated value %.6g by more than %g%%.' %
+            (stage.stage_sequence_number, normalization_factor,
+                stage.normalization_factor, 100*rtol))
 
 
 def compute_decim_delay(b_stages, factors):

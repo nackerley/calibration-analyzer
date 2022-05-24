@@ -59,7 +59,8 @@ from obspy.signal.invsim import simulate_seismometer
 
 from calan.core import (
     PACKAGE, VERSION, get_logger, factor_names, subplots_squeeze, minreal,
-    lti_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim)
+    lti_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
+    recompute_normalization_factors)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
@@ -722,27 +723,7 @@ class CalibrationAnalyzer():
                 (instrument_sensitivity, units,
                  response.instrument_sensitivity.value, units, CHECK_PERCENT))
 
-        for stage in response.response_stages:
-            try:
-                normalization_factor = stage.normalization_factor
-            except AttributeError:
-                continue
-            stage_lti = lti_from_zpsf(
-                stage.zeros, stage.poles, stage.stage_gain,
-                stage.normalization_frequency)
-            stage_gain = sig.freqresp(
-                stage_lti,
-                2*np.pi*stage.normalization_frequency)[1][0]
-            stage.normalization_factor *= (np.abs(stage_gain) /
-                                           abs(stage.stage_gain))
-            if np.isclose(stage.normalization_factor,
-                          normalization_factor, rtol=CHECK_PERCENT/100):
-                continue
-            self.logger.warning(
-                'Stage %d normalization factor %.6g in file differs from '
-                'recalculated value %.6g by more than %g%%.' %
-                (stage.stage_sequence_number, normalization_factor,
-                 stage.normalization_factor, CHECK_PERCENT))
+        recompute_normalization_factors(response, rtol=CHECK_PERCENT/100)
 
         if MOTION[response.response_stages[0].input_units.upper()] != 'ACC':
             self.logger.warning(
