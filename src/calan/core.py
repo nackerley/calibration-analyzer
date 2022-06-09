@@ -990,11 +990,9 @@ def channels2df(inventory):
     df['start'] = pd.to_datetime([
         channel.start_date.datetime if channel.start_date else pd.NaT
         for _, _, channel in inventory_items(inventory)])
-    df['start'] = df['start'].dt.date
     df['end'] = pd.to_datetime([
         channel.end_date.datetime if channel.end_date else pd.NaT
         for _, _, channel in inventory_items(inventory)])
-    df['end'] = df['end'].dt.date
 
     df['latitude'] = [station.latitude
                       for _, station, _ in inventory_items(inventory)]
