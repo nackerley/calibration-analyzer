@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 'A collection of utilities useful for station quality analysis.'
-# pylint: disable=logging-not-lazy
 # for Python 2 & 3 compatibility
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -101,7 +100,7 @@ def get_clients(servers=None, test_timeout=2):
             else:
                 if not os.path.isdir(server):
                     logger.warning(
-                        'CHIS archive %s not available. Ignoring.' % server)
+                        'CHIS archive %s not available. Ignoring.', server)
                     continue
 
             try:
@@ -129,8 +128,8 @@ STATIONXML_CONVERTER_FILE = 'stationxml-converter-1.0.9.jar'
 STATIONXML_CONVERTER = next(iter(glob(
     os.path.join(ROOT, '**', STATIONXML_CONVERTER_FILE))), None)
 if STATIONXML_CONVERTER is None:
-    print('WARNING: StationXML converter "%s" not found. '
-          'Cannot convert dataless2inventory ' % STATIONXML_CONVERTER_FILE)
+    print(f'WARNING: StationXML converter "{STATIONXML_CONVERTER_FILE}" not found. '
+          'Cannot convert dataless2inventory ')
 
 
 def dataless2inventory(inventory_dataless, inventory_source='GSC'):
@@ -160,8 +159,7 @@ def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
     """
     logger = get_logger(__name__)
     if not os.path.isfile(inventory_dataless):
-        logger.warning('Dataless SEED file "%s" not found'
-                       % inventory_dataless)
+        logger.warning('Dataless SEED file "%s" not found', inventory_dataless)
 
     inventory_xml = inventory_dataless.replace('.dataless', '.xml')
 
@@ -1009,6 +1007,11 @@ def channels2df(inventory):
     df['name'] = [station.site.name
                   for _, station, _ in inventory_items(inventory)]
 
+    if df.duplicated(NSLCSE).any():
+        getLogger(__name__).warning(
+            'Keeping last of duplicate keys: %s',
+            df.loc[df.duplicated(NSLCSE, keep=False)])
+        df.drop_duplicates(NSLCSE, keep='last', inplace=True)
     df.set_index(NSLCSE, verify_integrity=True, inplace=True)
     df.sort_index(inplace=True)
 
@@ -1068,7 +1071,7 @@ def read_sql(file_name, parse_dates=('start', 'end'), dtype=None,
     if dtype is None:
         dtype = {'count': int}
     line = ''
-    with open(file_name) as file:
+    with open(file_name, encoding='UTF-8') as file:
         for line in file:
             if '|' in line:
                 break
@@ -1077,7 +1080,7 @@ def read_sql(file_name, parse_dates=('start', 'end'), dtype=None,
     pipes = np.array([match.start() for match in re.finditer(r'\|', line)])
     colspecs = list(zip([0] + list(pipes + 1), list(pipes) + [len(line)]))
     df = pd.read_fwf(file_name, sep='|', skiprows=skiprows, skipfooter=2,
-                     colspecs=colspecs, parse_dates=parse_dates,
+                     colspecs=colspecs, parse_dates=list(parse_dates),
                      dtype=dtype)
 
     if stachan:
