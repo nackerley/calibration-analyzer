@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 'A collection of utilities useful for station quality analysis.'
-# for Python 2 & 3 compatibility
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+# pylint: disable=consider-using-f-string
 
 import os
 import re
@@ -24,6 +22,8 @@ import scipy.signal as sp
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
 from obspy.core.inventory import CoefficientsTypeResponseStage
+from obspy.core.event import (
+    Pick, Arrival, Amplitude, StationMagnitude, WaveformStreamID)
 
 from calan.utilities import string_list
 from calan import chis_archive
@@ -176,8 +176,7 @@ def inventory2dataless(inventory_xml):
     """Convert StationXML inventory to dataless SEED."""
     logger = get_logger(__name__)
     if not os.path.isfile(inventory_xml):
-        logger.warning('StationXML file "%s" not found'
-                       % inventory_xml)
+        logger.warning('StationXML file "%s" not found', inventory_xml)
 
     inventory_dataless = inventory_xml.replace('.xml', '.dataless')
 
@@ -221,29 +220,30 @@ def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
     inventory_file = inventory_file.replace('level', '')
 
     if os.path.isfile(inventory_file):
-        logger.info('Cache: ' + inventory_file)
+        logger.info('Cache: %s', inventory_file)
         tick = time()
         inventory = read_inventory(inventory_file)
-        logger.info('Elapsed: ' + _elapsed_since(tick))
+        logger.info('Elapsed: %s', _elapsed_since(tick))
     else:
         try:
             chis_fdsn_client = fdsn.Client(DEFAULT_FDSN_SERVERS[0])
         except fdsn.client.FDSNException:
             chis_fdsn_client = fdsn.Client(DEFAULT_FDSN_SERVERS[2])
 
-        logger.info('Client: ' + chis_fdsn_client.base_url)
+        logger.info('Client: %s', chis_fdsn_client.base_url)
 
         tick = time()
         inventory = chis_fdsn_client.get_stations(
             level=level, minlatitude=minlatitude, maxlatitude=maxlatitude,
             maxlongitude=maxlongitude, minlongitude=minlongitude)
-        logger.info('Read %s inventory via %s: %s' %
-                    (inventory.sender.upper(), inventory.source,
-                     _elapsed_since(tick)))
+        logger.info(
+            'Read %s inventory via %s: %s',
+            inventory.sender.upper(), inventory.source, _elapsed_since(tick))
 
         tick = time()
         inventory.write(inventory_file, format='StationXML')
-        logger.info('Cached %s: %s' % (inventory_file, _elapsed_since(tick)))
+        logger.info(
+            'Cached %s: %s', inventory_file, _elapsed_since(tick))
 
 
 def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
@@ -458,9 +458,9 @@ def recompute_normalization_factors(response, rtol=0.0002):
             continue
         logger.warning(
             'Stage %d normalization factor %.6g in file differs from '
-            'recalculated value %.6g by more than %g%%.' %
-            (stage.stage_sequence_number, normalization_factor,
-                stage.normalization_factor, 100*rtol))
+            'recalculated value %.6g by more than %g%%.',
+            stage.stage_sequence_number, normalization_factor,
+            stage.normalization_factor, 100*rtol)
 
 
 def compute_decim_delay(b_stages, factors):
@@ -588,18 +588,18 @@ def extract_decimation_coefficients(stages):
         if (isinstance(stage, CoefficientsTypeResponseStage) and
                 stage.decimation_factor > 1):
             if not factors:
-                logger.info('Input sample rate %g sps' %
+                logger.info('Input sample rate %g sps',
                             stage.decimation_input_sample_rate)
 
             factors.append(stage.decimation_factor)
             b_stages.append(stage.numerator)
             logger.info(
-                'Filter with %d coefficients and decimate by %d to %g sps'
-                % (len(stage.numerator), stage.decimation_factor,
-                   stage.decimation_input_sample_rate/stage.decimation_factor))
+                'Filter with %d coefficients and decimate by %d to %g sps',
+                len(stage.numerator), stage.decimation_factor,
+                stage.decimation_input_sample_rate/stage.decimation_factor)
     n_pad_upsample = compute_decim_delay(b_stages, factors)
-    logger.info('Filtering and decimation by %d consumes %d samples'
-                % (np.prod(factors), n_pad_upsample))
+    logger.info('Filtering and decimation by %d consumes %d samples',
+                np.prod(factors), n_pad_upsample)
 
     return b_stages, factors
 
@@ -1180,8 +1180,8 @@ def get_logger(name, log_file_name='', log_console_level='INFO'):
 
     logger = logging.getLogger(name)
     if not_previously_configured:
-        logger.info('Logfile: ' + os.path.abspath(log_file_name))
-        logger.info('Package: %s v%s' % (PACKAGE, VERSION))
+        logger.info('Logfile: %s', os.path.abspath(log_file_name))
+        logger.info('Package: %s v%s', PACKAGE, VERSION)
     return logger
 
 
@@ -1210,3 +1210,111 @@ class LoggerWriter:
 
     def flush(self):
         """Simulate file.flush()."""
+
+
+def get_channel(obj, event=None):
+    'Return SEED string associated with ObsPy object.'
+    waveform_id = get_waveform_id(obj, event)
+    if not isinstance(waveform_id, WaveformStreamID):
+        return ''
+
+    return waveform_id.get_seed_string()
+
+
+def get_waveform_id(obj, event=None):
+    'Return waveform_id associated with ObsPy object.'
+    if obj is None:
+        return None
+    if 'waveform_id' in obj and obj.waveform_id is not None:
+        return obj.waveform_id
+
+    pick = get_pick(obj, event)
+
+    if not pick:
+        return None
+
+    return pick.waveform_id
+
+
+def get_pick(obj, event=None):
+    '''
+    Look up Pick associated with object.
+
+    Arguments
+    ---------
+    obj: Pick, Arrival, Amplitude or StationMagnitude
+        object in question
+    event: Event
+        not required for Arrival or Amplitude if referential integrity is
+        intact.
+    '''
+    if obj is None:
+        return None
+
+    if isinstance(obj, Pick):
+        return obj
+
+    if isinstance(obj, (Arrival, Amplitude)):
+        if obj.pick_id is None:
+            return None
+
+        pick = obj.pick_id.get_referred_object()
+        if pick is None:
+            if not event:
+                raise ValueError(
+                    'Need Event to find Pick associated with this %s.' %
+                    obj.__class__.__name__)
+            pick = next((pick for pick in event.picks
+                         if pick.resource_id == obj.pick_id), None)
+        return pick
+
+    if isinstance(obj, StationMagnitude):
+        return get_pick(get_amplitude(obj, event), event)
+
+    raise TypeError('object must be one of: Pick, Arrival, Amplitude, '
+                    'StationMagnitude')
+
+
+# pylint: disable=too-many-return-statements
+def get_amplitude(obj, event=None):
+    '''
+    Look up Amplitude associated with object.
+
+    Arguments
+    ---------
+    obj: Pick, Arrival, Amplitude or StationMagnitude
+        object in question
+    event: Event
+        not required for StationMagnitude if referential integrity is intact.
+    '''
+    if obj is None:
+        return None
+
+    assert isinstance(obj, (Pick, Arrival, Amplitude, StationMagnitude))
+
+    if isinstance(obj, Amplitude):
+        return obj
+
+    if isinstance(obj, Pick):
+        return next((item for item in event.amplitudes
+                     if item.pick_id == obj.resource_id), None)
+
+    if isinstance(obj, StationMagnitude):
+        if obj.amplitude_id is None:
+            return None
+
+        amplitude = obj.amplitude_id.get_referred_object()
+        if amplitude is None:
+            if not event:
+                raise ValueError(
+                    'Need Event find Amplitude associated with this %s.' %
+                    obj.__class__.__name__)
+            amplitude = next(
+                (amplitude for amplitude in event.amplitudes
+                 if amplitude.resource_id == obj.amplitude_id), None)
+        return amplitude
+
+    if isinstance(obj, Arrival):
+        return get_amplitude(get_pick(obj, event), event)
+
+    return None
