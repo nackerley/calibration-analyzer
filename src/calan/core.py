@@ -247,7 +247,7 @@ def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
 
 
 def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
-    '''
+    """
     Remove (nearly) identical zero-pole pairs from a transfer function.
 
     The 'octave' method is that used in octave :func:`~control.minreal` and
@@ -280,7 +280,7 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     -------
     lti_out: instance of :class:`~scipy.signal.lti`
         transfer function after cancellation
-    '''
+    """
     assert isinstance(lti_in, sp.lti)
     tolerance = float(tolerance)
     assert tolerance >= 0
@@ -605,13 +605,13 @@ def extract_decimation_coefficients(stages):
 
 
 def truncnorm_shape(mean, std, clip_b, clip_a=None):
-    '''
+    """
     Convert mean, standard deviation and clip levels to shape parameters.
 
     See :class:`~scipy.stats.truncnorm'.
 
     :returns: a, b
-    '''
+    """
     if clip_a is None:
         clip_a = -clip_b
     shape_a, shape_b = (clip_a - mean) / std, (clip_b - mean) / std
@@ -852,8 +852,8 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
 
     percent_available = 100*fraction_available(trace_ids, start, end, gaps_df)
     logger.info(
-        '%s was %.1f%% complete with %d gap(s), e.g.:' %
-        (common_id, percent_available, num_gaps))
+        '%s was %.1f%% complete with %d gap(s), e.g.:',
+        common_id, percent_available, num_gaps)
 
     gaps_df.loc[:, 'note'] = ''
 
@@ -961,7 +961,7 @@ def inventory2df(inventory):
 
 
 def channels2df(inventory):
-    '''
+    """
     Create table of channels in inventory.
 
     TODO: consider merging contiguous time ranges, but carefully!
@@ -976,7 +976,7 @@ def channels2df(inventory):
     df : pandas.DataFrame
         station table with index 'network', 'station','location' 'channel'
         and columns 'start' and 'end'.
-    '''
+    """
     df = pd.DataFrame()
     df['network'] = [network.code
                      for network, _, _ in inventory_items(inventory)]
@@ -1017,7 +1017,7 @@ def channels2df(inventory):
 
 
 def stations2df(inventory):
-    '''
+    """
     Create table of stations in inventory.
 
     TODO: consider merging contiguous time ranges, but carefully!
@@ -1032,7 +1032,7 @@ def stations2df(inventory):
     df : pandas.DataFrame
         station table with index 'network', 'station','location' 'channel'
         and columns 'start' and 'end'.
-    '''
+    """
     df = pd.DataFrame()
     df['network'] = [network.code
                      for network, _ in inventory_stations(inventory)]
@@ -1213,7 +1213,9 @@ class LoggerWriter:
 
 
 def get_channel(obj, event=None):
-    'Return SEED string associated with ObsPy object.'
+    """
+    Return SEED string associated with ObsPy object.
+    """
     waveform_id = get_waveform_id(obj, event)
     if not isinstance(waveform_id, WaveformStreamID):
         return ''
@@ -1222,7 +1224,9 @@ def get_channel(obj, event=None):
 
 
 def get_waveform_id(obj, event=None):
-    'Return waveform_id associated with ObsPy object.'
+    """
+    Return waveform_id associated with ObsPy object.
+    """
     if obj is None:
         return None
     if 'waveform_id' in obj and obj.waveform_id is not None:
@@ -1237,7 +1241,7 @@ def get_waveform_id(obj, event=None):
 
 
 def get_pick(obj, event=None):
-    '''
+    """
     Look up Pick associated with object.
 
     Arguments
@@ -1247,7 +1251,7 @@ def get_pick(obj, event=None):
     event: Event
         not required for Arrival or Amplitude if referential integrity is
         intact.
-    '''
+    """
     if obj is None:
         return None
 
@@ -1277,7 +1281,7 @@ def get_pick(obj, event=None):
 
 # pylint: disable=too-many-return-statements
 def get_amplitude(obj, event=None):
-    '''
+    """
     Look up Amplitude associated with object.
 
     Arguments
@@ -1286,7 +1290,7 @@ def get_amplitude(obj, event=None):
         object in question
     event: Event
         not required for StationMagnitude if referential integrity is intact.
-    '''
+    """
     if obj is None:
         return None
 

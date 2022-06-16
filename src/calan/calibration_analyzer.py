@@ -29,7 +29,7 @@ Authors
 -------
 Nick Ackerley
 """
-# pylint: disable=logging-not-lazy, too-many-lines
+# pylint: disable=consider-using-f-string, too-many-lines, no-member
 import os
 import sys
 import lzma
@@ -249,13 +249,13 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
     logger = get_logger(__name__)
     if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
             not os.access(summary_csv, os.W_OK):
-        logger.error('Will not be able to write summary to %s.' % summary_csv)
+        logger.error('Will not be able to write summary to %s.', summary_csv)
         return ''
 
     output_files = sorted([item for item in glob(pattern)
                            if INPUT_FLAG not in item])
     if not output_files:
-        logger.error('No files match pattern "%s".' % pattern)
+        logger.error('No files match pattern "%s".', pattern)
         return ''
 
     dfs = []
@@ -313,7 +313,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
         df = df.loc[~df.index.duplicated(keep='last')]
     df.reset_index(col_level=1, col_fill='info', inplace=True)
 
-    logger.info('Summary: ' + summary_csv)
+    logger.info('Summary: %s', summary_csv)
     # transpose rows and columns before writing to file
     df.T.to_csv(summary_csv)
 
@@ -472,7 +472,7 @@ class CalibrationAnalyzer():
                 self.stream += read(input_file)
             else:
                 self.logger.warning(
-                    'Expected input file not found: ' + input_file)
+                    'Expected input file not found: %s', input_file)
         self.info['waveform_file'] = waveform_file
         self.info['start'] = self.stream[0].stats.starttime
         self.info['end'] = self.stream[0].stats.endtime
@@ -486,11 +486,11 @@ class CalibrationAnalyzer():
                 if trace.id != calibration_trace.id] + [calibration_trace]
         else:
             self.logger.debug(
-                'lead in, out [s]: %g, %g' % (lead_in, lead_out))
+                'lead in, out [s]: %g, %g', lead_in, lead_out)
             self.logger.debug(
-                'Pre, post-event [s]: %g, %g' % (pre_time, post_time))
+                'Pre, post-event [s]: %g, %g', pre_time, post_time)
             self.logger.info(
-                'Delay start [s]: %g' % delay_start)
+                'Delay start [s]: %g', delay_start)
             self.info['start'] += lead_in + pre_time + delay_start
             self.info['end'] -= lead_out + post_time - delay_start
             self.info['delay_start'] = delay_start
@@ -520,8 +520,8 @@ class CalibrationAnalyzer():
         """Load response file describing the system being calibrated."""
         response_files = {trace.id: '' for trace in self._output_stream()}
         self.logger.info(
-            'Searching %s for: %s' %
-            (pattern, ', '.join(sorted(response_files.keys()))))
+            'Searching %s for: %s',
+            pattern, ', '.join(sorted(response_files.keys())))
         for response_file in glob(pattern):
             inventory = read_inventory(response_file)
             for trace in self._output_stream():
@@ -538,7 +538,7 @@ class CalibrationAnalyzer():
 
             if found_ids:
                 self.logger.info(
-                    '%s: %s' % (response_file, ', '.join(sorted(found_ids))))
+                    '%s: %s', response_file, ', '.join(sorted(found_ids)))
                 for trace_id in found_ids:
                     response_files[trace_id] = response_file
 
@@ -550,7 +550,7 @@ class CalibrationAnalyzer():
                           if 'response' not in trace.stats]
         if missing_traces:
             missing_ids = ', '.join(trace.id for trace in missing_traces)
-            self.logger.warning('No station metadata found: ' + missing_ids)
+            self.logger.warning('No station metadata found: %s', missing_ids)
 
         for trace in missing_traces:
             self.stream.remove(trace)
@@ -566,7 +566,7 @@ class CalibrationAnalyzer():
                 'Sensor input units %s not among supported: ',
                 (sensor.input_units, ', '.join(sorted(MOTION.keys()))))
 
-        self.logger.debug(str(self._output_stream()[0].stats.response))
+        self.logger.debug(self._output_stream()[0].stats.response)
 
     def load_calibration_signal(self, calibration_signal_file):
         """
@@ -605,23 +605,23 @@ class CalibrationAnalyzer():
                 self._sampling_rate(), phase_suffix, self.info['delay_start'],
                 self.CACHE_FORMAT.lower()))
         if os.path.isfile(cache_file):
-            self.logger.info('Found cache: %s' % cache_file)
+            self.logger.info('Found cache: %s', cache_file)
             signal = read(cache_file)[0].data
         else:
-            self.logger.info('Reading: %s' % calibration_signal_file)
+            self.logger.info('Reading: %s', calibration_signal_file)
             signal = np.frombuffer(lzma.open(calibration_signal_file).read(),
                                    dtype=CALIBRATION_DTYPE)
             signal = sample_hold_digitize(signal)
             signal = pad_for_decimation(signal, b_stages, factors)[0]
             signal = self._pad_lead_in_out(signal, factor)
 
-            self.logger.info('Decimating by %d ...' % factor)
+            self.logger.info('Decimating by %d ...', factor)
             signal = multi_decim(signal, b_stages, factors)[0]
 
         if len(signal) != self.stream[0].stats.npts:
             self.logger.error(
-                'Expected %d, obtained %d points for calibration signal' %
-                (self.stream[0].stats.npts, len(signal)))
+                'Expected %d, obtained %d points for calibration signal',
+                self.stream[0].stats.npts, len(signal))
             raise RuntimeError('Check lead-in and lead-out times.')
 
         stats = {key: self.stream[0].stats[key] for key in
@@ -632,7 +632,7 @@ class CalibrationAnalyzer():
         stream = Stream([trace])
 
         if not os.path.isfile(cache_file):
-            self.logger.info('Caching: %s' % cache_file)
+            self.logger.info('Caching: %s', cache_file)
             stream.write(cache_file, format=self.CACHE_FORMAT)
 
         self.stream += stream
@@ -650,13 +650,13 @@ class CalibrationAnalyzer():
         last_start = max([trace.stats.starttime for trace in self.stream])
         if self.info['start'] < last_start:
             self.logger.warning(
-                'Data missing, delaying start to %s' % last_start)
+                'Data missing, delaying start to %s', last_start)
             self.info['start'] = last_start + discard_s
 
         first_end = min([trace.stats.endtime for trace in self.stream])
         if self.info['end'] < first_end:
             self.logger.warning(
-                'Data missing, advancing end to %s' % first_end)
+                'Data missing, advancing end to %s', first_end)
             self.info['end'] = first_end - discard_s
         self.logger.debug(str(self.stream))
 
@@ -671,9 +671,9 @@ class CalibrationAnalyzer():
             if any(clipping):
                 i = np.argmax(clipping)
                 self.logger.warning(
-                    'Potential clipping (|%d| > %d) counts on %s at %s' %
-                    (trace.data[i], CHECK_CLIP, trace.id,
-                     trace.stats.starttime + i*trace.stats.delta))
+                    'Potential clipping (|%d| > %d) counts on %s at %s',
+                    trace.data[i], CHECK_CLIP, trace.id,
+                    trace.stats.starttime + i*trace.stats.delta)
 
     def _pad_lead_in_out(self, samples, factor):
         sampling_rate = self._sampling_rate()*factor
@@ -719,16 +719,16 @@ class CalibrationAnalyzer():
                 response.instrument_sensitivity.input_units.lower())
             self.logger.warning(
                 'Instrument sensitivity %.6g %s in file differs from '
-                'recalculated value %.6g %s by more than %g%%.' %
-                (instrument_sensitivity, units,
-                 response.instrument_sensitivity.value, units, CHECK_PERCENT))
+                'recalculated value %.6g %s by more than %g%%.',
+                instrument_sensitivity, units,
+                response.instrument_sensitivity.value, units, CHECK_PERCENT)
 
         recompute_normalization_factors(response, rtol=CHECK_PERCENT/100)
 
         if MOTION[response.response_stages[0].input_units.upper()] != 'ACC':
             self.logger.warning(
-                'Expected calibration input [%s] to be acceleration [%s]: ' %
-                (response.response_stages[0].input_unit, UNITS['ACC']))
+                'Expected calibration input [%s] to be acceleration [%s]: ',
+                response.response_stages[0].input_unit, UNITS['ACC'])
 
         decimation_stages = [
             stage for stage in self.stream[0].stats.response.response_stages
@@ -762,7 +762,7 @@ class CalibrationAnalyzer():
         self.lti['sensor'] = lti_from_zpsf(
             sensor.zeros, sensor.poles, sensor.stage_gain,
             sensor.normalization_frequency)
-        self.logger.debug('Sensor: ' + str(self.lti['sensor']))
+        self.logger.debug('Sensor: %s', str(self.lti['sensor']))
 
         cal = self._cal_stage()
         cal_zeros, cal_poles, cal_gain = cal.poles, cal.zeros, 1/cal.stage_gain
@@ -770,14 +770,14 @@ class CalibrationAnalyzer():
                         ORDER[MOTION[cal.input_units.upper()]])
         if integrations:
             self.logger.debug(
-                'Integrating %d times, from %s to %s' %
-                (integrations, cal.input_units, sensor.input_units))
+                'Integrating %d times, from %s to %s',
+                integrations, cal.input_units, sensor.input_units)
             cal_poles = np.array([0]*integrations + list(cal_poles))
             # TODO: verify minus sign
             cal_gain /= (-2*np.pi*cal.normalization_frequency)**integrations
         self.lti['cal'] = lti_from_zpsf(
             cal_zeros, cal_poles, cal_gain, cal.normalization_frequency)
-        self.logger.debug('Cal: ' + str(self.lti['cal']))
+        self.logger.debug('Cal: %s', self.lti['cal'])
 
         system_zeros = (self.lti['cal'].zeros.tolist() +
                         self.lti['sensor'].zeros.tolist())
@@ -786,7 +786,7 @@ class CalibrationAnalyzer():
         system_gain = self.lti['cal'].gain*self.lti['sensor'].gain
         self.lti['system'] = minreal(
             sig.lti(system_zeros, system_poles, system_gain))
-        self.logger.debug('System: ' + str(self.lti['system']))
+        self.logger.debug('System: %s', self.lti['system'])
 
     def tf_nominal(self, model, f=None):
         """
@@ -853,7 +853,7 @@ class CalibrationAnalyzer():
             trace.stats.response.response_stages[0].stage_gain
             for trace in stream]).reshape((-1, 1))
         self.logger.debug(
-            'Digitizer sensitivities: ' + str(digitizer_sensitivity.squeeze()))
+            'Digitizer sensitivities: %s', digitizer_sensitivity.squeeze())
         signal /= digitizer_sensitivity
 
         return signal
@@ -1004,7 +1004,7 @@ class CalibrationAnalyzer():
             ((self.info['spec_min_freq_hz'] <= self.stft.f) &
              (self.stft.f <= self.info['spec_max_freq_hz'])), axis=1)
 
-        self.logger.info('Result: ' + ', '.join(
+        self.logger.info('Result: %s', ', '.join(
             [': '.join(items) for items in zip(
                 [trace.id[-1] for trace in self.stream],
                 ['pass' if in_spec else 'fail'
@@ -1017,8 +1017,8 @@ class CalibrationAnalyzer():
         f = self.stft.f[keep]
         if len(f) >= MAX_FAP_LEN:
             self.logger.warning(
-                '%d frequencies is more than %d supported by FAP2 format' %
-                (len(f), MAX_FAP_LEN))
+                '%d frequencies is more than %d supported by FAP2 format',
+                len(f), MAX_FAP_LEN)
         tf_estimate = (
             self.stft.tf_estimate()[:, keep] /
             self.tf_nominal('cal')[keep])
@@ -1028,7 +1028,7 @@ class CalibrationAnalyzer():
             start=self.info['start'].strftime('%Y%m%d.%H%M'))
         self.logger.info(output_txt)
 
-        with open(output_txt, 'w') as file:
+        with open(output_txt, 'w', encoding='UTF-8') as file:
             file.write(IMS_HEADER.substitute(
                 msg_id=CAL_RESULT_MSG_ID.format(
                     year=self.info['start'].year,
@@ -1170,8 +1170,8 @@ class CalibrationAnalyzer():
         f = f[keep]
         if not all(keep):
             self.logger.info(
-                'Discarding %d/%d points with variance > %g'
-                % ((~keep).sum(), len(keep), variance_threshhold))
+                'Discarding %d/%d points with variance > %g',
+                (~keep).sum(), len(keep), variance_threshhold)
 
         if len(f) < 1:
             self.logger.error('No data to fit.')

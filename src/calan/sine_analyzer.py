@@ -69,14 +69,14 @@ LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
 
 
 def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
-    '''
+    """
     Estimate time of first zero crossing.
 
     This is the time after first departure from zero
     greater than given tolerance relative to peak-to-peak amplitude. Only a
     very crude DC removal is attempted, by subtracting the value of the first
     sample.
-    '''
+    """
     x = trace.data - trace.data[0]
     t = trace.times(type=time_type)
 
@@ -87,7 +87,9 @@ def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
 
 
 class SynchronousCalibrationAnalyzer():
-    'Calibration analyzer for ObsPy stream including calibration signal.'
+    """
+    Calibration analyzer for ObsPy stream including calibration signal.
+    """
 
     TIME_ZONE_FINDER = TimezoneFinder()
 
@@ -116,15 +118,17 @@ class SynchronousCalibrationAnalyzer():
 
     def load_waveforms(self, output_file, trim_s=TRIM_S,
                        output_label=OUTPUT_LABEL, input_label=INPUT_LABEL):
-        'Load and preserve synchronous portions of input and output traces.'
+        """
+        Load and preserve synchronous portions of input and output traces.
+        """
         input_file = output_file.replace(output_label, input_label)
         self.test_name = (os.path.splitext(output_file)[0]
                           .replace(output_label, ''))
 
-        self.logger.info('Output: ' + output_file)
+        self.logger.info('Output: %s', output_file)
         output_stream = read(output_file)
 
-        self.logger.info('Input: ' + input_file)
+        self.logger.info('Input: %s', input_file)
         input_stream = read(input_file)
 
         self.stream = input_stream + output_stream
@@ -136,7 +140,7 @@ class SynchronousCalibrationAnalyzer():
             start_png = os.path.join(
                 os.path.dirname(self.test_name),
                 'start_%s.png' % os.path.basename(self.test_name))
-            self.logger.info('Check start: ' + start_png)
+            self.logger.info('Check start: %s', start_png)
             fig = self.stream.plot(endtime=start + 1,
                                    handle=True, equal_scale=False)
             for ax, trace in zip(fig.axes, reversed(self.stream)):
@@ -150,7 +154,7 @@ class SynchronousCalibrationAnalyzer():
             end_png = os.path.join(
                 os.path.dirname(self.test_name),
                 'end_%s.png' % os.path.basename(self.test_name))
-            self.logger.info('Check end: ' + end_png)
+            self.logger.info('Check end: %s', end_png)
             fig = self.stream.plot(starttime=end - 1,
                                    handle=True, equal_scale=False)
             for ax in fig.axes:
@@ -166,7 +170,9 @@ class SynchronousCalibrationAnalyzer():
 
     def load_response(self, template_station='YKAR1', template_channel='SHZ',
                       motor_ms2v=MOTOR_MS2V, dac_gain=DAC_GAIN):
-        'Load nominal input and output responses.'
+        """
+        Load nominal input and output responses.
+        """
         inventory_xml = self.stream[1].id + '.xml'
         # copy response from known station
         if not os.path.isfile(inventory_xml):
@@ -195,17 +201,19 @@ class SynchronousCalibrationAnalyzer():
                 decimation_delay=0, decimation_correction=0)
             calibration.recalculate_overall_sensitivity()
 
-            self.logger.info('Writing: ' + inventory_xml)
+            self.logger.info('Writing: %s', inventory_xml)
             inventory.write(inventory_xml, 'STATIONXML')
         else:
-            self.logger.info('Reading: ' + inventory_xml)
+            self.logger.info('Reading: %s', inventory_xml)
             inventory = read_inventory(inventory_xml)
 
         self.stream.attach_response(inventory)
 
     def compute_peak_response(self, len_fft=LEN_FFT, len_overlap=LEN_OVERLAP,
                               min_rel_power=1e-4, window=WINDOW):
-        'Compute relative transfer function estimate at spectral peak.'
+        """
+        Compute relative transfer function estimate at spectral peak.
+        """
         self.stft = Stft()
         self.stft.compute(self.stream[0].data, self.stream[1].data,
                           self.stream[0].stats.sampling_rate,
@@ -294,7 +302,9 @@ class SynchronousCalibrationAnalyzer():
 
     def get_temperature(self, dt_utc, station_id=WEATHER_STATION_ID,
                         time_zone=WEATHER_STATION_TIME_ZONE):
-        'Get temperature near station at given time.'
+        """
+        Get temperature near station at given time.
+        """
         tz = pytz.timezone(time_zone)
         dt_local = tz.fromutc(dt_utc)
 
@@ -309,8 +319,8 @@ class SynchronousCalibrationAnalyzer():
                 lat=df['Latitude (y)'].mean(), lng=df['Longitude (x)'].mean()))
             if actual_tz != tz:
                 self.logger.warning(
-                    'Data is from time zone "%s"; expected "%s".' %
-                    (actual_tz.zone, time_zone))
+                    'Data is from time zone "%s"; expected "%s".',
+                    actual_tz.zone, time_zone))
 
             df['Date/Time'] = df['Date/Time'].dt.tz_localize(
                 tz, ambiguous=True, nonexistent='NaT')
@@ -327,7 +337,9 @@ class SynchronousCalibrationAnalyzer():
 
     def summary(self, station_id=WEATHER_STATION_ID,
                 time_zone=WEATHER_STATION_TIME_ZONE):
-        'Summarize result.'
+        """
+        Summarize result.
+        """
         result = pd.Series()
         result['test name'] = self.test_name
         result['channel id'] = self.stream[1].id
@@ -350,7 +362,9 @@ class SynchronousCalibrationAnalyzer():
 
 
 def _argparser():
-    'Command-line interface.'
+    """
+    Command-line interface.
+    """
     # pylint: disable=no-member
     parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
                               description=__doc__,
@@ -401,7 +415,9 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
                   output_label=OUTPUT_LABEL, input_label=INPUT_LABEL,
                   summary_csv='',
                   plot=False, dpi=DPI):
-    'Run analysis for all calibration files matching a glob pattern.'
+    """
+    Run analysis for all calibration files matching a glob pattern.
+    """
     analyzer = SynchronousCalibrationAnalyzer(plot=plot, dpi=dpi)
 
     if not summary_csv:
@@ -422,8 +438,8 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
                                 if output_label in item])
     if not calibration_files:
         analyzer.logger.error(
-            'No files matching pattern "%s" contain output label "%s".' %
-            (pattern, output_label))
+            'No files matching pattern "%s" contain output label "%s".',
+            pattern, output_label))
         return ''
 
     rows = []
@@ -439,7 +455,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
             with StringIO() as buf, redirect_stdout(buf):
                 analyzer.stream.print_gaps()
                 gap_summary = buf.getvalue()
-            analyzer.logger.debug('\n' + gap_summary)
+            analyzer.logger.debug('\n%s', gap_summary)
         finally:
             plt.close('all')
 
@@ -463,13 +479,15 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
                               for item in df['normalized error']]
     df['temperature [°C]'] = df['temperature [°C]'].astype(float)
 
-    analyzer.logger.info('Summary: ' + summary_csv)
+    analyzer.logger.info('Summary: %s', summary_csv)
     df.to_csv(summary_csv, index=False)
     return summary_csv
 
 
 def main(argv=None):
-    'Analyze calibrations and return system exit code.'
+    """
+    Analyze calibrations and return system exit code.
+    """
     if argv is None:
         argv = sys.argv
     parser = _argparser()

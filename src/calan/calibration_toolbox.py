@@ -2,9 +2,7 @@
 """
 A collection of functions useful for seismograph calibration.
 """
-# pylint: disable=logging-not-lazy
-from __future__ import absolute_import, division, print_function
-
+# pylint: disable=consider-using-f-string
 import os
 from warnings import warn
 from struct import calcsize
@@ -34,8 +32,8 @@ def generate_piecewise_constant(durations, voltages):
         ['%gV_%ss' % (voltage, duration)
          for voltage, duration in zip(voltages, durations)])
     file_size = expected_wav_size(durations.sum())
-    logger.debug('Uncompressed output "%s.wav" will be %s.'
-                 % (file_name, file_size))
+    logger.debug('Uncompressed output "%s.wav" will be %s.',
+                 file_name, file_size)
 
     times = durations.cumsum()
     t = np.arange(0, durations.sum(), 1/CALIBRATION_SAMPLE_RATE).reshape(-1, 1)
