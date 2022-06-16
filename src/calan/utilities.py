@@ -1,22 +1,13 @@
 # -*- coding: utf-8 -*-
 'General-Purpose utilities.'
-# pylint: disable=logging-not-lazy
-# for Python 2 & 3 compatibility
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
+# pylint: disable=consider-using-f-string
 import sys
 from math import floor, log10
 from operator import mul
-from functools import reduce, wraps
+from functools import reduce
 import argparse
-from pdb import post_mortem
-from traceback import print_exception
 
 import numpy as np
-
-# for Python 2 & 3 compatible unicode support
-from past.builtins import basestring
 
 
 # %% argument parsing
@@ -36,7 +27,7 @@ class MyArgumentParser(argparse.ArgumentParser):
 
 def string_list(argument):
     """Turn an argument which might be a string or a tuple into a list."""
-    if isinstance(argument, basestring) or argument is None:
+    if isinstance(argument, str) or argument is None:
         argument = [argument]
     elif isinstance(argument, tuple):
         argument = list(argument)
@@ -269,7 +260,7 @@ E_SERIES = {
 
 
 def stdval(value, num=96, bump=0, preferred=None):
-    '''
+    """
     Compute nearest values in a standard-value series.
 
     For non-standard E-numbers, Renard numbers are used. Note that the
@@ -293,7 +284,7 @@ def stdval(value, num=96, bump=0, preferred=None):
     num=24 would not give the correct E24 series if it weren't overridden.
 
     :returns output: Nearest standard values after rounding
-    '''
+    """
     # we're going to need to do some elementwise operations
     x_type = type(value)
     value = np.asarray(value, dtype=float)
@@ -306,9 +297,9 @@ def stdval(value, num=96, bump=0, preferred=None):
     value[value < 0] = np.nan
 
     if preferred is None:
-        if num in E_SERIES.keys():
+        if num in E_SERIES:
             preferred = np.array(E_SERIES[num])
-        elif num in R_SERIES.keys():
+        elif num in R_SERIES:
             preferred = np.array(R_SERIES[num])
         log_series = True
     else:
@@ -399,23 +390,3 @@ def logspace(start, stop, num=12):
     n_total = int(num*(log_stop-log_start)) + 1
     temp = stdval(np.logspace(log_start, log_stop, num=n_total), num=num)
     return temp[np.bitwise_and(temp >= start, temp <= stop)]
-
-
-# %% debugging
-def debug_on(*exceptions):
-    """Decorate unittest function so that debugger is invoked on exceptions."""
-    if not exceptions:
-        exceptions = (AssertionError, )
-
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            try:
-                return f(*args, **kwargs)
-            except exceptions:
-                info = sys.exc_info()
-                print_exception(*info)
-                post_mortem(info[2])
-        return wrapper
-
-    return decorator
