@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
 Analyzer for broadband calibrations of seismometers using arbitrary signals.
 

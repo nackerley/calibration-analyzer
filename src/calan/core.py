@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-'A collection of utilities useful for station quality analysis.'
+"""
+A collection of utilities useful for station quality analysis.
+"""
 # pylint: disable=consider-using-f-string
-
 import os
 import re
 import queue

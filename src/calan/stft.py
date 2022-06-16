@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Short-term Fourier Transform.
 """
@@ -102,7 +101,7 @@ class Stft():
         return '\n'.join(lines)
 
     @staticmethod
-    def _mean(p_xy):
+    def mean(p_xy):
         """Finishing touch of Welch's method when deriving results."""
         if len(p_xy.shape) >= 2 and p_xy.size > 0:
             if p_xy.shape[-1] > 1:
@@ -167,8 +166,8 @@ class Stft():
 
     def coherence_squared(self):
         """Return Welch's method squared coherence."""
-        return np.abs(self._mean(self.p_xy))**2/(
-            self._mean(self.p_xx)*self._mean(self.p_yy))
+        return np.abs(self.mean(self.p_xy))**2/(
+            self.mean(self.p_xx)*self.mean(self.p_yy))
 
     def variance(self):
         """Return Welch's method variance."""
@@ -180,5 +179,5 @@ class Stft():
 
         Optionally, differentiated alpha times.
         """
-        return (self._mean(self.p_xy) /
-                self._mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha
+        return (self.mean(self.p_xy) /
+                self.mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha

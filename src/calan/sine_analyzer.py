@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
 Analyzer for sinusoidal calibrations of seismometers.
 
@@ -12,17 +12,18 @@ Currently only supports calibration of one channel at at time.
 
 Author: Nick Ackerley
 """
+# pylint: disable=consider-using-f-string
 import os
 import sys
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import pytz
-
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
 from urllib.parse import urlencode, urlunsplit
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import pytz
 from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
 from obspy import read, read_inventory
@@ -190,13 +191,14 @@ class SynchronousCalibrationAnalyzer():
             station[1].code = self.stream[1].stats.channel
 
             calibration = station[0].response
-            fs = calibration.response_stages[2].decimation_input_sample_rate
+            f_sample = calibration.response_stages[2].decimation_input_sample_rate
             calibration.response_stages[0] = PolesZerosResponseStage(
                 1, motor_ms2v, 0, 'M/S**2', 'V', 'LAPLACE (RADIANS/SECOND)', 0,
                 [], [])
             calibration.response_stages[1] = CoefficientsTypeResponseStage(
                 2, dac_gain, 0, 'V', 'COUNTS', 'DIGITAL',
-                numerator=[], denominator=[], decimation_input_sample_rate=fs,
+                numerator=[], denominator=[],
+                decimation_input_sample_rate=f_sample,
                 decimation_factor=1, decimation_offset=0,
                 decimation_delay=0, decimation_correction=0)
             calibration.recalculate_overall_sensitivity()
@@ -221,8 +223,8 @@ class SynchronousCalibrationAnalyzer():
         self.f_lim = (self.stft.f[1], self.stft.f[-1])
         self.stft.trim()
         f = self.stft.f
-        p_xx = self.stft._mean(self.stft.p_xx).squeeze()
-        p_yy = self.stft._mean(self.stft.p_yy).squeeze()
+        p_xx = self.stft.mean(self.stft.p_xx).squeeze()
+        p_yy = self.stft.mean(self.stft.p_yy).squeeze()
         tfe = self.stft.tf_estimate(alpha=0).squeeze()
         gain = np.abs(tfe)
         phase = np.angle(tfe, deg=True)
@@ -297,7 +299,7 @@ class SynchronousCalibrationAnalyzer():
                 'spectra_%g-%gHz_%s.png' % tuple(
                     list(self.f_lim) + [os.path.basename(self.test_name)]))
 
-            get_logger(__name__).info('Saving: ' + summary_png)
+            get_logger(__name__).info('Saving: %s', summary_png)
             fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
 
     def get_temperature(self, dt_utc, station_id=WEATHER_STATION_ID,
@@ -305,8 +307,8 @@ class SynchronousCalibrationAnalyzer():
         """
         Get temperature near station at given time.
         """
-        tz = pytz.timezone(time_zone)
-        dt_local = tz.fromutc(dt_utc)
+        time_zone = pytz.timezone(time_zone)
+        dt_local = time_zone.fromutc(dt_utc)
 
         query = dict(stationID=station_id, Year=dt_local.year,
                      Month=dt_local.month, Day=dt_local.day)
@@ -317,22 +319,22 @@ class SynchronousCalibrationAnalyzer():
             df = pd.read_csv(url, parse_dates=['Date/Time'])
             actual_tz = pytz.timezone(self.TIME_ZONE_FINDER.timezone_at(
                 lat=df['Latitude (y)'].mean(), lng=df['Longitude (x)'].mean()))
-            if actual_tz != tz:
+            if actual_tz != time_zone:
                 self.logger.warning(
                     'Data is from time zone "%s"; expected "%s".',
-                    actual_tz.zone, time_zone))
+                    actual_tz.zone, time_zone)
 
             df['Date/Time'] = df['Date/Time'].dt.tz_localize(
-                tz, ambiguous=True, nonexistent='NaT')
+                time_zone, ambiguous=True, nonexistent='NaT')
             df['Date/Time [UTC]'] = df['Date/Time'].dt.tz_convert(None)
 
             index = (df['Date/Time [UTC]'] > dt_utc).idxmax()
             result = df.at[index, 'Temp (°C)']
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             self.logger.error(repr(ex))
             result = np.NaN
 
-        self.logger.info('Temperature: %g°C' % result)
+        self.logger.info('Temperature: %g°C', result)
         return result
 
     def summary(self, station_id=WEATHER_STATION_ID,
@@ -431,7 +433,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
             not os.access(summary_csv, os.W_OK):
         analyzer.logger.error(
-            'Will not be able to write summary to %s.' % summary_csv)
+            'Will not be able to write summary to %s.', summary_csv)
         return ''
 
     calibration_files = sorted([item for item in glob(pattern)
@@ -439,7 +441,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     if not calibration_files:
         analyzer.logger.error(
             'No files matching pattern "%s" contain output label "%s".',
-            pattern, output_label))
+            pattern, output_label)
         return ''
 
     rows = []

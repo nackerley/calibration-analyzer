@@ -1,5 +1,6 @@
-# -*- coding: utf-8 -*-
-'General-Purpose utilities.'
+"""
+General-Purpose utilities.
+"""
 # pylint: disable=consider-using-f-string
 import sys
 from math import floor, log10
