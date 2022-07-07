@@ -1063,29 +1063,40 @@ def stations2df(inventory):
     return df
 
 
-def read_sql(file_name, parse_dates=('start', 'end'), dtype=None,
-             stachan=True, skiprows=(0, 1, 3)):
-    """Read pipe-delimited SQL query result, ignoring non-pipe-delimited header."""
+def read_sql(file_name, parse_dates=('start', 'end'), index=(), dtype=None):
+    """
+    Read pipe-delimited SQL query result, ignoring non-pipe-delimited header.
+    """
     if dtype is None:
         dtype = {'count': int}
-    line = ''
+
+    # determine structure of file
+    skiprows = []
+    found_header = False
     with open(file_name, encoding='UTF-8') as file:
-        for line in file:
+        for i, line in enumerate(file):
             if '|' in line:
+                pipes = np.array([match.start() for match in re.finditer(r'\|', line)])
+                colspecs = list(zip([0] + list(pipes + 1), list(pipes) + [len(line)]))
+                found_header = True
+            else:
+                skiprows.append(i)
+            if set(line) == set('-+'):
                 break
-        else:
-            raise RuntimeError('No header line found.')
-    pipes = np.array([match.start() for match in re.finditer(r'\|', line)])
-    colspecs = list(zip([0] + list(pipes + 1), list(pipes) + [len(line)]))
-    df = pd.read_fwf(file_name, sep='|', skiprows=skiprows, skipfooter=2,
+    if not found_header:
+        raise RuntimeError('No header line found.')
+
+    df = pd.read_fwf(file_name, sep='|', skiprows=skiprows,
                      colspecs=colspecs, parse_dates=list(parse_dates),
                      dtype=dtype)
 
-    if stachan:
-        # pylint: disable=no-member
-        df[['sta', 'chan']] = df.stachan.str.split('.', n=1, expand=True)
-        df.drop(columns='stachan', inplace=True)
-        df.set_index(['sta', 'chan'], inplace=True, verify_integrity=True)
+    for column, dtype in dtype.items():
+        if column in df and dtype == str:
+            df[column] = df[column].fillna('')
+
+    if index:
+        df.set_index(list(index), inplace=True, verify_integrity=True)
+
     return df
 
 
