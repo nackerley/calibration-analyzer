@@ -46,7 +46,9 @@ from tempfile import gettempdir
 from string import Template
 
 from scipy import signal as sig
-from scipy.special import erfinv
+from scipy import special
+from scipy.signal import ZerosPolesGain
+from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -66,6 +68,7 @@ from calan.utilities import (
 from calan.stft import Stft, len_fft_welch, num_windows_welch
 from calan.calibration_toolbox import (
     sample_hold_digitize, pad_for_decimation)
+from calan.fit_response import fit_response
 
 # %% setup
 warnings.simplefilter('error', category=sig.BadCoefficients)
@@ -320,10 +323,11 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
     return summary_csv
 
 
-class Fit():
+class TimingGainFit():
     """Container for transfer function fits."""
 
     def __init__(self, confidence=0.95):
+        """Construct object."""
         self.confidence = confidence
         self.timing = None
         self.gain = None
@@ -336,8 +340,8 @@ class Fit():
         return '\n'.join(lines)
 
     def num_sigma(self):
-        "Estimte number of standard deviations from confidence interval."
-        return np.sqrt(2)*erfinv(self.confidence)
+        """Estimte number of standard deviations from confidence interval."""
+        return np.sqrt(2)*special.erfinv(self.confidence)
 
     def timing_summary(self):
         """
@@ -419,7 +423,9 @@ class CalibrationAnalyzer():
             ('cal', None),
             ('system', None),
         ))
-        self.fit = Fit(confidence=0.95)
+        self.timing_gain_fit = TimingGainFit(confidence=0.95)
+        self.zpk_fit = ZerosPolesGain([], [], 1)
+        self.zpk_result = OptimizeResult()
 
         self.savefig = savefig
         self.dpi = dpi
@@ -442,7 +448,7 @@ class CalibrationAnalyzer():
         lines += ['\t' + line
                   for line in str(self.stft).strip().split('\n')]
         lines += ['\t' + line
-                  for line in str(self.fit).strip().split('\n')]
+                  for line in str(self.timing_gain_fit).strip().split('\n')]
         return '\n'.join(lines)
 
     def __repr__(self):
@@ -923,14 +929,14 @@ class CalibrationAnalyzer():
         info['sampling_rate_sps'] = self._sampling_rate()
         info['windows'] = self.stft.num_windows()
         info['windows'] = info['windows'].astype(int)
-        info['timing error estimate [s]'] = round(self.fit.timing.params[0], 6)
+        info['timing error estimate [s]'] = round(self.timing_gain_fit.timing.params[0], 6)
         info['timing error uncertainty [s]'] = round(
-            self.fit.num_sigma()*self.fit.timing.bse[0], 6)
+            self.timing_gain_fit.num_sigma()*self.timing_gain_fit.timing.bse[0], 6)
         info['gain error estimate [%]'] = round(
-            100*(self.fit.gain.params[0] - 1), 4)
+            100*(self.timing_gain_fit.gain.params[0] - 1), 4)
         info['gain error uncertainty [%]'] = round(
-            100*(self.fit.num_sigma()*self.fit.gain.bse[0]), 4)
-        info['confidence [%]'] = self.fit.confidence
+            100*(self.timing_gain_fit.num_sigma()*self.timing_gain_fit.gain.bse[0]), 4)
+        info['confidence [%]'] = self.timing_gain_fit.confidence
 
         # now append row for calibration input
         info = info.append(pd.Series(
@@ -1104,6 +1110,24 @@ class CalibrationAnalyzer():
 
         return signal
 
+    def fit_tfe(self):
+        """Least-squares estimation of poles and zeros."""
+        f = self.stft.f
+        if len(f) < 1:
+            self.logger.error('No data to fit.')
+            return
+
+        tf_estimate = self.stft.tf_estimate()
+        zpk_nom = self.tf_nominal('system').to_zpk()
+        variance = self.stft.variance()
+
+        # TODO "fix" part of response above Nyquist or below lowest frequency
+
+        self.zpk_fit, self.zpk_result = fit_response(
+            zpk_nom, f, tf_estimate, variance)
+        self.logger.info(self.zpk_result)
+        self.logger.info(self.zpk_fit)
+
     def estimate_errors(self, variance_threshhold=0.03):
         """
         Least-squares estimation of gain and timing errors.
@@ -1186,10 +1210,10 @@ class CalibrationAnalyzer():
         variance = np.reshape(variance, (-1, 1))
         weights = np.sqrt(1/variance)
 
-        self.fit.gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
-        self.logger.info(self.fit.gain_summary())
-        self.fit.timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
-        self.logger.info(self.fit.timing_summary())
+        self.timing_gain_fit.gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
+        self.logger.info(self.timing_gain_fit.gain_summary())
+        self.timing_gain_fit.timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
+        self.logger.info(self.timing_gain_fit.timing_summary())
 
     def _save_image(self, fig, option_list=None):
         """Save a figure with an automatically descriptive file name."""
@@ -1441,15 +1465,15 @@ class CalibrationAnalyzer():
                 tf_nominal /= tf_remove
 
         if errors:
-            if self.fit.gain is None or self.fit.timing is None:
+            if self.timing_gain_fit.gain is None or self.timing_gain_fit.timing is None:
                 raise RuntimeError('Run estimate_errors() first.')
 
-            tf_error = tf_nominal*np.exp(1j*2*np.pi*f*self.fit.timing.params)
-            tf_error *= self.fit.gain.params
+            tf_error = tf_nominal*np.exp(1j*2*np.pi*f*self.timing_gain_fit.timing.params)
+            tf_error *= self.timing_gain_fit.gain.params
         if errors == 'correct':
             with np.errstate(divide='ignore', invalid='ignore'):
-                tf_estimate /= self.fit.gain.params
-            tf_estimate /= np.exp(1j*2*np.pi*f*self.fit.timing.params)
+                tf_estimate /= self.timing_gain_fit.gain.params
+            tf_estimate /= np.exp(1j*2*np.pi*f*self.timing_gain_fit.timing.params)
 
         if variance_threshhold is not None:
             tf_estimate[variance > variance_threshhold] = np.nan
@@ -1521,9 +1545,9 @@ class CalibrationAnalyzer():
         axes[1].set_ylabel('Phase [°]')
 
         if errors:
-            axes[0].annotate(self.fit.gain_summary(), (0.025, 0.95),
+            axes[0].annotate(self.timing_gain_fit.gain_summary(), (0.025, 0.95),
                              xycoords='axes fraction', ha='left', va='top')
-            axes[1].annotate(self.fit.timing_summary(), (0.025, 0.95),
+            axes[1].annotate(self.timing_gain_fit.timing_summary(), (0.025, 0.95),
                              xycoords='axes fraction', ha='left', va='top')
         if errors:
             option_list.append(errors + '_errors')
