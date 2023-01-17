@@ -1,0 +1,33 @@
+type,subtype,0,1,2
+info,start,2020-06-24 19:45:15,2020-01-10 15:29:32.450000,
+info,trace_id,XX.YKAT1..SHZ,XX.YKAT1..SHZ,XX.YKAT1..SHC
+info,waveform_file,PRB_+30.19_Output.mseed,PRB_-36.00_Output.mseed,
+info,response_file,XX.YKAT1.xml,XX.YKAT1.xml,XX.YKAT1.xml
+info,delay_start,0.0,0.0,
+info,spec_min_freq_hz,0.02,0.02,
+info,spec_max_freq_hz,16.0,16.0,
+info,spec_max_amp_pct,5.0,5.0,
+info,spec_max_phase_deg,5.0,5.0,
+info,in_spec,False,False,
+info,duration_s,604.0,604.0,
+info,pre_s,0.0,0.0,
+info,post_s,0.0,0.0,
+info,sampling_rate_sps,40.0,40.0,
+info,windows,23.0,23.0,
+info,timing error estimate [s],0.046011,0.04433,
+info,timing error uncertainty [s],0.001603,0.001591,
+info,gain error estimate [%],33620183.5207,38346870.37,
+info,gain error uncertainty [%],34428.7966,77733.7067,
+info,confidence [%],0.95,0.95,
+info,output_units,V,V,V
+info,input_units,m/s,m/s,m/s
+info,calan,1.1.0,1.1.0,1.1.0
+pole_01,damping,0.4748375601653047,0.5454502090571394,0.6234365355422722
+pole_01,freq_hz,0.9730041730747947,0.9871629499110217,1.0000083529549575
+pole_01,imag_rad,-5.3803867514248545,-5.198606619553173,4.9127
+pole_01,real_rad,-2.902950537368656,-3.383170053923688,-3.9172
+zero_0,real_rad,0.0,0.0,0.0
+zero_0,freq_hz,0.0,0.0,0.0
+zero_1,real_rad,0.0,0.0,0.0
+zero_1,freq_hz,0.0,0.0,0.0
+gain,,128128347.88582572,146549020.31217545,387.1545685041496
