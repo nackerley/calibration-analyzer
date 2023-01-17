@@ -29,9 +29,9 @@ TODO: give complete formula for Jacobian
 """
 from typing import Optional, Tuple
 from logging import getLogger
+from copy import deepcopy
 
 import numpy as np
-from numpy.linalg import norm
 from numpy.typing import ArrayLike
 from scipy.signal import ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares, OptimizeResult
@@ -46,6 +46,7 @@ def fit_response(
     var_meas: Optional[ArrayLike] = None,
     zpk_fixed: Optional[ZerosPolesGain] = None,
     gtol: float = 1e-06,
+    var_max: float = 10,
 ) -> Tuple[ZerosPolesGain, OptimizeResult]:
     """
     Obtain least-squares best-fit poles, zeros and gain using exact Jacobian.
@@ -80,9 +81,9 @@ def fit_response(
     if var_meas is None:
         var_meas = np.ones_like(f_meas)
 
-    f_meas = np.array(f_meas)
-    h_meas = np.array(h_meas)
-    var_meas = np.array(var_meas)
+    f_meas = np.array(f_meas).reshape(-1)
+    h_meas = np.array(h_meas).reshape(-1)
+    var_meas = np.array(var_meas).reshape(-1)
     if not f_meas.shape == h_meas.shape == var_meas.shape:
         raise ValueError(
             'Frequencies, transfer function estimates and variances '
@@ -100,12 +101,12 @@ def fit_response(
     if zpk_fixed is not None:
         logger.info(
             'Removing fixed part from measured response and initial guess')
-        # zpk_nom = minreal(zpk_nom / zpk_fixed)
-        zpk_nom = zpk_nom / zpk_fixed
-        h_meas /= zpk_fixed.freqresp(2*np.pi*f_meas)
+        # scipy.signal.lti doesn't support division!
+        zpk_nom = zpk_divide(zpk_nom, zpk_fixed)
+        h_meas /= zpk_fixed.freqresp(2*np.pi*f_meas)[1]
 
     # remove cancelling poles and zeros from initial guess
-    zpk_nom = zp_cancel(zpk_nom)
+    zpk_nom = zpk_cancel(zpk_nom)
     tf_nom = zpk_nom.to_tf()
 
     # extract coefficient vector
@@ -118,10 +119,9 @@ def fit_response(
         logger.warning('Trimming leading zeroes from numerator coefficients.')
         b_guess = np.trim_zeros(b_guess, trim='f')
 
-    last_non_zero = np.nonzero(b_guess)[1][-1]
-    integrator_count = b_guess.shape[0] - last_non_zero
-    logger.info('Fixing %d zeros at zero.', integrator_count)
-    b_guess = b_guess[:last_non_zero]
+    p = np.argmax(np.flip(b_guess != 0))  # pylint: disable=invalid-name
+    logger.info('Fixing %d zeros at zero.', p)
+    b_guess = b_guess[:int(-p)]
 
     if a_guess[0] != 1:
         logger.warning('Normalizing denominator of initial guess.')
@@ -134,32 +134,38 @@ def fit_response(
         a_guess = np.copy(a_temp)
 
     # determine fitting orders
-    num_order = b_guess.shape[0] + integrator_count
-    den_order = a_guess.shape[0]
-    measuremen_count = f_meas.shape[0]
+    n = b_guess.shape[0] + p - 1  # pylint: disable=invalid-name
+    m = a_guess.shape[0] - 1  # pylint: disable=invalid-name
 
-    # ensure system is overdetermined
-    if den_order + num_order - integrator_count > (var_meas < 10).sum():
-        raise ValueError('There must be more measurements than coefficients.')
+    N = f_meas.shape[0]  # pylint: disable=invalid-name
+
+    if n > m:
+        raise ValueError(
+            f'Transfer function must be proper, but numerator degree {n} '
+            f'is greater than denominator degree {m}.')
+    if m + n - p > (var_meas < var_max).sum():
+        raise ValueError(
+            f'System must be overdetermined, but variance > {var_max} for '
+            f'{(var_meas < var_max).sum()}/{len(var_meas)} measurements and '
+            f'there are {m + n - p} coefficients to be fit.')
 
     # initial guess
     x_initial = np.hstack((a_guess[1:], b_guess))
 
     # precompute all required powers of frequencies
-    max_power = max(den_order, num_order)
-    omega = np.ones(measuremen_count, max_power + 1)
+    omega = np.ones((N, m + 1), dtype=complex)
     w_meas = 2*np.pi*f_meas
-    for i in range(max_power):
-        omega[:, max_power - i] = 1j*w_meas*omega[:, max_power - i + 1]
+    for i in range(m):
+        omega[:, m - i - 1] = 1j*w_meas*omega[:, m - i]
 
     # subsets needed for computation of model and Jacobian
-    omega_m = omega[:, max_power - den_order]
-    omega_a = omega[:, max_power - den_order + 1:max_power]
-    omega_b = omega[:, max_power - num_order:max_power - integrator_count]
+    omega_m = omega[:, 0]
+    omega_a = omega[:, 1:m + 1]
+    omega_b = omega[:, m - n:m - p + 1]
 
     def model(x):
         """Compute fitted transfer function model as function of frequency."""
-        return omega_b @ x[den_order:] / (omega_m + omega_a @ x[:den_order])
+        return omega_b @ x[m:] / (omega_m + omega_a @ x[:m])
 
     # variance- and response-based weights
     wt_meas = 1.0 / np.sqrt(var_meas) / np.abs(model(x_initial))
@@ -168,111 +174,43 @@ def fit_response(
         """Compute weighted mean squared error over all frequencies."""
         return wt_meas * (model(x) - h_meas)
 
+    def real_residuals(x):
+        """Convert residuals to vector of floats."""
+        result = residuals(x)
+        return np.hstack((result.real, result.imag))
+
     def jacobian(x):
         """Compute partial derivatives of residuals wrt coefficients."""
-        # TODO: check if broadcasting works as well as explicit tiling
-        part_a = -omega_a * np.tile(
-            model(x) / (omega_m + omega_a @ x[:den_order]), (1, den_order))
-        part_b = omega_b / np.tile(
-            omega_m + omega_a @ x[:den_order], (1, num_order + 1 - integrator_count))
-        return np.hstack((part_a, part_b)) * np.tile(
-            wt_meas, (1, den_order + num_order + 1 - integrator_count))
+        model_den = omega_m + omega_a @ x[:m]
+        part_a = -omega_a*(model(x) / model_den).reshape(-1, 1)
+        part_b = omega_b / model_den.reshape(-1, 1)
+        return np.hstack((part_a, part_b)) * wt_meas.reshape(-1, 1)
+
+    def real_jacobian(x):
+        """Convert Jacobian to vector of floats."""
+        result = jacobian(x)
+        return np.vstack((result.real, result.imag))
 
     result = least_squares(
-        residuals, x_initial, jac=jacobian, method='lm', gtol=gtol,
+        real_residuals, x_initial, jac=real_jacobian, method='lm', gtol=gtol,
         x_scale='jac', verbose=1)
 
     x_fit = result.x
-    b_fit = np.hstack((x_fit[:num_order], np.zeros(integrator_count)))
-    a_fit = np.hstack((1, x_fit[num_order:]))
-    tf_fit = TransferFunction(a_fit, b_fit)
+    b_fit = np.hstack((x_fit[m:], np.zeros(p)))
+    a_fit = np.hstack((1, x_fit[:m]))
+    tf_fit = TransferFunction(b_fit, a_fit)
     zpk_fit = tf_fit.to_zpk()
 
     return zpk_fit, result
-
-
-def old_least_squares(x_fit, e_fit, model, residuals, error, gradient,
-                      max_incr, max_iter, den_order):
-    """Old hand-crafted minimization loop."""
-    logger = getLogger(__name__)
-    report = True
-    iteration = -1
-    stop = 0
-    while not stop:
-        iteration = iteration + 1
-        dx_gauss_newton, j_error_f_error, j_error_squared = gradient(
-            x_fit[iteration - 1])
-
-        if (np.logical_not(np.isreal(dx_gauss_newton)).any() or
-                np.isinf(dx_gauss_newton).any() or
-                np.isnan(dx_gauss_newton).any()):
-            stop = 4
-            iteration = iteration - 1
-            break
-
-        if all(np.abs(dx_gauss_newton) <= np.abs(x_fit[:, iteration])/max_incr + 1):
-            stop = 1
-
-        def stabilize_and_report_first(x, report):
-            a_check = np.hstack((1, x[:den_order, 0].T))
-            a_temp = apolystab(a_check)
-            if any(a_temp != a_check):
-                x[:den_order, 0] = a_temp[1:].T  # FIXME: unnecessary transpose?
-                if report:
-                    logger.info('Stabilizing denominator in loop.')
-                    report = False
-            return report
-
-        # line search along the Gauss-Newton gradient
-        alpha = 1.0
-        x_new = x_fit[:, iteration] + alpha * dx_gauss_newton
-
-        report = stabilize_and_report_first(x_new, report)
-
-        h_new = model(x_new)
-        f_new = residuals(h_new)
-        e_new = error(f_new)
-
-        i_search = 0
-        while e_new >= e_fit[iteration] and not stop:
-            i_search = i_search + 1
-            alpha = alpha / 2
-            x_new = x_fit[:, iteration] + alpha * dx_gauss_newton
-
-            report = stabilize_and_report_first(x_new, report)
-
-            # compute transfer function and fit error
-            h_new = model(x_new)
-            f_current = residuals(h_new)
-            e_new = error(f_current)
-
-            if i_search == 10:
-                dx_gauss_newton = j_error_f_error / norm(j_error_squared) * len(j_error_squared)
-                alpha = 2.0
-
-            # after twenty steps quit
-            if i_search == 20:
-                x_new = x_fit[:, iteration]
-                stop = 2
-
-        x_fit[:, iteration + 1] = x_new
-        e_fit[iteration + 1] = e_new
-
-        logger.debug(
-            '%d line search iterations on step %d.', i_search, iteration)
-        if iteration == max_iter:
-            stop = 3
-
-    return iteration, stop, dx_gauss_newton, j_error_f_error, j_error_squared
 
 
 def apolystab(
     polynomial: np.ndarray,
 ) -> np.ndarray:
     """Return stabilized denominator polynomial of real analog filter."""
-    if polynomial.shape[0] != 1:
-        raise ValueError('Denominator coefficients must be row vector.')
-    if polynomial.shape[1] > 0:
+    if polynomial.ndim != 1:
+        raise ValueError('Coefficients must be a vector.')
+    if polynomial.shape[0] > 0:
         roots = np.roots(polynomial)
         real_positive = np.real(roots) > 0
         if real_positive.any():
@@ -281,7 +219,37 @@ def apolystab(
     return polynomial
 
 
-def zp_cancel(
+def zpk_divide(
+    num: ZerosPolesGain,
+    den: ZerosPolesGain,
+    tolerance: float = 0.001,
+) -> ZerosPolesGain:
+    """Divide numerator by denominator, including pole-zero cancellation."""
+    zeros = np.hstack((num.zeros, den.poles))
+    zeros.sort()
+    poles = np.hstack((num.poles, den.zeros))
+    poles.sort()
+    gain = num.gain/den.gain
+
+    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
+
+
+def zpk_multiply(
+    first: ZerosPolesGain,
+    second: ZerosPolesGain,
+    tolerance: float = 0.001,
+) -> ZerosPolesGain:
+    """Multiply first by second, including pole-zero cancellation."""
+    zeros = np.hstack((first.zeros, second.zeros))
+    zeros.sort()
+    poles = np.hstack((first.poles, second.poles))
+    poles.sort()
+    gain = first.gain*second.gain
+
+    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
+
+
+def zpk_cancel(
     old: ZerosPolesGain,
     tolerance: float = 0.001,
     f_norm: float = 1,
@@ -297,11 +265,11 @@ def zp_cancel(
         / np.sqrt(np.abs(np.cos(np.angle(z))*np.cos(np.angle(p))))
         < tolerance
     """
-    if not old.zeros or not old.poles:
-        return old.copy()
+    if len(old.zeros) == 0 or len(old.poles) == 0:
+        return deepcopy(old)
 
-    zeros = np.tile(old.zeros.T, old.poles.shape)
-    poles = np.tile(old.poles, old.zeros.T.shape)
+    zeros = old.zeros.reshape(-1, 1)
+    poles = old.poles.reshape(1, -1)
 
     if tolerance == 0:
         cancels = poles == zeros
@@ -313,27 +281,29 @@ def zp_cancel(
                 cancels[i, j + 1:] = False
                 cancels[i + 1:, j] = False
     else:
-        cancelling = (
-            np.abs(zeros - poles) / np.sqrt(np.abs(poles)*np.abs(zeros)) /
-            np.sqrt(np.abs(np.cos(np.angle(poles))) *
-                    np.abs(np.cos(np.angle(zeros)))))
+        with np.errstate(divide='ignore'):
+            cancelling = (
+                np.abs(zeros - poles) / np.sqrt(np.abs(poles)*np.abs(zeros)) /
+                np.sqrt(np.abs(np.cos(np.angle(poles))) *
+                        np.abs(np.cos(np.angle(zeros)))))
         cancelling[np.isnan(cancelling)] = 0
 
         # retain only closest cancellation
         cancels = np.full_like(cancelling, False)
 
         while (cancelling < tolerance).any():
+            # pylint: disable=unbalanced-tuple-unpacking
             i, j = np.unravel_index(np.argmin(cancelling), cancelling.shape)
             cancelling[i, :] = np.Inf
             cancelling[:, j] = np.Inf
             cancels[i, j] = True
             cancelling = np.ma.array(cancelling, cancels)
 
-    z_new = old.zeros(~cancels.any(axis=0))
-    p_new = old.poles(~cancels.any(axis=1).T)
+    z_new = old.zeros[~cancels.any(axis=1)]
+    p_new = old.poles[~cancels.any(axis=0).T]
     new = ZerosPolesGain(z_new, p_new, 1)
-    k_new = (old.freqresp(2*np.pi*f_norm).abs() /
-             new.freqresp(2*np.pi*f_norm).abs())  # pylint: disable=no-member
+    k_new = (np.abs(old.freqresp(2*np.pi*f_norm)[1]) /
+             np.abs(new.freqresp(2*np.pi*f_norm)[1]))  # pylint: disable=no-member
     new = ZerosPolesGain(z_new, p_new, k_new)
 
     return new
