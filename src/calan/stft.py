@@ -1,11 +1,9 @@
-"""
-Short-term Fourier Transform.
-"""
+"""Short-term Fourier Transform."""
 # pylint: disable=consider-using-f-string
 import os
 import numpy as np
 from scipy import fftpack
-import scipy.signal as sp
+from scipy.signal._spectral_py import _spectral_helper
 
 from calan.core import get_logger
 from calan.utilities import preferred_number
@@ -71,13 +69,11 @@ def fft_frequencies(len_fft, f_sample, sides='onesided'):
 
 
 class Stft():
-    """
-    Short-term fourier auto- and cross-spectra between input and output.
-    """
+    """Short-term fourier auto- and cross-spectra between input and output."""
 
     def __init__(self, f=None, t=None, p_xx=None, p_yy=None, p_xy=None,
                  log_level='INFO'):
-
+        """Construct STFT."""
         self.f = f
         self.t = t
         self.p_xx = p_xx
@@ -87,9 +83,7 @@ class Stft():
                                  log_level)
 
     def __str__(self):
-        """
-        Human-readable representation.
-        """
+        """Human-readable representation."""
         lines = [self.__class__.__name__ + ':']
         if self.p_xy is None:
             lines[0] = lines[0] + ' None'
@@ -111,15 +105,11 @@ class Stft():
         return p_xy
 
     def num_windows(self):
-        """
-        Return number of windows used.
-        """
+        """Return number of windows used."""
         return self.p_xx.shape[2]
 
     def compute(self, x, y, f_sample, len_fft, len_overlap, window='hann'):
-        """
-        Detrend segments by removing constant value before windowing.
-        """
+        """Detrend segments by removing constant value before windowing."""
         f_expected = fft_frequencies(len_fft, f_sample)
         if len(x.shape) == 1:
             x = x.reshape((1, -1))
@@ -136,15 +126,15 @@ class Stft():
             num_windows, f_expected[1], f_expected[-1])
 
         # pylint: disable=protected-access
-        self.f, self.t, self.p_xy = sp.spectral._spectral_helper(
+        self.f, self.t, self.p_xy = _spectral_helper(
             x, y, window=window,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')
 
-        self.p_xx = sp.spectral._spectral_helper(
+        self.p_xx = _spectral_helper(
             x, x, window=window,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
 
-        self.p_yy = sp.spectral._spectral_helper(
+        self.p_yy = _spectral_helper(
             y, y, window=window,
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
         # pylint: enable=protected-access
