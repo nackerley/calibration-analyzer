@@ -36,7 +36,7 @@ from numpy.typing import ArrayLike
 from scipy.signal import ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares, OptimizeResult
 
-# from control import minreal
+from calan.core import sort_complex
 
 
 def fit_response(
@@ -44,7 +44,7 @@ def fit_response(
     f_meas: ArrayLike,
     h_meas: ArrayLike,
     var_meas: Optional[ArrayLike] = None,
-    zpk_fixed: Optional[ZerosPolesGain] = None,
+    zpk_fixed: ZerosPolesGain = ZerosPolesGain([], [], 1),
     gtol: float = 1e-06,
     var_max: float = 10,
 ) -> Tuple[ZerosPolesGain, OptimizeResult]:
@@ -72,6 +72,9 @@ def fit_response(
 
     TODO Determine whether denominator must be constrained to be stable.
 
+    TODO Consider handling multiple channels, to reuse frequency matrix
+    computation.
+
     TODO support different weighting schemes:
       - 'variance" 1/sqrt(var) to account for measurement errors
       - 'response' 1/abs(h_nom) to emphasize importance of passband
@@ -98,12 +101,12 @@ def fit_response(
     if not np.isrealobj(var_meas) or (var_meas < 0).any():
         raise TypeError('Variances must be real and positive')
 
-    if zpk_fixed is not None:
+    if len(zpk_fixed.zeros) + len(zpk_fixed.poles):
         logger.info(
-            'Removing fixed part from measured response and initial guess')
-        # scipy.signal.lti doesn't support division!
-        zpk_nom = zpk_divide(zpk_nom, zpk_fixed)
-        h_meas /= zpk_fixed.freqresp(2*np.pi*f_meas)[1]
+            'Fixing %d zeros and %d poles at nominal values.',
+            len(zpk_fixed.zeros), len(zpk_fixed.poles))
+    zpk_nom = zpk_divide(zpk_nom, zpk_fixed)
+    h_meas /= zpk_fixed.freqresp(2*np.pi*f_meas)[1]
 
     # remove cancelling poles and zeros from initial guess
     zpk_nom = zpk_cancel(zpk_nom)
@@ -136,7 +139,6 @@ def fit_response(
     # determine fitting orders
     n = b_guess.shape[0] + p - 1  # pylint: disable=invalid-name
     m = a_guess.shape[0] - 1  # pylint: disable=invalid-name
-
     N = f_meas.shape[0]  # pylint: disable=invalid-name
 
     if n > m:
@@ -193,13 +195,20 @@ def fit_response(
 
     result = least_squares(
         real_residuals, x_initial, jac=real_jacobian, method='lm', gtol=gtol,
-        x_scale='jac', verbose=1)
+        x_scale='jac', verbose=0)
 
     x_fit = result.x
     b_fit = np.hstack((x_fit[m:], np.zeros(p)))
     a_fit = np.hstack((1, x_fit[:m]))
     tf_fit = TransferFunction(b_fit, a_fit)
     zpk_fit = tf_fit.to_zpk()
+    zpk_fit = ZerosPolesGain(
+        sort_complex(zpk_fit.zeros),
+        sort_complex(zpk_fit.poles),
+        zpk_fit.gain)
+
+    # restore fixed part
+    zpk_fit = zpk_multiply(zpk_fit, zpk_fixed)
 
     return zpk_fit, result
 
@@ -264,6 +273,8 @@ def zpk_cancel(
     np.abs(z-p) / np.sqrt(np.abs(z)*np.abs(p))
         / np.sqrt(np.abs(np.cos(np.angle(z))*np.cos(np.angle(p))))
         < tolerance
+
+    TODO: factor out repeated functionality with core.minreal()
     """
     if len(old.zeros) == 0 or len(old.poles) == 0:
         return deepcopy(old)
@@ -297,10 +308,10 @@ def zpk_cancel(
             cancelling[i, :] = np.Inf
             cancelling[:, j] = np.Inf
             cancels[i, j] = True
-            cancelling = np.ma.array(cancelling, cancels)
+            cancelling = np.ma.array(cancelling, mask=cancels)
 
-    z_new = old.zeros[~cancels.any(axis=1)]
-    p_new = old.poles[~cancels.any(axis=0).T]
+    z_new = sort_complex(old.zeros[~cancels.any(axis=1)])
+    p_new = sort_complex(old.poles[~cancels.any(axis=0).T])
     new = ZerosPolesGain(z_new, p_new, 1)
     k_new = (np.abs(old.freqresp(2*np.pi*f_norm)[1]) /
              np.abs(new.freqresp(2*np.pi*f_norm)[1]))  # pylint: disable=no-member
