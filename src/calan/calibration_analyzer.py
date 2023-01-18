@@ -43,7 +43,6 @@ from functools import reduce
 from math import log10, floor, ceil
 from collections import OrderedDict
 from tempfile import gettempdir
-from string import Template
 
 from scipy import special
 from scipy.signal import lti, BadCoefficients
@@ -116,22 +115,22 @@ CAL_RESULT_MSG_ID = 'CAL_{year:4d}_1_{station}_cr'
 CAL_RESULT_REF_ID = 'CAL_{year:4d}_1_{station}_cs'
 IMS_DATETIME_FMT = '%Y/%m/%d %H:%M'
 
-IMS_HEADER = Template('''\
+IMS_HEADER = '''\
 begin IMS2.0
 msg_type COMMAND_RESPONSE
-msg_id $msg_id
-ref_id $ref_id
-time_stamp $time_stamp
-''')
-RESPONSE_HEADER = Template('''
-sta_list $station
-chan_list $channel
+msg_id {msg_id}
+ref_id {ref_id}
+time_stamp {time_stamp}
+'''
+RESPONSE_HEADER = '''
+sta_list {station}
+chan_list {channel}
 CALIBRATE_RESULT
-CALIB $calib
-CALPER $calper
-in_spec $in_spec
+CALIB {calib:.6g}
+CALPER {calper}
+in_spec {in_spec}
 data_type RESPONSE IMS2.0
-''')
+'''
 CAL_BLOCK = (
     'CAL2 {station:5.5s} {channel:3.3s} {aux_id:4.4s} {inst_type:6.6s} '
     '{calib:15.8e} {calper:7.3f} {sample_rate:11.5f} {start} {end}' + '\n')
@@ -1083,9 +1082,9 @@ class CalibrationAnalyzer():
             test result per channel of calibration_signal_file
         """
         try:
-            tf_estimate = self.tf_fit().reshape((1, -1))
+            tf_estimate = self.tf_fit()
         except AttributeError:
-            tf_estimate = self.stft.tf_estimate().reshape((1, -1))
+            tf_estimate = self.stft.tf_estimate()
         tf_nominal = self.tf_nominal('system').reshape((1, -1))
         tf_deviation = tf_estimate/tf_nominal
 
@@ -1127,7 +1126,7 @@ class CalibrationAnalyzer():
         self.logger.info(output_txt)
 
         with open(output_txt, 'w', encoding='UTF-8') as file:
-            file.write(IMS_HEADER.substitute(
+            file.write(IMS_HEADER.format(
                 msg_id=CAL_RESULT_MSG_ID.format(
                     year=self.info['start'].year,
                     station=self.stream[0].stats.station),
@@ -1151,7 +1150,7 @@ class CalibrationAnalyzer():
                 nominal_digitizer = nominal_instrument/nominal_sensor
                 actual_sensor = amplitudes[np.argmax(f >= 1/calper)]
                 calib = 1e9*calper/(2*np.pi*actual_sensor*nominal_digitizer)
-                file.write(RESPONSE_HEADER.substitute(
+                file.write(RESPONSE_HEADER.format(
                     station=trace.stats.station,
                     channel=trace.stats.channel,
                     calib=calib,
