@@ -30,7 +30,10 @@ Authors
 Nick Ackerley
 """
 # pylint: disable=consider-using-f-string, too-many-lines, no-member
+from __future__ import annotations
+
 import os
+import re
 import sys
 import lzma
 import logging
@@ -45,7 +48,7 @@ from collections import OrderedDict
 from tempfile import gettempdir
 
 from scipy import special
-from scipy.signal import lti, BadCoefficients
+from scipy.signal import lti, BadCoefficients, ZerosPolesGain
 from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 import numpy as np
@@ -60,7 +63,7 @@ from obspy.signal.invsim import simulate_seismometer
 from calan.core import (
     PACKAGE, VERSION, get_logger, factor_names, subplots_squeeze, minreal,
     lti_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
-    recompute_normalization_factors)
+    recompute_normalization_factors, sort_complex)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
@@ -84,6 +87,7 @@ DEFAULT_RESPONSE_PATTERN = '*.resp'
 DEFAULT_CAL_SIGNAL_FILE = 'prb_1V_10ms_3h.lzma'
 DEFAULT_CAL_RESPONSE_FILE = 'Centaur_Trillium120Q_Calibration.xml'
 DEFAULT_DPI = 120
+DEFAULT_ORIENTATION_MAP = ('', '')
 
 # Centaur configuration
 DEFAULT_LEAD_IN = 360
@@ -153,6 +157,7 @@ for motion, motion_units in OUTPUT_UNIT_MAP.items():
     for unit in motion_units:
         MOTION[unit] = motion
 ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
+STRIP_NULL_IMAG = re.compile(r'±0\s+j')
 
 
 CHECK_PERCENT = 0.01
@@ -210,6 +215,9 @@ def _argparser():
         help='maximum deviation from nominal of amplitude in percent and '
         'phase in degrees')
     parser.add_argument(
+        '-m', '--orientation-map', nargs=2, default=DEFAULT_ORIENTATION_MAP,
+        help='Map external channel orientation to internal axis orientations')
+    parser.add_argument(
         '--ims-instrument-type', default='',
         help='if provided, write IMS2.0 CALIBRATE_RESULT message with this type')
     parser.add_argument(
@@ -252,6 +260,16 @@ def feature_stats(values, type_):
     return pd.DataFrame(stats).unstack().to_frame().T
 
 
+def feature_str(values):
+    """Pretty-print complex array, omitting zeros and merging complex pairs."""
+    values = [value for value in values if value !=0]
+    values = [value for i, value in enumerate(values)
+              if i == 0 and not np.isclose(value, np.conj(values[i - 1]))]
+    strings = [f'{round_sig(np.real(value), 4)}±{round_sig(np.real(value), 4)}j'
+               .replace(' ', '').replace('±0j', '') for value in values]
+    return ', '.join(strings)
+
+
 def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
                          num_windows=DEFAULT_NUM_WINDOWS, len_fft=None,
                          window=DEFAULT_WINDOW,
@@ -264,6 +282,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
                          test_band_hz=TEST_BAND_HZ,
                          test_limits=(MAX_AMPLITUDE_PERCENT,
                                       MAX_PHASE_DEGREES),
+                         orientation_map=DEFAULT_ORIENTATION_MAP,
                          plot='', fit=False, dpi=DEFAULT_DPI):
     """Do arbitrary-signal calibration analysis."""
     pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
@@ -296,6 +315,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
         analyzer.load_calibration_response(calibration_response_file)
         analyzer.check_stream(discard_s=discard_s)
         analyzer.setup_nominal_responses()
+        analyzer.map_orientations(orientation_map)
 
         if plot:
             analyzer.plot_check('start')
@@ -345,7 +365,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
 
     logger.info('Summary: %s', summary_csv)
     # transpose rows and columns before writing to file
-    df.T.to_csv(summary_csv)
+    df.T.to_csv(summary_csv, float_format='%.5g')
 
     return summary_csv
 
@@ -449,10 +469,10 @@ class CalibrationAnalyzer():
             ('sensor', None),
             ('cal', None),
             ('system', None),
-            ('fit', None),
+            ('fits', None),
         ))
         self.timing_gain_fit = TimingGainFit(confidence=0.95)
-        self.zpk_fit = OptimizeResult()
+        self.zpk_fits = [OptimizeResult()]
 
         self.savefig = savefig
         self.dpi = dpi
@@ -476,8 +496,9 @@ class CalibrationAnalyzer():
                   for line in str(self.stft).strip().split('\n')]
         lines += ['\t' + line
                   for line in str(self.timing_gain_fit).strip().split('\n')]
-        lines += ['\t' + line
-                  for line in str(self.zpk_fit).strip().split('\n')]
+        for zpk_fit in self.zpk_fits:
+            lines += ['\t' + line
+                    for line in str(zpk_fit).strip().split('\n')]
         return '\n'.join(lines)
 
     def __repr__(self):
@@ -822,8 +843,8 @@ class CalibrationAnalyzer():
         """
         sensor = self._sensor_stage()
         self.lti['sensor'] = lti_from_zpsf(
-            sensor.zeros, sensor.poles, sensor.stage_gain,
-            sensor.normalization_frequency)
+            sensor.zeros, sensor.poles,
+            sensor.stage_gain, sensor.normalization_frequency)
         self.logger.debug('Sensor: %s', str(self.lti['sensor']))
 
         cal = self._cal_stage()
@@ -849,6 +870,13 @@ class CalibrationAnalyzer():
         self.lti['system'] = minreal(
             lti(system_zeros, system_poles, system_gain))
         self.logger.debug('System: %s', self.lti['system'])
+
+    def map_orientations(self, mapping):
+        """Account for differences between outputs and internal mechanics."""
+        for trace in self.stream:
+            for output, internal in zip(*mapping):
+                if trace.id[-1] == output:
+                    trace.id = trace.id[:-1] + internal
 
     def tf_nominal(self, model, f=None):
         """
@@ -1007,19 +1035,22 @@ class CalibrationAnalyzer():
         info['input_units'] = self._sensor_stage().input_units.lower()
         info[PACKAGE] = VERSION
 
-        if self.lti['fit']:
-            tf_fit_sensor = zpk_divide(self.lti['fit'], self.lti['cal'])
+        if self.lti['fits']:
             poles = pd.concat(
-                (feature_stats(tf_fit_sensor.poles, 'pole'),
-                 feature_stats(self.lti['sensor'].poles, 'pole')))
+                [feature_stats(zpk_divide(fit, self.lti['cal']).poles, 'pole')
+                    for fit in self.lti['fits']] +
+                [feature_stats(self.lti['sensor'].poles, 'pole')])
             poles.index = info.index
+
             zeros = pd.concat(
-                [feature_stats(tf_fit_sensor.zeros, 'zero'),
-                 feature_stats(self.lti['sensor'].zeros, 'zero')])
+                [feature_stats(zpk_divide(fit, self.lti['cal']).zeros, 'zero')
+                    for fit in self.lti['fits']] +
+                [feature_stats(self.lti['sensor'].zeros, 'zero')])
             zeros.index = info.index
             gain = pd.DataFrame(
-                np.vstack((tf_fit_sensor.gain,
-                           self.lti['sensor'].gain)),
+                np.vstack(
+                    [fit.gain for fit in self.lti['fits']] +
+                    [self.lti['sensor'].gain]),
                 columns=pd.MultiIndex.from_tuples([('gain', '')]),
                 index=info.index)
 
@@ -1055,9 +1086,10 @@ class CalibrationAnalyzer():
 
         return df
 
-    def tf_fit(self):
-        """Compute fitted transfer function at measured frequencies."""
-        return self.lti['fit'].freqresp(2*np.pi*self.stft.f)[1]
+    def tf_fits(self):
+        """Compute fitted transfer functions at measured frequencies."""
+        return np.array([
+            fit.freqresp(2*np.pi*self.stft.f)[1] for fit in self.lti['fits']])
 
     def test(self, test_band_hz=TEST_BAND_HZ,
              max_amplitude_percent=MAX_AMPLITUDE_PERCENT,
@@ -1082,7 +1114,7 @@ class CalibrationAnalyzer():
             test result per channel of calibration_signal_file
         """
         try:
-            tf_estimate = self.tf_fit()
+            tf_estimate = self.tf_fits()
         except AttributeError:
             tf_estimate = self.stft.tf_estimate()
         tf_nominal = self.tf_nominal('system').reshape((1, -1))
@@ -1183,7 +1215,11 @@ class CalibrationAnalyzer():
 
             file.write(IMS_FOOTER)
 
-    def simulate_response(self, trim=True, model='system'):
+    def simulate_response(
+        self: CalibrationAnalyzer,
+        trim: bool = True,
+        model: str = 'system',
+    ) -> np.ndarray:
         """Simulate nominal response of sensor to calibration signal."""
         sensitivity = abs(self.lti[model].freqresp(w=2*np.pi)[1][0])
         nominal_paz = {'zeros': self.lti[model].zeros,
@@ -1201,6 +1237,13 @@ class CalibrationAnalyzer():
 
         return signal
 
+    def _in_band(
+        self: CalibrationAnalyzer,
+        feature_rad_s: float,
+    ) -> bool:
+        f = np.abs(feature_rad_s)/(2*np.pi)
+        return f == 0 or (f >= self.stft.f[0]/2 and f <= self.stft.f[-1]*2)
+
     def fit(self):
         """Least-squares estimation of poles and zeros."""
         f = self.stft.f
@@ -1208,18 +1251,60 @@ class CalibrationAnalyzer():
             self.logger.error('No data to fit.')
             return
 
-        tf_estimate = self.stft.tf_estimate()
+        tf_estimates = self.stft.tf_estimate()
         zpk_nom = self.lti['system']
-        variance = self.stft.variance()
+        variances = self.stft.variance()
+        self.logger.debug(zpk_nom)
 
-        # TODO "fix" part of response above Nyquist or below lowest frequency
+        z_fixed = sort_complex([item for item in zpk_nom.zeros
+                                   if not self._in_band(item)])
+        p_fixed = sort_complex([item for item in zpk_nom.poles
+                                   if not self._in_band(item)])
+        zpk_fixed = ZerosPolesGain(z_fixed, p_fixed, 1)
+        f_norm = self._sensor_stage().stage_gain_frequency
+        gain = np.abs(zpk_fixed.freqresp(w=2*np.pi*f_norm)[1])
+        zpk_fixed = ZerosPolesGain(zpk_fixed.zeros, zpk_fixed.poles, 1/gain)
+        self.logger.debug(zpk_fixed)
 
-        self.lti['fit'], self.zpk_fit = fit_response(
-            zpk_nom, f, tf_estimate, variance)
-        self.logger.debug(self.zpk_fit)
-        self.logger.info('Fit: %s', self.lti['fit'])
+        f_norm = self._sensor_stage().stage_gain_frequency
+        units = '%s/(%s)' % (self._sensor_stage().output_units,
+                             self._sensor_stage().input_units.lower())
+        zpk_unfixed = zpk_divide(zpk_nom, zpk_fixed)
+        sensitivity =  np.abs(zpk_nom.freqresp(w=2*np.pi*f_norm)[1])
+        self.logger.info(
+            'Nominal zeros [rad/s]: %s', feature_str(zpk_unfixed.zeros))
+        self.logger.info(
+            'Nominal poles [rad/s]: %s', feature_str(zpk_unfixed.poles))
+        self.logger.info(
+            'Nominal sensitivity [%s]: %.5g', units, sensitivity)
 
-    def estimate_errors(self, variance_threshhold=0.03):
+        self.lti['fits'] = []
+        self.zpk_fits = []
+        labels = factor_names(self.stream)[1]
+        for label, tf_estimate, variance in zip(labels, tf_estimates, variances):
+
+            self.logger.info('Fitting: %s', label)
+            zpk_fit, result = fit_response(
+                zpk_nom, f, tf_estimate, variance, zpk_fixed)
+
+            self.logger.debug(zpk_fit)
+            zpk_unfixed = zpk_divide(zpk_fit, zpk_fixed)
+            sensitivity =  np.abs(zpk_fit.freqresp(w=2*np.pi*f_norm)[1])
+            self.logger.info(
+                'Fit zeros [rad/s]: %s', feature_str(zpk_unfixed.zeros))
+            self.logger.info(
+                'Fit poles [rad/s]: %s', feature_str(zpk_unfixed.poles))
+            self.logger.info(
+                'Fit sensitivity [%s]: %.5g', units, sensitivity)
+
+
+            self.lti['fits'].append(zpk_fit)
+            self.zpk_fits.append(result)
+
+    def estimate_errors(
+        self: CalibrationAnalyzer,
+        variance_threshhold: float = 0.03
+    ) -> None:
         """
         Least-squares estimation of gain and timing errors.
 
@@ -1289,8 +1374,7 @@ class CalibrationAnalyzer():
                 (~keep).sum(), len(keep), variance_threshhold)
 
         if len(f) < 1:
-            self.logger.error('No data to fit.')
-            return None, None, None, None, ''
+            raise RuntimeError('No data to fit.')
 
         magnitude = np.abs(tf_estimate)
         phase = unwrap_mid(np.angle(tf_estimate), f, axis=1)
@@ -1507,8 +1591,13 @@ class CalibrationAnalyzer():
 
         self._save_image(fig)
 
-    def plot_transfer_function(self, remove='system', errors='estimate',
-                               scale='log', variance_threshhold=None):
+    def plot_transfer_function(
+        self: CalibrationAnalyzer,
+        remove: str = 'system',
+        errors: str = 'estimate',
+        scale: str = 'log',
+        variance_threshhold: float = np.NaN,
+    ) -> None:
         """
         Plot calibration transfer function on log or linear scale.
 
@@ -1549,16 +1638,16 @@ class CalibrationAnalyzer():
         tf_estimate = self.stft.tf_estimate()
         variance = self.stft.variance()
 
-        if self.lti['fit']:
-            tf_fit = self.tf_fit()
+        if self.lti['fits']:
+            tf_fits = self.tf_fits()
 
         if remove:
             tf_remove = self.tf_nominal(remove)
             with np.errstate(divide='ignore', invalid='ignore'):
                 tf_estimate /= tf_remove
                 tf_nominal /= tf_remove
-                if self.lti['fit']:
-                    tf_fit /= tf_remove
+                if self.lti['fits']:
+                    tf_fits /= tf_remove
 
         if errors:
             if self.timing_gain_fit.gain is None or self.timing_gain_fit.timing is None:
@@ -1571,10 +1660,10 @@ class CalibrationAnalyzer():
                 1j*2*np.pi*f*self.timing_gain_fit.timing.params)
             with np.errstate(divide='ignore', invalid='ignore'):
                 tf_estimate /= tf_timing_gain
-                if self.lti['fit']:
-                    tf_fit /= tf_remove
+                if self.lti['fits']:
+                    tf_fits /= tf_timing_gain
 
-        if variance_threshhold is not None:
+        if not np.isnan(variance_threshhold):
             tf_estimate[variance > variance_threshhold] = np.nan
             option_list += ['variance_lt_%g' % variance_threshhold]
 
@@ -1615,11 +1704,11 @@ class CalibrationAnalyzer():
         if errors == 'estimate':
             axes[1].plot(f, np.angle(tf_error, deg=True), label='error')
 
-        if self.lti['fit']:
+        for tf_fit, label in zip(tf_fits, labels):
             gain_fit = 20*np.log10(np.abs(tf_fit))
             phase_fit = np.angle(tf_fit, deg=True)
-            axes[0].plot(f, gain_fit, label='fit')
-            axes[1].plot(f, phase_fit, label='fit')
+            axes[0].plot(f, gain_fit, label=label)
+            axes[1].plot(f, phase_fit, label=label)
 
         max_mag_db = 20*np.log10((1 + self.info['spec_max_amp_pct']/100))
         max_phase_deg = self.info['spec_max_phase_deg']
@@ -1676,7 +1765,8 @@ def main(argv=None):
     args = parser.parse_args(argv[1:])
 
     config = vars(args).copy()
-
+    if os.path.isfile(LOG_FILE_NAME):
+        os.remove(LOG_FILE_NAME)
     result = calibration_analyzer(**config)
 
     return len(result) == 0
