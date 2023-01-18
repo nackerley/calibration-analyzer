@@ -18,6 +18,7 @@ import requests
 import numpy as np
 import pandas as pd
 import scipy.signal as sp
+from scipy.signal import ZerosPolesGain
 
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
@@ -246,6 +247,10 @@ def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
             'Cached %s: %s', inventory_file, _elapsed_since(tick))
 
 
+def sort_complex(array: np.ndarray) -> np.ndarray:
+    return np.array(sorted(sorted(array, key=np.imag), key=np.abs))
+
+
 def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     """
     Remove (nearly) identical zero-pole pairs from a transfer function.
@@ -315,9 +320,9 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     z_out = lti_in.zeros[np.logical_not(np.any(cancel_indices, axis=1))]
 
     k_out = float(abs(lti_in.freqresp(w=2*np.pi*f_norm)[1])) / \
-        float(abs(sp.lti(z_out, p_out, 1).freqresp(w=2*np.pi*f_norm)[1]))
+        float(abs(ZerosPolesGain(z_out, p_out, 1).freqresp(w=2*np.pi*f_norm)[1]))
 
-    return sp.lti(z_out, p_out, k_out)
+    return ZerosPolesGain(sort_complex(z_out), sort_complex(p_out), k_out)
 
 
 def flip(ndarray, axis):
@@ -403,9 +408,10 @@ def lti_from_zpsf(zeros, poles, sensitivity, frequency):
     Inputs are zeros, poles, sensitivity and
     frequency at which sensitivity is specified.
     """
-    model = sp.lti(zeros, poles, 1)
+    model = ZerosPolesGain(zeros, poles, 1)
     midband = abs(model.freqresp(2*np.pi*frequency)[1])
-    return sp.lti(zeros, poles, sensitivity/midband)
+    return ZerosPolesGain(
+        sort_complex(zeros), sort_complex(poles), sensitivity/midband)
 
 
 def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
