@@ -1,0 +1,56 @@
+INFO     shared.py:__main__:get_logger - Logfile: U:\studies_git\calibration\outdoor\outdoor.log
+INFO     outdoor.py:__main__:<module> - Loading: U:\studies_git\calibration\manufacturer\CalibrationSheetsDerived.csv
+INFO     outdoor.py:__main__:<module> - Nominal calibration temperature coefficient: -0.223%/°C
+INFO     outdoor.py:__main__:<module> - Nominal ground motion temperature coefficient: -0.163%/°C
+INFO     outdoor.py:__main__:<module> - TEST1
+sensor_model               S-13
+sensor_id                  2567
+Kg                          621
+Rg                         3760
+CDR                        6225
+Rd                         6225
+Km                       0.1975
+M                             5
+Rm                           23
+f0                            1
+lambda_x                 0.0124
+preamp_model       MAN-ELP-0110
+preamp_id                   NaN
+Kp                           40
+Kc                        8.692
+Rp                          200
+digitizer_model        CMG-DM24
+digitizer_id              A3082
+Si                    2.864e-06
+Kd                            2
+So                     4.24e-07
+Rc                      25.6558
+Sg                      387.153
+lambda0                0.623435
+Sd                       698324
+kappa_g              -0.0016799
+kappa_c             -0.00228524
+NCALPER                    0.25
+NCALIB0              0.00367926
+gain0                  0.280891
+NCALIB               0.00364291
+gain_expected          0.283693
+Name: TEST1, dtype: object
+INFO     outdoor.py:__main__:<module> - Expected TEST1 ground motion temperature coefficient: -0.229%/°C
+INFO     outdoor.py:__main__:<module> - Saving: temperatures.png
+INFO     outdoor.py:__main__:<module> - Saving: temp_vs_gain.png
+INFO     outdoor.py:__main__:<module> - Saving: temp_vs_gain_fitted.png
+INFO     outdoor.py:__main__:<module> - Probe position: air
+INFO     outdoor.py:__main__:<module> - Measured calibration temperature coefficient: -0.187%/°C
+INFO     outdoor.py:__main__:<module> - Gain deviation at 20°C: -2.29%
+INFO     outdoor.py:__main__:<module> - Apparent manufacturer's calibration temperature: 7.7°C
+INFO     outdoor.py:__main__:<module> - Probe position: vault
+INFO     outdoor.py:__main__:<module> - Measured calibration temperature coefficient: -0.241%/°C
+INFO     outdoor.py:__main__:<module> - Gain deviation at 20°C: -4.56%
+INFO     outdoor.py:__main__:<module> - Apparent manufacturer's calibration temperature: 1.1°C
+INFO     outdoor.py:__main__:<module> - Probe position: sensor
+INFO     outdoor.py:__main__:<module> - Measured calibration temperature coefficient: -0.22%/°C
+INFO     outdoor.py:__main__:<module> - Gain deviation at 20°C: -3.29%
+INFO     outdoor.py:__main__:<module> - Apparent manufacturer's calibration temperature: 5.1°C
+INFO     outdoor.py:__main__:<module> - Saving: outdoor_gaussian_fits.png
+INFO     outdoor.py:__main__:<module> - Saving: outdoor_temperatures.png

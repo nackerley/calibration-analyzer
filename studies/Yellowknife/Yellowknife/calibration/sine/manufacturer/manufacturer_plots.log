@@ -1,0 +1,5 @@
+INFO     shared.py:__main__:get_logger - Logfile: U:\studies_git\calibration\manufacturer\manufacturer_plots.log
+INFO     manufacturer_plots.py:__main__:<module> - Loading: U:\studies_git\calibration\manufacturer\CalibrationSheetsDerived.csv
+INFO     manufacturer_plots.py:__main__:<module> - Saving: manufacturer_plots.png
+INFO     manufacturer_plots.py:__main__:<module> - Saving: response_existing.png
+INFO     manufacturer_plots.py:__main__:<module> - Saving: response_new.png

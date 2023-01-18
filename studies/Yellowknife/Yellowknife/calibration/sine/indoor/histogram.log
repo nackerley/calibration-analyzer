@@ -1,0 +1,12 @@
+INFO     shared.py:__main__:get_logger - Logfile: U:\studies_git\calibration\indoor\histogram.log
+INFO     histogram.py:__main__:<module> - Loading: U:\studies_git\calibration\manufacturer\CalibrationSheetsDerived.csv
+INFO     histogram.py:__main__:<module> -        ncalib_deviation  gain_deviation
+count                61              61
+mean                6.3             6.4
+std                 1.2           0.053
+min                 2.1             6.3
+50%                 6.5             6.5
+max                 7.7             6.5
+INFO     histogram.py:__main__:<module> - Saving: indoor_gaussian_fits.png
+INFO     histogram.py:__main__:<module> - Saving: joint_plot_1.png
+INFO     histogram.py:__main__:<module> - Saving: joint_plot_2.png
