@@ -312,14 +312,15 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
     cancel_indices = np.zeros(condition.shape, dtype=bool)
     with np.errstate(divide='ignore', invalid='ignore'):
         while np.any(np.any(condition <= tolerance)):
-            i, j = np.unravel_index(np.nanargmin(condition), condition.shape)
-            condition[i, :] = np.inf
-            condition[:, j] = np.inf
-            cancel_indices[i, j] = True
+            indices = np.unravel_index(np.nanargmin(condition), condition.shape)
+            condition[indices[0], :] = np.inf
+            condition[:, indices[1]] = np.inf
+            cancel_indices[indices[0], indices[1]] = True
 
     p_out = lti_in.poles[np.logical_not(np.any(cancel_indices, axis=0))]
     z_out = lti_in.zeros[np.logical_not(np.any(cancel_indices, axis=1))]
 
+    # pylint: disable=no-member
     k_out = float(abs(lti_in.freqresp(w=2*np.pi*f_norm)[1])) / \
         float(abs(ZerosPolesGain(z_out, p_out, 1).freqresp(w=2*np.pi*f_norm)[1]))
 
@@ -971,8 +972,6 @@ def channels2df(inventory):
     """
     Create table of channels in inventory.
 
-    TODO: consider merging contiguous time ranges, but carefully!
-
     Parameters
     ----------
     inventory : obspy.Inventory
@@ -984,6 +983,7 @@ def channels2df(inventory):
         station table with index 'network', 'station','location' 'channel'
         and columns 'start' and 'end'.
     """
+    # TODO: consider merging contiguous time ranges, but carefully!
     df = pd.DataFrame()
     df['network'] = [network.code
                      for network, _, _ in inventory_items(inventory)]
@@ -1027,8 +1027,6 @@ def stations2df(inventory):
     """
     Create table of stations in inventory.
 
-    TODO: consider merging contiguous time ranges, but carefully!
-
     Parameters
     ----------
     inventory : obspy.Inventory
@@ -1040,6 +1038,7 @@ def stations2df(inventory):
         station table with index 'network', 'station','location' 'channel'
         and columns 'start' and 'end'.
     """
+    # TODO: consider merging contiguous time ranges, but carefully!
     df = pd.DataFrame()
     df['network'] = [network.code
                      for network, _ in inventory_stations(inventory)]
