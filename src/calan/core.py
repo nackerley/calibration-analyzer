@@ -248,6 +248,7 @@ def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
 
 
 def sort_complex(array: np.ndarray) -> np.ndarray:
+    """Sort complex array by absolute value, then by imaginary part."""
     return np.array(sorted(sorted(array, key=np.imag), key=np.abs))
 
 
