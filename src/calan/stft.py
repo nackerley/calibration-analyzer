@@ -89,7 +89,7 @@ class Stft():
             lines[0] = lines[0] + ' None'
         else:
             lines.append('\t%dx%d inputs x outputs',
-                         self.stft.p_xx.shape[0], self.stft.p_yy.shape[0])
+                         self.p_xx.shape[0], self.p_yy.shape[0])
             lines.append('\tt: %d from %g to %g s' %
                          (len(self.t), self.t[0], self.t[-1]))
             lines.append('\tf: %d from %g to %g Hz' %
