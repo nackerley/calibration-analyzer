@@ -23,10 +23,9 @@ Given coefficients x and transfer function estimate H:
 
 $$J(x) = $$
 
-TODO: give complete formula for Jacobian
-
 @nackerle
 """
+# TODO: give complete formula for Jacobian
 from typing import Optional, Tuple
 from logging import getLogger
 from copy import deepcopy
@@ -69,17 +68,9 @@ def fit_response(
     Outputs:
       - zpk_fit:   best_fit transfer function
       - result:    optimization result
-
-    TODO Determine whether denominator must be constrained to be stable.
-
-    TODO Consider handling multiple channels, to reuse frequency matrix
-    computation.
-
-    TODO support different weighting schemes:
-      - 'variance" 1/sqrt(var) to account for measurement errors
-      - 'response' 1/abs(h_nom) to emphasize importance of passband
-      - 'frequency' 1/f to account for over-weighting of high frequencies by FFT
     """
+    # TODO: Determine whether denominator must be constrained to be stable.
+    # TODO: Consider handling multiple channels, to reuse frequency matrix computation.
     logger = getLogger(__name__)
     if var_meas is None:
         var_meas = np.ones_like(f_meas)
@@ -170,6 +161,10 @@ def fit_response(
         return omega_b @ x[m:] / (omega_m + omega_a @ x[:m])
 
     # variance- and response-based weights
+    # TODO: support different weighting schemes:
+    #   - 'variance" 1/sqrt(var) to account for measurement errors
+    #   - 'response' 1/abs(h_nom) to emphasize importance of passband
+    #   - 'frequency' 1/f to account for over-weighting of high frequencies by FFT
     wt_meas = 1.0 / np.sqrt(var_meas) / np.abs(model(x_initial))
 
     def residuals(x):
@@ -273,9 +268,8 @@ def zpk_cancel(
     np.abs(z-p) / np.sqrt(np.abs(z)*np.abs(p))
         / np.sqrt(np.abs(np.cos(np.angle(z))*np.cos(np.angle(p))))
         < tolerance
-
-    TODO: factor out repeated functionality with core.minreal()
     """
+    # TODO: factor out repeated functionality with core.minreal()
     if len(old.zeros) == 0 or len(old.poles) == 0:
         return deepcopy(old)
 
