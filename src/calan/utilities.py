@@ -61,6 +61,10 @@ def str_sig(value: float, sig_dig: int = 3) -> str:
     order_of_magnitude = int(floor(log10(abs(value))))
     num_digits = sig_dig - order_of_magnitude - 1
 
+    if num_digits < 0:
+        value = np.round(value, num_digits)
+        num_digits = 0
+
     return f'{value:.{num_digits}f}'
 
 
