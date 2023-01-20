@@ -1,7 +1,11 @@
 """Short-term Fourier Transform."""
 # pylint: disable=consider-using-f-string
+from __future__ import annotations
+
 import os
+
 import numpy as np
+from numpy.typing import ArrayLike
 from scipy import fftpack
 from scipy.signal._spectral_py import _spectral_helper
 
@@ -71,48 +75,58 @@ def fft_frequencies(len_fft, f_sample, sides='onesided'):
 class Stft():
     """Short-term fourier auto- and cross-spectra between input and output."""
 
-    def __init__(self, f=None, t=None, p_xx=None, p_yy=None, p_xy=None,
-                 log_level='INFO'):
+    def __init__(self: Stft, log_level: str = 'INFO') -> None:
         """Construct STFT."""
-        self.f = f
-        self.t = t
-        self.p_xx = p_xx
-        self.p_yy = p_yy
-        self.p_xy = p_xy
+        self.f = np.array([[np.NaN]])
+        self.t = np.array([[np.NaN]])
+        self.p_xx = np.array([[np.NaN]])
+        self.p_yy = np.array([[np.NaN]])
+        self.p_xy = np.array([[np.NaN]])
         self.logger = get_logger(self.__class__.__name__, LOG_FILE_NAME,
                                  log_level)
 
-    def __str__(self):
+    def __str__(self: Stft) -> str:
         """Human-readable representation."""
         lines = [self.__class__.__name__ + ':']
-        if self.p_xy is None:
+        if np.isnan(self.p_xy).all():
             lines[0] = lines[0] + ' None'
         else:
-            lines.append('\t%dx%d inputs x outputs',
-                         self.p_xx.shape[0], self.p_yy.shape[0])
-            lines.append('\tt: %d from %g to %g s' %
-                         (len(self.t), self.t[0], self.t[-1]))
-            lines.append('\tf: %d from %g to %g Hz' %
-                         (len(self.f), self.f[0], self.f[-1]))
+            lines.append(
+                f'    {self.p_xx.shape[0]} input x {self.p_yy.shape[0]} outputs ')
+            lines.append(
+                f'    t: {len(self.t)} from {self.t[0]} to {self.t[-1]} s')
+            lines.append(
+                f'    f: {len(self.f)} from {self.f[0]} to {self.f[-1]} Hz')
         return '\n'.join(lines)
 
     @staticmethod
-    def mean(p_xy):
+    def mean(p_xy: ArrayLike) -> np.ndarray:
         """Finishing touch of Welch's method when deriving results."""
+        p_xy = np.array(p_xy)
         if len(p_xy.shape) >= 2 and p_xy.size > 0:
             if p_xy.shape[-1] > 1:
-                p_xy = p_xy.mean(axis=-1)
+                p_xy = np.mean(p_xy, axis=-1)
             else:
                 p_xy = np.reshape(p_xy, p_xy.shape[:-1])
-        return p_xy
+        return p_xy  # type: ignore
 
-    def num_windows(self):
+    def num_windows(self: Stft) -> int:
         """Return number of windows used."""
         return self.p_xx.shape[2]
 
-    def compute(self, x, y, f_sample, len_fft, len_overlap, window='hann'):
+    def compute(
+        self: Stft,
+        x: ArrayLike,
+        y: ArrayLike,
+        f_sample: float,
+        len_fft: int,
+        len_overlap: int,
+        window: str = 'hann'
+    ) -> None:
         """Detrend segments by removing constant value before windowing."""
         f_expected = fft_frequencies(len_fft, f_sample)
+        x = np.array(x)
+        y = np.array(y)
         if len(x.shape) == 1:
             x = x.reshape((1, -1))
         if len(y.shape) == 1:
@@ -141,7 +155,11 @@ class Stft():
             fs=f_sample, nperseg=len_fft, noverlap=len_overlap, mode='psd')[2]
         # pylint: enable=protected-access
 
-    def trim(self, low_frequency_points=1, high_frequency_fraction=0.8):
+    def trim(
+        self: Stft,
+        low_frequency_points: int = 1,
+        high_frequency_fraction: float = 0.8,
+    ) -> None:
         """
         Trim low- and high-frequency points.
 
@@ -156,16 +174,16 @@ class Stft():
         self.p_yy = self.p_yy[..., keep, :]
         self.p_xy = self.p_xy[..., keep, :]
 
-    def coherence_squared(self):
+    def coherence_squared(self: Stft) -> np.ndarray:
         """Return Welch's method squared coherence."""
         return np.abs(self.mean(self.p_xy))**2/(
             self.mean(self.p_xx)*self.mean(self.p_yy))
 
-    def variance(self):
+    def variance(self: Stft) -> np.ndarray:
         """Return Welch's method variance."""
         return (1/self.coherence_squared() - 1)/(2*len(self.t))
 
-    def tf_estimate(self, alpha=0):
+    def tf_estimate(self: Stft, alpha: int = 0) -> np.ndarray:
         """
         Return transfer function estimate (from input, x, to output, y).
 
