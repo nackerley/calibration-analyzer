@@ -29,7 +29,7 @@ Authors
 -------
 nicholas.ackerley@nrcan-rncan.gc.ca
 """
-# pylint: disable=consider-using-f-string, too-many-lines, no-member
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import os
@@ -61,8 +61,8 @@ from obspy.core.inventory import Inventory, Response, ResponseStage
 from obspy.signal.invsim import simulate_seismometer
 
 from calan.core import (
-    PACKAGE, VERSION, factor_names, subplots_squeeze, minreal,
-    lti_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
+    PACKAGE, VERSION, factor_names, subplots_squeeze, zpk_cancel,
+    zpk_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
     recompute_normalization_factors)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
@@ -74,7 +74,7 @@ from calan.fit_response import fit_response, zpk_divide, zpk_out_of_band
 # %% setup
 warnings.simplefilter('error', category=BadCoefficients)
 pd.plotting.register_matplotlib_converters()
-np.set_printoptions(suppress=True)
+np.set_printoptions(suppress=True, precision=5)
 
 # %% defaults
 
@@ -109,7 +109,7 @@ CAL_COMPONENT = 'C'
 
 # Nanometrics Centaur User Guide 17935R5, 2016-11-02
 DAC_BITS = 16
-CALIBRATION_DTYPE = 'int%d' % DAC_BITS
+CALIBRATION_DTYPE = f'int{DAC_BITS}'
 
 # IDC-ENG-SPC-103-Rev.7.3, May 2017
 TEST_BAND_HZ = (0.02, 16)
@@ -167,7 +167,6 @@ PLOT_CHOICES = ['basic', 'diagnostic']
 # %% definitions
 def _argparser() -> MyArgumentParser:
     """Command-line interface."""
-    # pylint: disable=no-member
     parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
                               description=__doc__,
                               formatter_class=MyFormatter)
@@ -231,7 +230,7 @@ def _argparser() -> MyArgumentParser:
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
         '-v', '--version', action='version',
-        version='%s %s' % (PACKAGE, VERSION))
+        version=f'{PACKAGE} {VERSION}')
     return parser
 
 
@@ -428,11 +427,10 @@ class TimingGainFit():
             return 'timing fit: None'
         uncertainty = self.num_sigma()*self.timing.bse
         digits = round(log10(abs(self.timing.params)/uncertainty)) + 1
-        return (
-            'timing error %s ±%s (%.0f%% conf.)' %
-            (pretty_duration(self.timing.params, fmt=digits, thresh=0.05),
-             pretty_duration(uncertainty, fmt=1, thresh=0.05),
-             100*self.confidence))
+        estimate = pretty_duration(self.timing.params, fmt=digits, thresh=0.05)
+        error = pretty_duration(uncertainty, fmt=1, thresh=0.05)
+        conf = 100*self.confidence
+        return f'timing error {estimate} ±{error} ({conf:0f}%% conf.)'
 
     def gain_summary(self: TimingGainFit) -> str:
         """
@@ -444,11 +442,10 @@ class TimingGainFit():
             return 'gain fit: None'
         uncertainty = self.num_sigma()*self.gain.bse
         digits = round(log10(abs(self.gain.params - 1)/uncertainty)) + 1
-        return (
-            'gain error %g%% ±%g%% (%.0f%% conf.)' %
-            (round_sig(100*(self.gain.params - 1), digits),
-             round_sig(100*self.num_sigma()*self.gain.bse, 1),
-             100*self.confidence))
+        estimate = round_sig(100*(self.gain.params - 1), digits)
+        error = round_sig(100*self.num_sigma()*self.gain.bse, 1)
+        conf = 100*self.confidence
+        return f'gain error {estimate}%% ±{error}%% ({conf:0f}%% conf.)'
 
 
 class CalibrationInfo():
@@ -473,7 +470,7 @@ class CalibrationInfo():
         """Human-readable representation."""
         lines = [self.__class__.__name__ + ':']
         for key, value in self.__dict__.items():
-            lines.append('    %s: %s' % (key, value))
+            lines.append(f'    {key}: {value}')
         return '\n'.join(lines)
 
 
@@ -665,7 +662,10 @@ class CalibrationAnalyzer():
                 'Sensor input units %s not among supported: ',
                 (sensor.input_units, ', '.join(sorted(MOTION.keys()))))
 
-        self.logger.debug(self._output_stream()[0].stats.response)
+        if self._output_stream() and isinstance(self._output_stream()[0], Trace):
+            first_trace = self._output_stream()[0]
+            first_stats = first_trace.stats  # pylint: disable=no-member
+            self.logger.debug(first_stats.response)
 
     def _force_response_match_deprecated(
         self: CalibrationAnalyzer,
@@ -722,10 +722,9 @@ class CalibrationAnalyzer():
 
         cache_file = os.path.join(
             gettempdir(),
-            '%s_%gsps%s_delay%gs.%s' % (
-                calibration_signal_file.replace('.lzma', ''),
-                self._sampling_rate(), phase_suffix, self.info.delay_start,
-                self.CACHE_FORMAT.lower()))
+            f'{calibration_signal_file.replace(".lzma", "")}_'
+            f'{self._sampling_rate()}sps{phase_suffix}_'
+            f'delay{self.info.delay_start}s.{self.CACHE_FORMAT.lower()}')
         if os.path.isfile(cache_file):
             self.logger.info('Found cache: %s', cache_file)
             signal = read(cache_file)[0].data
@@ -819,7 +818,7 @@ class CalibrationAnalyzer():
             1. Sensor is a single stage.
             2. All traces have the same response.
         """
-        return self._output_stream()[0].stats.response.response_stages[0]
+        return self._output_stream()[0].stats.response.response_stages[0]  # pylint: disable=no-member
 
     def _cal_stage(self: CalibrationAnalyzer) -> ResponseStage:
         """
@@ -866,11 +865,11 @@ class CalibrationAnalyzer():
 
         if not np.isclose(response.instrument_sensitivity.value,
                           instrument_sensitivity, rtol=CHECK_PERCENT/100):
-            units = '%s/(%s)' % (
-                response.instrument_sensitivity.output_units,
-                response.instrument_sensitivity.input_units.lower())
+            units = (
+                f'{response.instrument_sensitivity.output_units}/'
+                f'({response.instrument_sensitivity.input_units.lower()})')
             self.logger.warning(
-                'Instrument sensitivity %.6g %s in file differs from '
+                'Instrument sensitivity %.6g %s in file differs from'
                 'recalculated value %.6g %s by more than %g%%.',
                 instrument_sensitivity, units,
                 response.instrument_sensitivity.value, units, CHECK_PERCENT)
@@ -911,7 +910,7 @@ class CalibrationAnalyzer():
         ground motion it is inverted.
         """
         sensor = self._sensor_stage()
-        self.lti.sensor = lti_from_zpsf(
+        self.lti.sensor = zpk_from_zpsf(
             sensor.zeros, sensor.poles,
             sensor.stage_gain, sensor.normalization_frequency)
         self.logger.debug('Sensor: %s', str(self.lti.sensor))
@@ -927,7 +926,7 @@ class CalibrationAnalyzer():
             cal_poles = np.array([0]*integrations + list(cal_poles))
             # TODO: verify minus sign
             cal_gain /= (-2*np.pi*cal.normalization_frequency)**integrations
-        self.lti.cal = lti_from_zpsf(
+        self.lti.cal = zpk_from_zpsf(
             cal_zeros, cal_poles, cal_gain, cal.normalization_frequency)
         self.logger.debug('Cal: %s', self.lti.cal)
 
@@ -936,7 +935,7 @@ class CalibrationAnalyzer():
         system_poles = (self.lti.cal.poles.tolist() +
                         self.lti.sensor.poles.tolist())
         system_gain = self.lti.cal.gain*self.lti.sensor.gain
-        self.lti.system = minreal(
+        self.lti.system = zpk_cancel(
             lti(system_zeros, system_poles, system_gain))
         self.logger.debug('System: %s', self.lti.system)
 
@@ -970,8 +969,8 @@ class CalibrationAnalyzer():
         # TODO can this be simplified using getattr?
         if model not in vars(self.lti):
             raise ValueError(
-                "Model '%s' not among supported: %s."
-                % (model, ', '.join(vars(self.lti))))
+                f"Model '{model}' not among supported: "
+                ', '.join(vars(self.lti)))
         if f is None:
             f = self.stft.f
         else:
@@ -1247,9 +1246,9 @@ class CalibrationAnalyzer():
             self.stft.tf_estimate()[:, keep] /
             self.tf_nominal('cal')[keep])
 
-        output_txt = 'calibrate_result_{station}_{start}.txt'.format(
-            station=self.stream[0].stats.station,
-            start=self.info.start.strftime('%Y%m%d.%H%M'))
+        output_txt = '_'.join([
+            'calibrate_result', self.stream[0].stats.station,
+            self.info.start.strftime('%Y%m%d.%H%M')]) + '.txt'
         self.logger.info(output_txt)
 
         with open(output_txt, 'w', encoding='UTF-8') as file:
@@ -1351,8 +1350,8 @@ class CalibrationAnalyzer():
                                     self._sensor_stage().stage_gain_frequency)
         self.logger.debug(zpk_fixed)
 
-        units = '%s/(%s)' % (self._sensor_stage().output_units,
-                             self._sensor_stage().input_units.lower())
+        units = (f'{self._sensor_stage().output_units}/'
+                 f'({self._sensor_stage().input_units.lower()})')
         zpk_unfixed = zpk_divide(zpk_nom, zpk_fixed)
         self.logger.info(
             'Nominal zeros [rad/s]: %s', feature_str(zpk_unfixed.zeros))
@@ -1560,13 +1559,13 @@ class CalibrationAnalyzer():
             axes[1].set_yticks(np.arange(-180, 180 + 1, 45.))
 
         if model == 'cal':
-            axes[0].set_ylabel('Gain [dB wrt %s/(%s)]' % (
-                self._sensor_stage().input_units.lower(),
-                self._sensor_stage().output_units))
+            output_units = self._sensor_stage().input_units.lower()
+            input_units = self._sensor_stage().output_units
+            axes[0].set_ylabel(f'Gain [dB wrt {output_units}/({input_units})]')
         elif model == 'sensor':
-            axes[0].set_ylabel('Gain [dB wrt %s/(%s)]' % (
-                self._sensor_stage().output_units,
-                self._sensor_stage().input_units.lower()))
+            output_units = self._sensor_stage().output_units
+            input_units = self._sensor_stage().input_units.lower()
+            axes[0].set_ylabel(f'Gain [dB wrt {output_units}/({input_units})]')
         else:
             axes[0].set_ylabel('Gain [dB]')
         axes[0].legend(loc='best')
@@ -1702,9 +1701,9 @@ class CalibrationAnalyzer():
         """
         if remove and remove not in ['cal', 'system']:
             raise ValueError(
-                "Removal of '%s' response not supported" % remove)
+                f"Removal of '{remove}' response not supported")
         if errors and errors not in ['estimate', 'correct']:
-            raise ValueError("Cannot '%s' errors" % errors)
+            raise ValueError(f"Cannot '{errors}' errors")
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
 
@@ -1714,7 +1713,7 @@ class CalibrationAnalyzer():
 
         channels = factor_names(self._output_stream())[1]
         results = ['pass' if item else 'fail' for item in self.info.in_spec]
-        labels = ['%s: %s' % items for items in zip(channels, results)]
+        labels = [f'{channel}: {result}' for channel, result in zip(channels, results)]
 
         f = self.stft.f
         tf_nominal = self.tf_nominal('system')
@@ -1749,7 +1748,7 @@ class CalibrationAnalyzer():
 
         if not np.isnan(variance_threshhold):
             tf_estimate[variance > variance_threshhold] = np.nan
-            option_list += ['variance_lt_%g' % variance_threshhold]
+            option_list += [f'variance_lt_{variance_threshhold}']
 
         band_hz = (self.info.spec_min_freq_hz,
                    self.info.spec_max_freq_hz)
@@ -1799,9 +1798,10 @@ class CalibrationAnalyzer():
         ids_start = '\n'.join([
             factor_names(self.stream)[0],
             self.info.start.strftime('%Y-%m-%d %H:%M')])
-        test_limits = '±%g%%, ±%g°\n%g - %g Hz' % (
-            (self.info.spec_max_amp_pct, self.info.spec_max_phase_deg) +
-            band_hz)
+        test_limits = (
+            f'±{self.info.spec_max_amp_pct}%%, '
+            f'±{self.info.spec_max_phase_deg}°\n'
+            f'{band_hz[0]} - {band_hz[1]} Hz')
         axes[0].annotate(ids_start, (0.025, 0.025), xycoords='axes fraction',
                          ha='left', va='bottom')
         axes[0].fill_between(f[spec],
@@ -1816,9 +1816,9 @@ class CalibrationAnalyzer():
         if remove == 'system':
             axes[0].set_ylabel('Gain wrt nominal [dB]')
         elif remove == 'cal':
-            axes[0].set_ylabel('Gain [dB wrt %s/(%s)]' % (
-                self._sensor_stage().output_units,
-                self._sensor_stage().input_units.lower()))
+            axes[0].set_ylabel(
+                f'Gain [dB wrt {self._sensor_stage().output_units}/'
+                f'({self._sensor_stage().input_units.lower()})]')
         else:
             axes[0].set_ylabel('Gain [dB]')
         axes[1].set_ylabel('Phase [°]')

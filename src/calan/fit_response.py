@@ -26,34 +26,36 @@ $$J(x) = $$
 @nackerle
 """
 # TODO: give complete formula for Jacobian
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
 from logging import getLogger
-from copy import deepcopy
 
 import numpy as np
 from numpy.typing import ArrayLike
-from scipy.signal import lti, ZerosPolesGain, TransferFunction
+from scipy.signal import ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares, OptimizeResult
 
-from calan.core import sort_complex
-
-
-def sensitivity(system: lti, f: float = 1) -> float:
-    """Compute sensitivity at given frequency."""
-    return np.abs(system.freqresp(w=2*np.pi*f)[1][0])
+from calan.core import sort_complex, sensitivity, zpk_divide, zpk_multiply
 
 
 def zpk_out_of_band(
     system: ZerosPolesGain,
     f: ArrayLike,
-    f_norm: float = 1,
+    factor: float = 2,
+    norm_freq_hz: float = 1,
     set_sensitivity: float = 1,
 ) -> ZerosPolesGain:
-    """Construct out-of-band part of nominal response, with unity gain."""
+    """
+    Construct out-of-band part of nominal response, with unity gain.
+
+    Band is expanded by configurable factor beyond given frequency range.
+
+    Tranfer function returned is constrained to have the sensitivity given at
+    the normalization frequency.
+    """
     f = np.array(f)
     f.sort()
-    w_min = f[0]/2
-    w_max = f[-1]*5
+    w_min = f[0]/factor
+    w_max = f[-1]*factor
     poles = sort_complex(system.poles)
     zeros = sort_complex(system.zeros)
 
@@ -68,7 +70,10 @@ def zpk_out_of_band(
 
     return ZerosPolesGain(
         z_fixed, p_fixed, set_sensitivity /
-        sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), f_norm))
+        sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), norm_freq_hz))
+
+
+WEIGHTING_SCHEMES = ['variance', 'response', 'frequency']
 
 
 def fit_response(
@@ -78,7 +83,8 @@ def fit_response(
     var_meas: Optional[ArrayLike] = None,
     zpk_fixed: ZerosPolesGain = ZerosPolesGain([], [], 1),
     gtol: float = 1e-06,
-    var_max: float = 10,
+    var_max: float = 0.1,
+    weighting: Sequence[str] = ('variance', 'response'),
 ) -> Tuple[ZerosPolesGain, OptimizeResult]:
     """
     Obtain least-squares best-fit poles, zeros and gain using exact Jacobian.
@@ -97,6 +103,11 @@ def fit_response(
       - var_meas:  estimated variance at frequencies
       - zpk_fixed: fixed part of transfer function
       - gtol:      tolerance for termination by the norm of the gradient
+      - var_max:   maximum variance for inclusion in fit
+      - weighting: multple options can be selected
+        - 'variance'    1/sqrt(var) to account for measurement errors
+        - 'response'    1/abs(h_nom) to emphasize importance of passband
+        - 'frequency'   1/f to account for over-weighting of high frequencies by FFT
 
     Outputs:
       - zpk_fit:   best_fit transfer function
@@ -104,6 +115,11 @@ def fit_response(
     """
     # TODO: Determine whether denominator must be constrained to be stable.
     # TODO: Consider handling multiple channels, to reuse frequency matrix computation.
+    unsupported = [item for item in weighting if item not in WEIGHTING_SCHEMES]
+    if any(unsupported):
+        raise ValueError(
+            f'Weighting {unsupported} not in supported weighting schemes: '
+            f'{WEIGHTING_SCHEMES}')
     logger = getLogger(__name__)
     if var_meas is None:
         var_meas = np.ones_like(f_meas)
@@ -131,9 +147,6 @@ def fit_response(
             len(zpk_fixed.zeros), len(zpk_fixed.poles))
     zpk_nom = zpk_divide(zpk_nom, zpk_fixed)
     h_meas /= np.abs(zpk_fixed.freqresp(w=2*np.pi*f_meas)[1])
-
-    # remove cancelling poles and zeros from initial guess
-    zpk_nom = zpk_cancel(zpk_nom)
     tf_nom = zpk_nom.to_tf()
 
     # extract coefficient vector
@@ -193,12 +206,14 @@ def fit_response(
         """Compute fitted transfer function model as function of frequency."""
         return omega_b @ x[m:] / (omega_m + omega_a @ x[:m])
 
-    # variance- and response-based weights
-    # TODO: support different weighting schemes:
-    #   - 'variance" 1/sqrt(var) to account for measurement errors
-    #   - 'response' 1/abs(h_nom) to emphasize importance of passband
-    #   - 'frequency' 1/f to account for over-weighting of high frequencies by FFT
-    wt_meas = 1.0 / np.sqrt(var_meas) / np.abs(model(x_initial))
+    # weight according to configuration
+    wt_meas = np.ones_like(f_meas)
+    if 'variance' in weighting:
+        wt_meas /= np.sqrt(var_meas)
+    if 'response' in weighting:
+        wt_meas /= np.abs(model(x_initial))
+    if 'frequency' in weighting:
+        wt_meas /= np.sqrt(f_meas)
 
     def residuals(x):
         """Compute weighted mean squared error over all frequencies."""
@@ -254,93 +269,3 @@ def apolystab(
             roots[real_positive] = -roots[real_positive]
             polynomial = np.real(np.poly(roots))
     return polynomial
-
-
-def zpk_divide(
-    num: ZerosPolesGain,
-    den: ZerosPolesGain,
-    tolerance: float = 0.001,
-) -> ZerosPolesGain:
-    """Divide numerator by denominator, including pole-zero cancellation."""
-    zeros = np.hstack((num.zeros, den.poles))
-    zeros.sort()
-    poles = np.hstack((num.poles, den.zeros))
-    poles.sort()
-    gain = num.gain/den.gain
-
-    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
-
-
-def zpk_multiply(
-    first: ZerosPolesGain,
-    second: ZerosPolesGain,
-    tolerance: float = 0.001,
-) -> ZerosPolesGain:
-    """Multiply first by second, including pole-zero cancellation."""
-    zeros = np.hstack((first.zeros, second.zeros))
-    zeros.sort()
-    poles = np.hstack((first.poles, second.poles))
-    poles.sort()
-    gain = first.gain*second.gain
-
-    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
-
-
-def zpk_cancel(
-    old: ZerosPolesGain,
-    tolerance: float = 0.001,
-    f_norm: float = 1,
-) -> ZerosPolesGain:
-    """
-    Remove nearly-equal zero-pole pairs from a transfer function.
-
-    Pole-zero pairs must be farther apart in order to be considered
-    cancelling when the damping is low.  A pole-zero pair can therefore
-    cancel if the following condition is met:
-
-    np.abs(z-p) / np.sqrt(np.abs(z)*np.abs(p))
-        / np.sqrt(np.abs(np.cos(np.angle(z))*np.cos(np.angle(p))))
-        < tolerance
-    """
-    # TODO: factor out repeated functionality with core.minreal()
-    if len(old.zeros) == 0 or len(old.poles) == 0:
-        return deepcopy(old)
-
-    zeros = old.zeros.reshape(-1, 1)
-    poles = old.poles.reshape(1, -1)
-
-    if tolerance == 0:
-        cancels = poles == zeros
-
-        # retain only first cancellation
-        for i in np.arange(cancels.shape[0]).reshape(-1):
-            j = np.argmax(cancels[i, :], axis=1)
-            if j:
-                cancels[i, j + 1:] = False
-                cancels[i + 1:, j] = False
-    else:
-        with np.errstate(divide='ignore'):
-            cancelling = (
-                np.abs(zeros - poles) / np.sqrt(np.abs(poles)*np.abs(zeros)) /
-                np.sqrt(np.abs(np.cos(np.angle(poles))) *
-                        np.abs(np.cos(np.angle(zeros)))))
-        cancelling[np.isnan(cancelling)] = 0
-
-        # retain only closest cancellation
-        cancels = np.full_like(cancelling, False)
-
-        while (cancelling < tolerance).any():
-            # pylint: disable=unbalanced-tuple-unpacking
-            i, j = np.unravel_index(np.argmin(cancelling), cancelling.shape)
-            cancelling[i, :] = np.Inf
-            cancelling[:, j] = np.Inf
-            cancels[i, j] = True
-            cancelling = np.ma.array(cancelling, mask=cancels)
-
-    z_new = sort_complex(old.zeros[~cancels.any(axis=1)])
-    p_new = sort_complex(old.poles[~cancels.any(axis=0).T])
-    new = ZerosPolesGain(z_new, p_new, 1)
-    k_new = sensitivity(old, f_norm)/sensitivity(new, f_norm)
-    new = ZerosPolesGain(z_new, p_new, k_new)
-
-    return new

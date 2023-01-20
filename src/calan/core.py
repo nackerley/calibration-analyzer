@@ -1,7 +1,8 @@
 """
 A collection of utilities useful for station quality analysis.
 """
-# pylint: disable=consider-using-f-string
+# pylint: disable=too-many-lines
+from copy import deepcopy
 import os
 import re
 import queue
@@ -18,7 +19,7 @@ import requests
 import numpy as np
 import pandas as pd
 import scipy.signal as sp
-from scipy.signal import ZerosPolesGain
+from scipy.signal import lti, ZerosPolesGain
 
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
@@ -166,9 +167,8 @@ def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
 
     if not os.path.isfile(inventory_xml):
         os.system(
-            'java -jar %s --xml --prettyprint --source %s --output %s %s' %
-            (STATIONXML_CONVERTER, inventory_source, inventory_xml,
-             inventory_dataless))
+            f'java -jar {STATIONXML_CONVERTER} --xml --prettyprint --source '
+            f'{inventory_source} --output {inventory_xml} {inventory_dataless}')
 
     return inventory_xml
 
@@ -183,8 +183,8 @@ def inventory2dataless(inventory_xml):
 
     if not os.path.isfile(inventory_dataless):
         os.system(
-            'java -jar %s --seed --output %s %s' %
-            (STATIONXML_CONVERTER, inventory_dataless, inventory_xml))
+            f'java -jar {STATIONXML_CONVERTER} --seed --output '
+            f'{inventory_dataless} {inventory_xml}')
 
     return inventory_dataless
 
@@ -216,7 +216,7 @@ def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
     args, _, _, defaults = inspect.getfullargspec(get_chis_stations)[:4]
     inventory_file = os.path.join(
         gettempdir(),
-        '_'.join('%s%s' % (arg, default)
+        '_'.join(f'{arg}{default}'
                  for arg, default in zip(args, defaults)) + '.xml')
     inventory_file = inventory_file.replace('level', '')
 
@@ -252,7 +252,17 @@ def sort_complex(array: np.ndarray) -> np.ndarray:
     return np.array(sorted(sorted(array, key=np.imag), key=np.abs))
 
 
-def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
+def sensitivity(system: lti, f: float = 1) -> float:
+    """Compute sensitivity at given frequency."""
+    return np.abs(system.freqresp(w=2*np.pi*f)[1][0])
+
+
+def zpk_cancel(
+    old: ZerosPolesGain,
+    tolerance: float = 0,
+    f_norm: float = 1,
+    method: str = 'damping',
+):
     """
     Remove (nearly) identical zero-pole pairs from a transfer function.
 
@@ -263,9 +273,8 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
 
         `abs(z-p) < tolerance`
 
-    The 'damping' method is an improvement on this method whereby
-    pole-zero pairs must be farther apart in order to be considered
-    cancelling when the damping is low.
+    The 'damping' method is an improvement whereby pole-zero pairs must be
+    farther apart in order to be considered cancelling when the damping is low.
     In this case poles and zeros are considered to cancel when the following
     condition is met:
 
@@ -273,58 +282,76 @@ def minreal(lti_in, tolerance=0., f_norm=1, method='damping'):
 
     Parameters
     ----------
-    lti_in: instance of :class:`~scipy.signal.lti`
-        transfer function before cancellation
-    tolerance: `float`, optional
-        tolerance for cancellation
-    f_norm: `float`, optional
-        normalization frequency - anywhere mid-band
-    method: `str`, optional
-        'damping' or 'octave' as described above
-
-    Returns
-    -------
-    lti_out: instance of :class:`~scipy.signal.lti`
-        transfer function after cancellation
+        - old: transfer function before cancellation
+        - tolerance: tolerance for cancellation
+        - f_norm: normalization frequency - anywhere mid-band
+        - method: 'damping' or 'octave' as described above
     """
-    assert isinstance(lti_in, sp.lti)
-    tolerance = float(tolerance)
     assert tolerance >= 0
-    f_norm = float(f_norm)
     assert f_norm >= 0
     assert method in ['damping', 'octave']
 
-    z_mat = np.tile(lti_in.zeros, (len(lti_in.poles), 1)).transpose()
-    p_mat = np.tile(lti_in.poles, (len(lti_in.zeros), 1))
+    if len(old.zeros) == 0 or len(old.poles) == 0:
+        return deepcopy(old)
 
-    condition = np.abs(z_mat - p_mat)
+    zeros = old.zeros.reshape(-1, 1)
+    poles = old.poles.reshape(1, -1)
+
+    condition = np.abs(zeros - poles)
     if method == 'damping':
         with np.errstate(divide='ignore', invalid='ignore'):
-            condition /= (np.sqrt(np.abs(p_mat)*np.abs(z_mat)) /
-                          np.sqrt(np.cos(np.angle(p_mat)) *
-                                  np.cos(np.angle(z_mat))))
+            condition /= (np.sqrt(np.abs(poles)*np.abs(zeros)) /
+                          np.sqrt(np.cos(np.angle(poles)) *
+                                  np.cos(np.angle(zeros))))
+        # correct NaNs produced by 0/0
+        condition[zeros == poles] = 0
 
-        # deal with NaNs produced by 0/0
-        condition[z_mat == p_mat] = 0
+    # retain only closest cancellation
+    cancels = np.full_like(condition, False)
+    while (condition <= tolerance).any():
+        indices = np.unravel_index(np.nanargmin(condition), condition.shape)
+        condition[indices[0], :] = np.Inf
+        condition[:, indices[1]] = np.Inf
+        cancels[indices[0], indices[1]] = True
+        condition = np.ma.array(condition, mask=cancels)
 
-    # a zero may cancel only one pole and vice versa
-    # thus only closest cancellation is retained
-    cancel_indices = np.zeros(condition.shape, dtype=bool)
-    with np.errstate(divide='ignore', invalid='ignore'):
-        while np.any(np.any(condition <= tolerance)):
-            indices = np.unravel_index(np.nanargmin(condition), condition.shape)
-            condition[indices[0], :] = np.inf
-            condition[:, indices[1]] = np.inf
-            cancel_indices[indices[0], indices[1]] = True
+    z_new = sort_complex(old.zeros[~cancels.any(axis=1)])
+    p_new = sort_complex(old.poles[~cancels.any(axis=0).T])
+    k_new = (sensitivity(old, f_norm) /
+             sensitivity(ZerosPolesGain(z_new, p_new, 1), f_norm))
+    new = ZerosPolesGain(z_new, p_new, k_new)
 
-    p_out = lti_in.poles[np.logical_not(np.any(cancel_indices, axis=0))]
-    z_out = lti_in.zeros[np.logical_not(np.any(cancel_indices, axis=1))]
+    return new
 
-    # pylint: disable=no-member
-    k_out = float(abs(lti_in.freqresp(w=2*np.pi*f_norm)[1])) / \
-        float(abs(ZerosPolesGain(z_out, p_out, 1).freqresp(w=2*np.pi*f_norm)[1]))
 
-    return ZerosPolesGain(sort_complex(z_out), sort_complex(p_out), k_out)
+def zpk_divide(
+    num: ZerosPolesGain,
+    den: ZerosPolesGain,
+    tolerance: float = 0,
+) -> ZerosPolesGain:
+    """Divide numerator by denominator, including pole-zero cancellation."""
+    zeros = np.hstack((num.zeros, den.poles))
+    zeros.sort()
+    poles = np.hstack((num.poles, den.zeros))
+    poles.sort()
+    gain = num.gain/den.gain
+
+    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
+
+
+def zpk_multiply(
+    first: ZerosPolesGain,
+    second: ZerosPolesGain,
+    tolerance: float = 0,
+) -> ZerosPolesGain:
+    """Multiply first by second, including pole-zero cancellation."""
+    zeros = np.hstack((first.zeros, second.zeros))
+    zeros.sort()
+    poles = np.hstack((first.poles, second.poles))
+    poles.sort()
+    gain = first.gain*second.gain
+
+    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
 
 
 def flip(ndarray, axis):
@@ -360,8 +387,9 @@ def flip(ndarray, axis):
     try:
         indexer[axis] = slice(None, None, -1)
     except IndexError as ex:
-        raise ValueError('axis=%i is invalid for %i-dimensional input array'
-                         % (axis, ndarray.ndim)) from ex
+        raise ValueError(
+            f'axis={axis} is invalid for {ndarray.ndim}-dimensional input'
+        ) from ex
     return ndarray[tuple(indexer)]
 
 
@@ -403,17 +431,17 @@ def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1, discont=np.pi):
     return np.concatenate((phase_below, phase_above), axis)
 
 
-def lti_from_zpsf(zeros, poles, sensitivity, frequency):
+def zpk_from_zpsf(zeros, poles, sens, frequency):
     """
     Generate a LinearTimeInvariant model.
 
-    Inputs are zeros, poles, sensitivity and
-    frequency at which sensitivity is specified.
+    Inputs are zeros, poles, sensitivity and frequency at which sensitivity is
+    specified.
     """
     model = ZerosPolesGain(zeros, poles, 1)
     midband = abs(model.freqresp(2*np.pi*frequency)[1])
     return ZerosPolesGain(
-        sort_complex(zeros), sort_complex(poles), sensitivity/midband)
+        sort_complex(zeros), sort_complex(poles), sens/midband)
 
 
 def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
@@ -450,7 +478,7 @@ def recompute_normalization_factors(response, rtol=0.0002):
             normalization_factor = stage.normalization_factor
         except AttributeError:
             continue
-        stage_lti = lti_from_zpsf(
+        stage_lti = zpk_from_zpsf(
             stage.zeros, stage.poles, stage.stage_gain,
             stage.normalization_frequency)
         stage_gain = sp.freqresp(
@@ -495,8 +523,8 @@ def compute_decim_delay(b_stages, factors):
     for i in reversed(range(len(factors))):
         if len(b_stages[i]) % 2 == 0:
             raise TypeError(
-                'Decimation filters must be odd-order:'
-                'stage %d has %d coefficients.' % i, len(b_stages[i]))
+                'Decimation filters must be odd-order: '
+                f'stage {i} has {len(b_stages[i])} coefficients.')
         n_pad_upsample = n_pad_upsample*factors[i] + len(b_stages[i]) - 1
 
     return n_pad_upsample
@@ -913,15 +941,12 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
 
     for _, gap in gaps_df.iterrows():
         if daylong:
-            logger.info(
-                '%s: %s start of %.3g %s gap (%s)'
-                % (gap.id, str(gap.starttime.time())[:-3],
-                   gap[column], gap_unit, gap.note))
+            gap_start = str(gap.starttime.time())[:-3]
         else:
-            logger.info(
-                '%s: %s start of %.3g %s gap (%s)'
-                % (gap.id, str(gap.starttime)[:-3],
-                   gap[column], gap_unit, gap.note))
+            gap_start = str(gap.starttime)[:-3]
+        logger.info(
+            f'{gap.id}: {gap_start} start of {gap[column]:3g} {gap_unit} gap '
+            f'({gap.note})')
 
 
 def inventory_items(inventory):
@@ -1283,8 +1308,8 @@ def get_pick(obj, event=None):
         if pick is None:
             if not event:
                 raise ValueError(
-                    'Need Event to find Pick associated with this %s.' %
-                    obj.__class__.__name__)
+                    'Need Event to find Pick associated with this ' +
+                    obj.__class__.__name__ + '.')
             pick = next((pick for pick in event.picks
                          if pick.resource_id == obj.pick_id), None)
         return pick
@@ -1328,8 +1353,8 @@ def get_amplitude(obj, event=None):
         if amplitude is None:
             if not event:
                 raise ValueError(
-                    'Need Event find Amplitude associated with this %s.' %
-                    obj.__class__.__name__)
+                    'Need Event find Amplitude associated with this ' +
+                    obj.__class__.__name__ + '.')
             amplitude = next(
                 (amplitude for amplitude in event.amplitudes
                  if amplitude.resource_id == obj.amplitude_id), None)
