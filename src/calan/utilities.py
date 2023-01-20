@@ -51,6 +51,19 @@ def round_sig(value, num_significant=3):
     return np.round(value, num_digits)
 
 
+def str_sig(value: float, sig_dig: int = 3) -> str:
+    """
+    Make string with given number of significant digits.
+    """
+    if np.isinf(value) or np.isnan(value):
+        return str(value)
+
+    order_of_magnitude = int(floor(log10(abs(value))))
+    num_digits = sig_dig - order_of_magnitude - 1
+
+    return f'{value:.{num_digits}f}'
+
+
 # pylint: disable=too-many-arguments
 def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
     """

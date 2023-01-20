@@ -27,7 +27,7 @@ sensitivity.
 
 Authors
 -------
-Nick Ackerley
+nicholas.ackerley@nrcan-rncan.gc.ca
 """
 # pylint: disable=consider-using-f-string, too-many-lines, no-member
 from __future__ import annotations
@@ -36,7 +36,8 @@ import os
 import re
 import sys
 import lzma
-import logging
+import logging.config
+from typing import Tuple
 import warnings
 from io import StringIO
 from contextlib import redirect_stdout
@@ -52,6 +53,7 @@ from scipy.signal import lti, BadCoefficients, ZerosPolesGain
 from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import ArrayLike
 
 import pandas as pd
 import statsmodels.api as sm
@@ -61,11 +63,11 @@ from obspy.core.inventory import Response
 from obspy.signal.invsim import simulate_seismometer
 
 from calan.core import (
-    PACKAGE, VERSION, get_logger, factor_names, subplots_squeeze, minreal,
+    PACKAGE, VERSION, factor_names, subplots_squeeze, minreal,
     lti_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
     recompute_normalization_factors, sort_complex)
 from calan.utilities import (
-    logspace, pretty_duration, round_sig, MyArgumentParser, MyFormatter)
+    logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
 from calan.calibration_toolbox import (
     sample_hold_digitize, pad_for_decimation)
@@ -244,7 +246,7 @@ def feature_stats(values, type_):
             key = type_ + '_' + str(i)
             stats[key] = {
                 'real_rad': np.real(value),
-                'freq_hz': np.real(value) / 2 / np.pi,
+                'freq_hz': np.real(value)/(2*np.pi),
             }
         elif i > 0 and np.isclose(value, np.conj(values[i - 1])):
             continue
@@ -253,20 +255,35 @@ def feature_stats(values, type_):
             stats[key] = {
                 'real_rad': np.real(value),
                 'imag_rad': np.imag(value),
-                'freq_hz': np.abs(value) / 2 / np.pi,
-                'damping': np.abs(np.cos(np.angle(value)))
+                'freq_hz': np.abs(value)/(2*np.pi),
+                'damping': np.abs(np.cos(np.angle(value))),
             }
 
     return pd.DataFrame(stats).unstack().to_frame().T
 
 
-def feature_str(values):
-    """Pretty-print complex array, omitting zeros and merging complex pairs."""
-    values = [value for value in values if value !=0]
-    values = [value for i, value in enumerate(values)
-              if i == 0 and not np.isclose(value, np.conj(values[i - 1]))]
-    strings = [f'{round_sig(np.real(value), 4)}±{round_sig(np.real(value), 4)}j'
-               .replace(' ', '').replace('±0j', '') for value in values]
+def feature_str(values: ArrayLike, sig_dig: int = 3) -> str:
+    """
+    Pretty-print complex array of pole/zero features.
+
+    Zero-values are skipped, frequencies are converted from angular to linear,
+    and damping is given for complex pairs.
+    """
+    values = np.array(values).reshape(-1)
+    non_zero = [value for value in values if value != 0]
+    nonzero_unpaired = [
+        value for i, value in enumerate(non_zero)
+        if i == 0 or not np.isclose(value, np.conj(values[i - 1]))]
+
+    strings = []
+    for value in nonzero_unpaired:
+        frequency = str_sig(np.abs(value)/(2*np.pi), sig_dig)
+        string = f'{frequency} Hz'
+        if np.iscomplex(value):
+            damping = str_sig(np.abs(np.cos(np.angle(value))), sig_dig)
+            string += f' (ζ = {damping})'
+        strings.append(string)
+
     return ', '.join(strings)
 
 
@@ -285,6 +302,8 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
                          orientation_map=DEFAULT_ORIENTATION_MAP,
                          plot='', fit=False, dpi=DEFAULT_DPI):
     """Do arbitrary-signal calibration analysis."""
+    logger = logging.getLogger(__name__)
+
     pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
                            if char.isalnum())
     output_parts = [os.path.splitext(THIS_FILE_NAME)[0]]
@@ -293,7 +312,7 @@ def calibration_analyzer(pattern=DEFAULT_OUTPUT_PATTERN,
     summary_csv = '_'.join(output_parts) + '.csv'
 
     analyzer = CalibrationAnalyzer(savefig=plot != '', dpi=dpi)
-    logger = get_logger(__name__)
+
     if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
             not os.access(summary_csv, os.W_OK):
         logger.error('Will not be able to write summary to %s.', summary_csv)
@@ -434,19 +453,16 @@ class CalibrationAnalyzer():
 
     CACHE_FORMAT = 'MSEED'
 
-    def __init__(self, log_level='INFO', savefig=True, dpi=DEFAULT_DPI):
+    def __init__(self, savefig=True, dpi=DEFAULT_DPI):
         """
         Set up data server and calibration details for later use.
 
         Parameters
         ----------
-        log_level : TYPE, optional
-            Console logging level. The default is 'INFO'.
-        savefig : TYPE, optional
+        savefig : bool, optional
             Whether or not to save figures to PNG. The default is True.
         """
-        self.logger = get_logger(self.__class__.__name__, LOG_FILE_NAME,
-                                 log_level)
+        self.logger = logging.getLogger(self.__class__.__name__)
 
         self.info = OrderedDict((
             ('waveform_file', ''),
@@ -498,7 +514,7 @@ class CalibrationAnalyzer():
                   for line in str(self.timing_gain_fit).strip().split('\n')]
         for zpk_fit in self.zpk_fits:
             lines += ['\t' + line
-                    for line in str(zpk_fit).strip().split('\n')]
+                      for line in str(zpk_fit).strip().split('\n')]
         return '\n'.join(lines)
 
     def __repr__(self):
@@ -774,6 +790,15 @@ class CalibrationAnalyzer():
         """
         return self._input_stream()[0].stats.response.response_stages[0]
 
+    def sensitivity(
+        self: CalibrationAnalyzer,
+        system: lti
+    ) -> Tuple[float, float]:
+        """Compute sensitivity at sensor stage gain frequency."""
+        f_norm = self._sensor_stage().stage_gain_frequency
+        sensitivity = np.abs(system.freqresp(w=2*np.pi*f_norm)[1][0])
+        return f_norm, sensitivity
+
     def load_calibration_response(self, response_file=''):
         """Set up calibration input response."""
         self.logger.info(response_file)
@@ -1034,29 +1059,35 @@ class CalibrationAnalyzer():
         info['output_units'] = self._sensor_stage().output_units
         info['input_units'] = self._sensor_stage().input_units.lower()
         info[PACKAGE] = VERSION
-
+        units = (f'{self._sensor_stage().output_units}/'
+                 f'({self._sensor_stage().input_units.lower()})')
         if self.lti['fits']:
             poles = pd.concat(
                 [feature_stats(zpk_divide(fit, self.lti['cal']).poles, 'pole')
                     for fit in self.lti['fits']] +
-                [feature_stats(self.lti['sensor'].poles, 'pole')])
+                [feature_stats(self.lti['sensor'].poles, 'pole')]
+            ).applymap(lambda x: round_sig(x, 6))
             poles.index = info.index
 
             zeros = pd.concat(
                 [feature_stats(zpk_divide(fit, self.lti['cal']).zeros, 'zero')
                     for fit in self.lti['fits']] +
-                [feature_stats(self.lti['sensor'].zeros, 'zero')])
+                [feature_stats(self.lti['sensor'].zeros, 'zero')]
+            ).applymap(lambda x: round_sig(x, 6))
             zeros.index = info.index
-            gain = pd.DataFrame(
+
+            sensitivity = pd.DataFrame(
                 np.vstack(
-                    [fit.gain for fit in self.lti['fits']] +
-                    [self.lti['sensor'].gain]),
-                columns=pd.MultiIndex.from_tuples([('gain', '')]),
-                index=info.index)
+                    [self.sensitivity(zpk_divide(fit, self.lti['cal']))
+                     for fit in self.lti['fits']] +
+                    [self.sensitivity(self.lti['sensor'])]),
+                columns=pd.MultiIndex.from_tuples([('f_norm', 'hz'),
+                                                   ('sensitivity', units)]),
+                index=info.index).applymap(lambda x: round_sig(x, 6))
 
             info.columns = pd.MultiIndex.from_product((['info'], info.columns))
 
-            df = pd.concat((info, poles, zeros, gain), axis=1)
+            df = pd.concat((info, poles, zeros, sensitivity), axis=1)
 
         else:
             f = pd.Index(self.stft.f, name='f')
@@ -1221,7 +1252,7 @@ class CalibrationAnalyzer():
         model: str = 'system',
     ) -> np.ndarray:
         """Simulate nominal response of sensor to calibration signal."""
-        sensitivity = abs(self.lti[model].freqresp(w=2*np.pi)[1][0])
+        sensitivity = self.sensitivity(self.lti[model])[1]
         nominal_paz = {'zeros': self.lti[model].zeros,
                        'poles': self.lti[model].poles,
                        'gain': self.lti[model].gain/sensitivity,
@@ -1237,12 +1268,25 @@ class CalibrationAnalyzer():
 
         return signal
 
-    def _in_band(
-        self: CalibrationAnalyzer,
-        feature_rad_s: float,
-    ) -> bool:
-        f = np.abs(feature_rad_s)/(2*np.pi)
-        return f == 0 or (f >= self.stft.f[0]/2 and f <= self.stft.f[-1]*2)
+    def zpk_out_of_band(self):
+        """Construct out-of-band part of nominal response, with unity gain."""
+        poles = sort_complex(self.lti['system'].poles)
+        zeros = sort_complex(self.lti['system'].zeros)
+        w_min = self.stft.f[0]/2
+        w_max = self.stft.f[-1]*5
+
+        if (np.abs(poles) < w_min).any():
+            p_fixed, z_fixed = zip(*[
+                (pole, zero) for pole, zero in zip(poles, zeros)
+                if np.abs(pole) < w_min])
+        else:
+            p_fixed, z_fixed = [], []
+        p_fixed += [pole for pole in poles if np.abs(pole) > w_max]
+        z_fixed += [zero for zero in zeros if np.abs(zero) > w_max]
+
+        return ZerosPolesGain(
+            z_fixed, p_fixed,
+            1/self.sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1))[1])
 
     def fit(self):
         """Least-squares estimation of poles and zeros."""
@@ -1256,27 +1300,20 @@ class CalibrationAnalyzer():
         variances = self.stft.variance()
         self.logger.debug(zpk_nom)
 
-        z_fixed = sort_complex([item for item in zpk_nom.zeros
-                                   if not self._in_band(item)])
-        p_fixed = sort_complex([item for item in zpk_nom.poles
-                                   if not self._in_band(item)])
-        zpk_fixed = ZerosPolesGain(z_fixed, p_fixed, 1)
-        f_norm = self._sensor_stage().stage_gain_frequency
-        gain = np.abs(zpk_fixed.freqresp(w=2*np.pi*f_norm)[1])
-        zpk_fixed = ZerosPolesGain(zpk_fixed.zeros, zpk_fixed.poles, 1/gain)
+        f_norm, sens_nom = self.sensitivity(self.lti['sensor'])
+
+        zpk_fixed = self.zpk_out_of_band()
         self.logger.debug(zpk_fixed)
 
-        f_norm = self._sensor_stage().stage_gain_frequency
         units = '%s/(%s)' % (self._sensor_stage().output_units,
                              self._sensor_stage().input_units.lower())
         zpk_unfixed = zpk_divide(zpk_nom, zpk_fixed)
-        sensitivity =  np.abs(zpk_nom.freqresp(w=2*np.pi*f_norm)[1])
         self.logger.info(
             'Nominal zeros [rad/s]: %s', feature_str(zpk_unfixed.zeros))
         self.logger.info(
             'Nominal poles [rad/s]: %s', feature_str(zpk_unfixed.poles))
         self.logger.info(
-            'Nominal sensitivity [%s]: %.5g', units, sensitivity)
+            'Nominal sensitivity [%s at %g Hz]: %.5g', units, f_norm, sens_nom)
 
         self.lti['fits'] = []
         self.zpk_fits = []
@@ -1289,14 +1326,14 @@ class CalibrationAnalyzer():
 
             self.logger.debug(zpk_fit)
             zpk_unfixed = zpk_divide(zpk_fit, zpk_fixed)
-            sensitivity =  np.abs(zpk_fit.freqresp(w=2*np.pi*f_norm)[1])
+            f_norm, sens_fit = self.sensitivity(
+                zpk_divide(zpk_fit, self.lti['cal']))
             self.logger.info(
                 'Fit zeros [rad/s]: %s', feature_str(zpk_unfixed.zeros))
             self.logger.info(
                 'Fit poles [rad/s]: %s', feature_str(zpk_unfixed.poles))
             self.logger.info(
-                'Fit sensitivity [%s]: %.5g', units, sensitivity)
-
+                'Fit sensitivity [%s at %g Hz]: %.5g', units, f_norm, sens_fit)
 
             self.lti['fits'].append(zpk_fit)
             self.zpk_fits.append(result)
@@ -1757,6 +1794,41 @@ class CalibrationAnalyzer():
         self._save_image(fig, option_list)
 
 
+LOG_SETTINGS = {
+    'version': 1,  # schema
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'simple',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': LOG_FILE_NAME,
+            'level': 'DEBUG',
+            'formatter': 'detailed',
+        },
+    },
+    'formatters': {
+        'simple': {
+            'format':
+            '%(levelname)-8s %(funcName)s - %(message)s'
+        },
+        'detailed': {
+            'format': '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - '
+                      '%(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'loggers': {
+        'root': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file']
+        },
+    }
+}
+
+
 def main(argv=None):
     """Run analysis and return system exit code."""
     if argv is None:
@@ -1764,9 +1836,11 @@ def main(argv=None):
     parser = _argparser()
     args = parser.parse_args(argv[1:])
 
-    config = vars(args).copy()
     if os.path.isfile(LOG_FILE_NAME):
         os.remove(LOG_FILE_NAME)
+    logging.config.dictConfig(LOG_SETTINGS)
+
+    config = vars(args).copy()
     result = calibration_analyzer(**config)
 
     return len(result) == 0
