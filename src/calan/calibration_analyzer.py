@@ -74,6 +74,7 @@ from calan.fit_response import fit_response, zpk_divide, zpk_out_of_band
 # %% setup
 warnings.simplefilter('error', category=BadCoefficients)
 pd.plotting.register_matplotlib_converters()
+np.set_printoptions(suppress=True)
 
 # %% defaults
 
