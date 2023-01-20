@@ -32,10 +32,43 @@ from copy import deepcopy
 
 import numpy as np
 from numpy.typing import ArrayLike
-from scipy.signal import ZerosPolesGain, TransferFunction
+from scipy.signal import lti, ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares, OptimizeResult
 
 from calan.core import sort_complex
+
+
+def sensitivity(system: lti, f: float = 1) -> float:
+    """Compute sensitivity at given frequency."""
+    return np.abs(system.freqresp(w=2*np.pi*f)[1][0])
+
+
+def zpk_out_of_band(
+    system: ZerosPolesGain,
+    f: ArrayLike,
+    f_norm: float = 1,
+    set_sensitivity: float = 1,
+) -> ZerosPolesGain:
+    """Construct out-of-band part of nominal response, with unity gain."""
+    f = np.array(f)
+    f.sort()
+    w_min = f[0]/2
+    w_max = f[-1]*5
+    poles = sort_complex(system.poles)
+    zeros = sort_complex(system.zeros)
+
+    if (np.abs(poles) < w_min).any():
+        p_fixed, z_fixed = zip(*[
+            (pole, zero) for pole, zero in zip(poles, zeros)
+            if np.abs(pole) < w_min])
+    else:
+        p_fixed, z_fixed = [], []
+    p_fixed += [pole for pole in poles if np.abs(pole) > w_max]
+    z_fixed += [zero for zero in zeros if np.abs(zero) > w_max]
+
+    return ZerosPolesGain(
+        z_fixed, p_fixed, set_sensitivity /
+        sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), f_norm))
 
 
 def fit_response(
@@ -97,7 +130,7 @@ def fit_response(
             'Fixing %d zeros and %d poles at nominal values.',
             len(zpk_fixed.zeros), len(zpk_fixed.poles))
     zpk_nom = zpk_divide(zpk_nom, zpk_fixed)
-    h_meas /= zpk_fixed.freqresp(2*np.pi*f_meas)[1]
+    h_meas /= np.abs(zpk_fixed.freqresp(w=2*np.pi*f_meas)[1])
 
     # remove cancelling poles and zeros from initial guess
     zpk_nom = zpk_cancel(zpk_nom)
@@ -307,8 +340,7 @@ def zpk_cancel(
     z_new = sort_complex(old.zeros[~cancels.any(axis=1)])
     p_new = sort_complex(old.poles[~cancels.any(axis=0).T])
     new = ZerosPolesGain(z_new, p_new, 1)
-    k_new = (np.abs(old.freqresp(2*np.pi*f_norm)[1]) /
-             np.abs(new.freqresp(2*np.pi*f_norm)[1]))  # pylint: disable=no-member
+    k_new = sensitivity(old, f_norm)/sensitivity(new, f_norm)
     new = ZerosPolesGain(z_new, p_new, k_new)
 
     return new

@@ -63,13 +63,13 @@ from obspy.signal.invsim import simulate_seismometer
 from calan.core import (
     PACKAGE, VERSION, factor_names, subplots_squeeze, minreal,
     lti_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
-    recompute_normalization_factors, sort_complex)
+    recompute_normalization_factors)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
 from calan.calibration_toolbox import (
     sample_hold_digitize, pad_for_decimation)
-from calan.fit_response import fit_response, zpk_divide
+from calan.fit_response import fit_response, zpk_divide, zpk_out_of_band
 
 # %% setup
 warnings.simplefilter('error', category=BadCoefficients)
@@ -1332,26 +1332,6 @@ class CalibrationAnalyzer():
 
         return signal
 
-    def zpk_out_of_band(self: CalibrationAnalyzer) -> ZerosPolesGain:
-        """Construct out-of-band part of nominal response, with unity gain."""
-        poles = sort_complex(self.lti.system.poles)
-        zeros = sort_complex(self.lti.system.zeros)
-        w_min = self.stft.f[0]/2
-        w_max = self.stft.f[-1]*5
-
-        if (np.abs(poles) < w_min).any():
-            p_fixed, z_fixed = zip(*[
-                (pole, zero) for pole, zero in zip(poles, zeros)
-                if np.abs(pole) < w_min])
-        else:
-            p_fixed, z_fixed = [], []
-        p_fixed += [pole for pole in poles if np.abs(pole) > w_max]
-        z_fixed += [zero for zero in zeros if np.abs(zero) > w_max]
-
-        return ZerosPolesGain(
-            z_fixed, p_fixed,
-            1/self.sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1))[1])
-
     def fit(self: CalibrationAnalyzer) -> None:
         """Least-squares estimation of poles and zeros."""
         f = self.stft.f
@@ -1366,7 +1346,8 @@ class CalibrationAnalyzer():
 
         f_norm, sens_nom = self.sensitivity(self.lti.sensor)
 
-        zpk_fixed = self.zpk_out_of_band()
+        zpk_fixed = zpk_out_of_band(self.lti.system, self.stft.f,
+                                    self._sensor_stage().stage_gain_frequency)
         self.logger.debug(zpk_fixed)
 
         units = '%s/(%s)' % (self._sensor_stage().output_units,
