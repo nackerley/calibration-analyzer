@@ -1,4 +1,11 @@
-"""Short-term Fourier Transform."""
+"""
+Short-term Fourier Transform.
+
+## References
+
+Bendat, J. S., & Piersol, A. G. (2010). Random Data: Analysis and measurement
+procedures (4th ed.). Wiley.
+"""
 # pylint: disable=consider-using-f-string
 from __future__ import annotations
 
@@ -174,20 +181,32 @@ class Stft():
         self.p_yy = self.p_yy[..., keep, :]
         self.p_xy = self.p_xy[..., keep, :]
 
-    def coherence_squared(self: Stft) -> np.ndarray:
-        """Return Welch's method squared coherence."""
-        return np.abs(self.mean(self.p_xy))**2/(
-            self.mean(self.p_xx)*self.mean(self.p_yy))
-
-    def variance(self: Stft) -> np.ndarray:
-        """Return Welch's method variance."""
-        return (1/self.coherence_squared() - 1)/(2*len(self.t))
-
     def tf_estimate(self: Stft, alpha: int = 0) -> np.ndarray:
         """
         Return transfer function estimate (from input, x, to output, y).
 
-        Optionally, differentiated alpha times.
+        Optionally, differentiated alpha times to convert between displacement,
+        acceleration and velocity.
+
+        Bendat & Piersol (2014) Equation 9.53, p. 299.
         """
         return (self.mean(self.p_xy) /
                 self.mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha
+
+    def coherence_squared(self: Stft) -> np.ndarray:
+        """
+        Return Welch's method squared coherence.
+
+
+        Bendat & Piersol (2014) Equation 9.54, p. 299.
+        """
+        return np.abs(self.mean(self.p_xy))**2/(
+            self.mean(self.p_xx)*self.mean(self.p_yy))
+
+    def variance(self: Stft) -> np.ndarray:
+        """
+        Return Welch's method variance.
+
+        Bendat & Piersol (2014) Table 9.6, p.312.
+        """
+        return (1/self.coherence_squared() - 1)/(2*len(self.t))
