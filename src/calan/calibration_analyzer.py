@@ -71,12 +71,12 @@ from calan.calibration_toolbox import (
     sample_hold_digitize, pad_for_decimation)
 from calan.fit_response import fit_response, zpk_divide, zpk_out_of_band
 
-# %% setup
+# setup
 warnings.simplefilter('error', category=BadCoefficients)
 pd.plotting.register_matplotlib_converters()
-np.set_printoptions(suppress=True, precision=5)
+np.set_printoptions(suppress=True, precision=6)
 
-# %% defaults
+# defaults
 
 # analysis setup
 DEFAULT_NUM_WINDOWS = 30
@@ -98,7 +98,7 @@ DEFAULT_POST_TIME = 10
 DEFAULT_DELAY_START = 0
 DEFAULT_DISCARD = 0
 
-# %% constants
+# constants
 THIS_FILE_NAME = os.path.basename(__file__)
 LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
 
@@ -164,7 +164,7 @@ CHECK_CLIP = 8000000
 PLOT_CHOICES = ['basic', 'diagnostic']
 
 
-# %% definitions
+# definitions
 def _argparser() -> MyArgumentParser:
     """Command-line interface."""
     parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
@@ -430,7 +430,7 @@ class TimingGainFit():
         estimate = pretty_duration(self.timing.params, fmt=digits, thresh=0.05)
         error = pretty_duration(uncertainty, fmt=1, thresh=0.05)
         conf = 100*self.confidence
-        return f'timing error {estimate} ±{error} ({conf:0f}%% conf.)'
+        return f'timing error {estimate} ±{error} ({conf:.0f}% conf.)'
 
     def gain_summary(self: TimingGainFit) -> str:
         """
@@ -440,12 +440,12 @@ class TimingGainFit():
         """
         if self.gain is None:
             return 'gain fit: None'
-        uncertainty = self.num_sigma()*self.gain.bse
+        uncertainty = self.num_sigma()*self.gain.bse[0]
         digits = round(log10(abs(self.gain.params - 1)/uncertainty)) + 1
-        estimate = round_sig(100*(self.gain.params - 1), digits)
-        error = round_sig(100*self.num_sigma()*self.gain.bse, 1)
+        estimate = round_sig(100*(self.gain.params - 1), digits)[0]
+        error = round_sig(100*self.num_sigma()*self.gain.bse, 1)[0]
         conf = 100*self.confidence
-        return f'gain error {estimate}%% ±{error}%% ({conf:0f}%% conf.)'
+        return f'gain error {estimate}% ±{error}% ({conf:.0f}% conf.)'
 
 
 class CalibrationInfo():
@@ -723,7 +723,7 @@ class CalibrationAnalyzer():
         cache_file = os.path.join(
             gettempdir(),
             f'{calibration_signal_file.replace(".lzma", "")}_'
-            f'{self._sampling_rate()}sps{phase_suffix}_'
+            f'{self._sampling_rate():g}sps{phase_suffix}_'
             f'delay{self.info.delay_start}s.{self.CACHE_FORMAT.lower()}')
         if os.path.isfile(cache_file):
             self.logger.info('Found cache: %s', cache_file)
@@ -1799,7 +1799,7 @@ class CalibrationAnalyzer():
             factor_names(self.stream)[0],
             self.info.start.strftime('%Y-%m-%d %H:%M')])
         test_limits = (
-            f'±{self.info.spec_max_amp_pct}%%, '
+            f'±{self.info.spec_max_amp_pct}%, '
             f'±{self.info.spec_max_phase_deg}°\n'
             f'{band_hz[0]} - {band_hz[1]} Hz')
         axes[0].annotate(ids_start, (0.025, 0.025), xycoords='axes fraction',
