@@ -2081,7 +2081,7 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.238015.17125"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>534868076643778.56</Value>
+            <Value>-226784064.5</Value>
             <Frequency>0</Frequency>
             <InputUnits>
               <Name>m/s**2</Name>
@@ -2108,7 +2108,7 @@
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
             </PolesZeros>
             <StageGain>
-              <Value>25.31645569620253</Value>
+              <Value>-25.31645569620253</Value>
               <Frequency>0</Frequency>
             </StageGain>
           </Stage>
@@ -2133,12 +2133,6 @@
             </StageGain>
           </Stage>
           <Stage number="3">
-            <StageGain>
-              <Value>2358490.566037736</Value>
-              <Frequency>0.05</Frequency>
-            </StageGain>
-          </Stage>
-          <Stage number="4">
             <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
               <Description>S/N A3082</Description>
               <InputUnits>
@@ -2164,7 +2158,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="5">
+          <Stage number="4">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
@@ -2224,7 +2218,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="6">
+          <Stage number="5">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
@@ -2254,7 +2248,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="7">
+          <Stage number="6">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
@@ -2285,7 +2279,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="8">
+          <Stage number="7">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
@@ -2357,7 +2351,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="9">
+          <Stage number="8">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
@@ -2507,7 +2501,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="10">
+          <Stage number="9">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
@@ -3032,7 +3026,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="11">
+          <Stage number="10">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
@@ -3557,7 +3551,7 @@
               <Frequency>0.05</Frequency>
             </StageGain>
           </Stage>
-          <Stage number="12">
+          <Stage number="11">
             <Coefficients>
               <InputUnits>
                 <Name>COUNTS</Name>
