@@ -1367,7 +1367,7 @@ class CalibrationAnalyzer():
 
             self.logger.info('Fitting: %s', label)
             zpk_fit, result = fit_response(
-                zpk_nom, f, tf_estimate, variance, zpk_fixed)
+                zpk_nom, f, tf_estimate, variance, zpk_fixed, debug=True)
 
             self.logger.debug(zpk_fit)
             zpk_unfixed = zpk_divide(zpk_fit, zpk_fixed)

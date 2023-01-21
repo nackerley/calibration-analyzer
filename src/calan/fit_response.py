@@ -26,8 +26,10 @@ $$J(x) = $$
 @nackerle
 """
 # TODO: give complete formula for Jacobian
+import os
 from typing import Optional, Sequence, Tuple
 from logging import getLogger
+from itertools import combinations
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -35,6 +37,8 @@ from scipy.signal import ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares, OptimizeResult
 
 from calan.core import sort_complex, sensitivity, zpk_divide, zpk_multiply
+
+np.random.seed(seed=42)
 
 
 def zpk_out_of_band(
@@ -77,14 +81,16 @@ WEIGHTING_SCHEMES = ['variance', 'response', 'frequency']
 
 
 def fit_response(
-    zpk_nom: ZerosPolesGain,
+    zpk_guess: ZerosPolesGain,
     f_meas: ArrayLike,
     h_meas: ArrayLike,
     var_meas: Optional[ArrayLike] = None,
     zpk_fixed: ZerosPolesGain = ZerosPolesGain([], [], 1),
+    ftol: float = 1e-10,
     gtol: float = 1e-06,
     var_max: float = 0.1,
-    weighting: Sequence[str] = ('variance', 'response'),
+    weighting: Sequence[str] = ('variance', 'frequency'),
+    debug: bool = False,
 ) -> Tuple[ZerosPolesGain, OptimizeResult]:
     """
     Obtain least-squares best-fit poles, zeros and gain using exact Jacobian.
@@ -113,13 +119,6 @@ def fit_response(
       - zpk_fit:   best_fit transfer function
       - result:    optimization result
     """
-    # TODO: Determine whether denominator must be constrained to be stable.
-    # TODO: Consider handling multiple channels, to reuse frequency matrix computation.
-    unsupported = [item for item in weighting if item not in WEIGHTING_SCHEMES]
-    if any(unsupported):
-        raise ValueError(
-            f'Weighting {unsupported} not in supported weighting schemes: '
-            f'{WEIGHTING_SCHEMES}')
     logger = getLogger(__name__)
     if var_meas is None:
         var_meas = np.ones_like(f_meas)
@@ -145,13 +144,13 @@ def fit_response(
         logger.info(
             'Fixing %d zeros and %d poles at nominal values.',
             len(zpk_fixed.zeros), len(zpk_fixed.poles))
-    zpk_nom = zpk_divide(zpk_nom, zpk_fixed)
+    zpk_guess_unfixed = zpk_divide(zpk_guess, zpk_fixed)
     h_meas /= np.abs(zpk_fixed.freqresp(w=2*np.pi*f_meas)[1])
-    tf_nom = zpk_nom.to_tf()
+    tf_guess = zpk_guess_unfixed.to_tf()
 
     # extract coefficient vector
-    a_guess = tf_nom.den
-    b_guess = tf_nom.num
+    a_guess = tf_guess.den
+    b_guess = tf_guess.num
     if a_guess[0] == 0:
         logger.warning('Trimming leading zeroes from denominator coefficients.')
         a_guess = np.trim_zeros(a_guess, trim='f')
@@ -168,6 +167,7 @@ def fit_response(
         b_guess = b_guess / a_guess[0]
         a_guess = a_guess / a_guess[0]
 
+    # TODO: Determine whether denominator must be constrained to be stable.
     a_temp = apolystab(a_guess)
     if any(a_temp != a_guess):
         logger.warning('Stabilizing denominator of initial guess.')
@@ -206,14 +206,28 @@ def fit_response(
         """Compute fitted transfer function model as function of frequency."""
         return omega_b @ x[m:] / (omega_m + omega_a @ x[:m])
 
-    # weight according to configuration
-    wt_meas = np.ones_like(f_meas)
-    if 'variance' in weighting:
-        wt_meas /= np.sqrt(var_meas)
-    if 'response' in weighting:
-        wt_meas /= np.abs(model(x_initial))
-    if 'frequency' in weighting:
-        wt_meas /= np.sqrt(f_meas)
+    h_initial = model(x_initial)
+    wt_meas = get_weights(weighting, f_meas, var_meas, h_initial)
+
+    if debug:
+        # pylint: disable=import-outside-toplevel
+        import inspect
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
+        example_weightings = []
+        for num in range(len(WEIGHTING_SCHEMES) + 1):
+            example_weightings += list(combinations(WEIGHTING_SCHEMES, num))
+        for ex_weighting in example_weightings:
+            ex_weights = get_weights(ex_weighting, f_meas, var_meas, h_initial)
+            ax.loglog(f_meas, ex_weights, label=','.join(ex_weighting) or 'none')
+        ax.set_ylabel('Weight')
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.set_xlabel('Frequency [Hz]')
+        frame = inspect.stack()[1]
+        module = inspect.getmodule(frame[0])
+        weighting_png = os.path.splitext(module.__file__)[0] + '_weighting.png'  # type: ignore
+        logger.info('Writing: %s', weighting_png)
+        fig.savefig(weighting_png, bbox_inches='tight')
 
     def residuals(x):
         """Compute weighted mean squared error over all frequencies."""
@@ -237,23 +251,39 @@ def fit_response(
         return np.vstack((result.real, result.imag))
 
     result = least_squares(
-        real_residuals, x_initial, jac=real_jacobian, method='lm', gtol=gtol,
-        x_scale='jac', verbose=0)
+        real_residuals, x_initial, jac=real_jacobian, method='lm',
+        ftol=ftol, gtol=gtol, x_scale=1, verbose=1)
 
+    logger.info(result.message)
     x_fit = result.x
     b_fit = np.hstack((x_fit[m:], np.zeros(p)))
     a_fit = np.hstack((1, x_fit[:m]))
     tf_fit = TransferFunction(b_fit, a_fit)
     zpk_fit = tf_fit.to_zpk()
-    zpk_fit = ZerosPolesGain(
-        sort_complex(zpk_fit.zeros),
-        sort_complex(zpk_fit.poles),
-        zpk_fit.gain)
 
     # restore fixed part
     zpk_fit = zpk_multiply(zpk_fit, zpk_fixed)
 
     return zpk_fit, result
+
+
+def get_weights(weighting, f_meas, var_meas, h_initial):
+    """Construct various kinds of weighting schemes."""
+    unsupported = [item for item in weighting if item not in WEIGHTING_SCHEMES]
+    if any(unsupported):
+        raise ValueError(
+            f'Weighting {unsupported} not in supported weighting schemes: '
+            f'{WEIGHTING_SCHEMES}')
+
+    wt_meas = np.ones_like(f_meas)
+    if 'variance' in weighting:
+        wt_meas /= np.sqrt(var_meas)
+    if 'response' in weighting:
+        wt_meas /= np.abs(h_initial)
+    if 'frequency' in weighting:
+        wt_meas /= np.sqrt(f_meas)
+    wt_meas /= wt_meas.sum()
+    return wt_meas
 
 
 def apolystab(
