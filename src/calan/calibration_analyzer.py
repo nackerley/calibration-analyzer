@@ -418,11 +418,7 @@ class TimingGainFit():
         return np.sqrt(2)*special.erfinv(self.confidence)
 
     def timing_summary(self: TimingGainFit) -> str:
-        """
-        Summarize a timing error estimate using statsmodels.
-
-        Returns error estimate and bounds on that estimate.
-        """
+        """Summarize timing error estimate."""
         if self.timing is None:
             return 'timing fit: None'
         uncertainty = self.num_sigma()*self.timing.bse
@@ -433,11 +429,7 @@ class TimingGainFit():
         return f'timing error {estimate} ±{error} ({conf:.0f}% conf.)'
 
     def gain_summary(self: TimingGainFit) -> str:
-        """
-        Summarize a gain error estimate using statsmodels.
-
-        Returns error estimate and bounds on that estimate.
-        """
+        """Summarize gain error estimate."""
         if self.gain is None:
             return 'gain fit: None'
         uncertainty = self.num_sigma()*self.gain.bse[0]
@@ -507,10 +499,9 @@ class CalibrationAnalyzer():
         """
         Initialize calibration analyzer.
 
-        Parameters
-        ----------
-        savefig : Whether or not to save figures to PNG
-        dpi : Resolution to use when rendering figures
+        Arguments:
+        - `savefig`: Whether or not to save figures to PNG
+        - `dpi`: Resolution to use when rendering figures
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.info = CalibrationInfo()
@@ -954,17 +945,12 @@ class CalibrationAnalyzer():
         """
         Return nominal transfer function evaluated at frequencies.
 
-        Parameters
-        ----------
-        model
-            model to evaluate: 'sensor', 'cal' or 'system'
-        f : list-like of float, optional
-            frequencies in Hz, defaults to those of self.stft
+        Arguments:
+        - `model`: typically 'sensor', 'cal' or 'system'
+        - `f`: frequencies in Hz, defaults to those of self.stft
 
-        Returns
-        -------
-        np.array of complex float
-            nominal transfer function at given frequencies.
+        Returns:
+        - `tf`: nominal transfer function at given frequencies.
         """
         if model not in vars(self.lti):
             raise ValueError(
@@ -994,17 +980,12 @@ class CalibrationAnalyzer():
         """
         Get digitizer input or output signals in volts.
 
-        Arguments
-        ---------
-        which: str
-            "input" or "output"
-        trim: bool
-            remove padding (e.g. turn-on and turn-off times) by slicing
+        Arguments:
+        - `which`: "input" or "output"
+        - `trim`: remove padding (e.g. turn-on and turn-off times) by slicing
 
-        Returns
-        -------
-        signal: :class:`numpy.ndarray`
-            output [V], one row per channel
+        Returns:
+        - `signal`: one row per channel
         """
         assert which in ['input', 'output']
 
@@ -1054,7 +1035,7 @@ class CalibrationAnalyzer():
 
     def summary(self: CalibrationAnalyzer):
         """
-        Summarize calibration result, one row per trace.
+        Summarize calibration result in a table, one row per trace.
 
         Columns are pd.MultiIndex.
             First level:
@@ -1066,11 +1047,6 @@ class CalibrationAnalyzer():
                 PAZ: pole/zero index
 
         Rows are indexed by obspy.Trace.id and start time.
-
-        Returns
-        -------
-        df : pandas DataFrame
-            calibration summary table
         """
         # first construct info for calibration outputs
         info = pd.DataFrame(index=pd.MultiIndex.from_product(
@@ -1189,19 +1165,10 @@ class CalibrationAnalyzer():
 
         Specifciation is defined with respect to nominal.
 
-        Parameters
-        ----------
-        test_band_hz : 2 element list-like of float, optional
-            minimum and maxumum frequency of interest (default [0.02, 16]).
-        max_amplitude_percent : float, optional
-            maximum percentage deviation of amplitude (default 5).
-        max_phase_degrees : float, optional
-            maximum deviation of phase in degrees (default 5).
-
-        Returns
-        -------
-        result : list-like of bool
-            test result per channel of calibration_signal_file
+        Arguments:
+        - `test_band_hz`: minimum and maxumum frequency of interest
+        - `max_amplitude_percent`: maximum percentage deviation of amplitude
+        - `max_phase_degrees`: maximum deviation of phase in degrees
         """
         try:
             tf_estimate = self.tf_fits()
@@ -1422,18 +1389,8 @@ class CalibrationAnalyzer():
         errors on a per-channel basis, it instead treats the errors as common
         to all channels.
 
-        Parameters
-        ----------
-        variance_threshhold: float, optional
-            maximum variance for inclusion in fit. Default is 0.01.
-
-        Returns
-        -------
-        gain_error, gain_error_std, time_error, time_error_std: float
-            least-squares estimate of the overall errors, and estimates of the
-            error in those estimates with the specified confidenc
-        summary: string
-            summary of fitting results
+        Arguments:
+        - `variance_threshhold`: maximum variance for inclusion in fit
         """
         f = self.stft.f
         tf_estimate = self.stft.tf_estimate()
@@ -1530,12 +1487,11 @@ class CalibrationAnalyzer():
         """
         Plot nominal transfer function between specified frequency limits.
 
-        Arguments
-        ---------
-        model: str, optional
-            'sensor' for the sensor itself,
-            'cal' for calibration input or
-            'system' for the combination of the two
+        Arguments:
+        - `model`:
+            - 'sensor' for the sensor itself,
+            - 'cal' for calibration input or
+            - 'system' for the combination of the two
         """
         if f_limits:
             f = logspace(f_limits[0], f_limits[1], 24)
@@ -1650,10 +1606,8 @@ class CalibrationAnalyzer():
         """
         Plot variance on log or linear scale.
 
-        Parameters
-        ----------
-        scale: str, optional
-            selects 'log' or 'linear' scaling for x-axis
+        Arguments:
+        - `scale` selects 'log' or 'linear' scaling for x-axis
         """
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
@@ -1682,21 +1636,17 @@ class CalibrationAnalyzer():
         """
         Plot calibration transfer function on log or linear scale.
 
-        Parameters
-        ----------
-        scale: str, optional, scaling for x-axis:
-            * 'log' (default)
-            * 'linear'
-        remove: str, optional, which nominal response to remove:
-            * '': no response removal
-            * 'system': remove nominal system resposne (default)
-            * 'cal': remove nominal calibration input response
-        errors : str, optional, how to treat gain and phase errors:
-            * '': no estimation or correction
-            * 'estimate': estimate only (default)
-            * 'correct': estimate and correct
-        variance_threshhold : float, optional
-            Plot only points with variance above threshold. Default is None.
+        Arguments:
+        - `scale`: scaling for x-axis
+        - `remove`: which nominal response to remove
+            - '': no response removal
+            - 'system': remove nominal system resposne (default)
+            - 'cal': remove nominal calibration input response
+        - `errors` : how to treat gain and phase errors
+            - '': no estimation or correction
+            - 'estimate': estimate only (default)
+            - 'correct': estimate and correct
+        - `variance_threshhold`: plot only points with variance above this
         """
         if remove and remove not in ['cal', 'system']:
             raise ValueError(

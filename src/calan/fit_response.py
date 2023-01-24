@@ -55,12 +55,11 @@ def extract_coefficients(system: lti) -> Tuple[np.ndarray, int, int, int]:
     """
     Extract coefficient vector from transfer function.
 
-    Returns
-    -------
-    x   - coefficient vector
-    p   - number of poles fixed at zero
-    n   - numerator degree
-    m   - denominator degree
+    Returns:
+        - x: coefficient vector
+        - p: number of poles fixed at zero
+        - n: numerator degree
+        - m: denominator degree
     """
     if isinstance(system, TransferFunction):
         tf_ = system
