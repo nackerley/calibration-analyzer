@@ -26,8 +26,10 @@ $$J(x) = $$
 @nackerle
 """
 # TODO: give complete formula for Jacobian
+from io import StringIO
 import os
 import inspect
+from contextlib import redirect_stdout
 from typing import Any, Dict, Optional, Sequence, Tuple
 from logging import getLogger
 from itertools import combinations
@@ -91,6 +93,10 @@ def real_jacobian(x, omega, h_meas, weights, m, n, p):
     return np.vstack((result.real, result.imag))
 
 
+WEIGHTING_SCHEMES = ['variance', 'response', 'frequency']
+LEAST_SQUARES_METHODS = ['scipy.least_squares', 'line_search']
+
+
 def fit_response(
     zpk_guess: ZerosPolesGain,
     f: ArrayLike,
@@ -101,7 +107,7 @@ def fit_response(
     gtol: float = 1e-06,
     var_lims: Tuple[float, float] = (1e-4, 0.1),
     weighting: Sequence[str] = ('response', 'variance', 'frequency'),
-    method: str = 'line_search',
+    method: str = 'scipy.least_squares',
     debug: bool = False,
 ) -> ZerosPolesGain:
     """
@@ -132,6 +138,10 @@ def fit_response(
       - result:    optimization result
     """
     logger = getLogger(__name__)
+    if method not in LEAST_SQUARES_METHODS:
+        raise RuntimeError(
+            f"Method '{method}' not among supported: " +
+            ', '.join(LEAST_SQUARES_METHODS))
     if var_meas is None:
         var_meas = np.ones_like(f)
 
@@ -202,15 +212,12 @@ def fit_response(
     omega = precompute_omega(f, m)
     h_initial = model(x_initial, omega, m, n, p)
     weights = get_weights(weighting, f, var_meas, h_initial, var_lims)
-    res_initial = residuals(x_initial, omega, h_meas, weights, m, n, p)
 
     if debug:
-        _plot_model_residuals(
-            f, h_initial, res_initial, tf_guess, h_meas, weights, 'initial')
-        _plot_possible_weights(
-            f, var_meas, h_initial, var_lims)
+        _plot_possible_weights(f, var_meas, h_initial, var_lims)
 
     kwargs = dict(omega=omega, h_meas=h_meas, weights=weights, m=m, n=n, p=p)
+    logger.info('Method: %s', method)
     if method == 'line_search':
         x_fits, e_fits, message = least_squares_line_search(x_initial, **kwargs)
         logger.info('Termination condition: %s', message)
@@ -218,10 +225,14 @@ def fit_response(
                     e_fits[0], e_fits[-1], len(e_fits))
         x_fit = x_fits[-1]
     else:
-        result = least_squares(
-            real_residuals, x_initial, jac=real_jacobian, method='lm',
-            ftol=ftol, gtol=gtol, x_scale='jac', verbose=1, kwargs=kwargs)
-        logger.info(result.message)
+        captured_stdout = StringIO()
+        with redirect_stdout(captured_stdout):
+            result = least_squares(
+                real_residuals, x_initial, jac=real_jacobian, method='lm',
+                ftol=ftol, gtol=gtol, x_scale='jac', verbose=1, kwargs=kwargs)
+        for line in captured_stdout.getvalue().split('\n'):
+            if line:
+                logger.info(line)
         x_fit = result.x
 
     tf_fit = TransferFunction(
@@ -368,9 +379,6 @@ def zpk_out_of_band(
         sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), norm_freq_hz))
 
 
-WEIGHTING_SCHEMES = ['variance', 'response', 'frequency']
-
-
 def get_weights(weighting, f_meas, var_meas, h_initial, var_lims):
     """Construct various kinds of weighting schemes."""
     unsupported = [item for item in weighting if item not in WEIGHTING_SCHEMES]
@@ -419,36 +427,6 @@ def _plot_possible_weights(*args) -> None:
     weighting_png = os.path.splitext(str(module.__file__))[0] + '_weighting.png'
     getLogger(__name__).info('Writing: %s', weighting_png)
     fig.savefig(weighting_png, bbox_inches='tight')
-
-
-def _plot_model_residuals(f, matrix_model, matrix_res, tf_, h_meas, weights, label) -> None:
-    logger = getLogger(__name__)
-    logger.info(tf_.to_zpk())
-
-    direct_model = tf_.freqresp(2*np.pi*f)[1]
-    direct_res = weights*(direct_model - h_meas)
-
-    fig, axes = plt.subplots(4, 1, figsize=(4.5, 6.5), sharex=True)
-    fig.subplots_adjust(hspace=0)
-    for i, (func, y_label, scale) in enumerate(zip(
-            [lambda x: np.abs(np.real(x)), lambda x: np.abs(np.imag(x)),
-             gain, phase],
-            ['Real', 'Imaginary', 'Gain [dB]', 'Phase [°]'],
-            ['symlog', 'symlog', 'linear', 'linear'])):
-        axes[i].loglog(f, func(direct_model), label='direct model')
-        axes[i].loglog(f, func(direct_res), label='direct residuals')
-        axes[i].loglog(f, func(matrix_model), label='matrix model')
-        axes[i].loglog(f, func(matrix_res), label='matrix residuals')
-        axes[i].set_ylabel(y_label)
-        axes[i].set_yscale(scale)
-    axes[0].legend(loc='upper right')
-    axes[-1].set_xlabel('Frequency [Hz]')
-    frame = inspect.stack()[1]
-    module = inspect.getmodule(frame[0])
-    assert module is not None
-    initial_png = f'{os.path.splitext(str(module.__file__))[0]}_{label}.png'
-    logger.info('Writing: %s', initial_png)
-    fig.savefig(initial_png, bbox_inches='tight')
 
 
 def apolystab(
