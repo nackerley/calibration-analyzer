@@ -14,29 +14,35 @@ $$H = \Omega_b x_b \div (\Omega_m + \Omega_a x_a)$$
 
 The function to be minimized, in matrix notation where $\times$ and
 $\div$ denote elementwise multiplication and division, respectively,
-$\sigma^2$ is the variance, and $\hat H$ and $H$ is the measured and
-modeled response, respectively:
+$\sigma^2$ is the variance, $w$ are some weights, and $\hat H$ and $H$ are
+the measured and modeled response, respectively, is:
 
-$$f(x) = \frac{1}{\hat \sigma \times |\hat H|} \times (H - \hat H)$$
+$$f(x) = w \times (H - \hat H)$$
 
-Given coefficients x and transfer function estimate H:
+And the associated Jacobian is:
 
-$$J(x) = $$
+$$J(x) = w \times \left[
+    -\Omega_a \times \left( \Omega_b x_b \div (\Omega_m + \Omega_a x_a)^2 \right)
+    \Omega_b \div (\Omega_m + \Omega_a x_a ) \right]$$
+
+Where the weighting can consist of one or all of inverse 1) square root of
+variance, 2) response or 3) frequency (below all are shown):
+
+$$w = \frac{1}{\hat \sigma \times |\hat H| \times f} $$
 
 @nackerle
 """
-# TODO: give complete formula for Jacobian
 from io import StringIO
 import os
 from contextlib import redirect_stdout
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 from logging import getLogger
 from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import ArrayLike
-from scipy.signal import ZerosPolesGain, TransferFunction
+from scipy.signal import lti, ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares
 
 from calan.core import \
@@ -45,15 +51,57 @@ from calan.core import \
 np.random.seed(seed=42)
 
 
-def precompute_omega(f, m):
+def extract_coefficients(system: lti) -> Tuple[np.ndarray, int, int, int]:
     """
-    Precompute all required powers of angular frequencies.
+    Extract coefficient vector from transfer function.
 
-    Subsets needed for model and Jacobian are:
-        - omega_m = omega[:, 0]
-        - omega_a = omega[:, 1:m + 1]
-        - omega_b = omega[:, m - n:m - p + 1]
+    Returns
+    -------
+    x   - coefficient vector
+    p   - number of poles fixed at zero
+    n   - numerator degree
+    m   - denominator degree
     """
+    if isinstance(system, TransferFunction):
+        tf_ = system
+    else:
+        tf_ = system.to_tf()
+
+    logger = getLogger(__name__)
+    den = tf_.den
+    num = tf_.num
+    if den[0] == 0:
+        logger.warning('Trimming leading zeroes from denominator coefficients.')
+        den = np.trim_zeros(den, trim='f')
+    if num[0] == 0:
+        logger.warning('Trimming leading zeroes from numerator coefficients.')
+        num = np.trim_zeros(num, trim='f')
+
+    p = int(np.argmax(np.flip(num != 0)))
+    logger.info('Fixing %d zeros at zero.', p)
+
+    if den[0] != 1:
+        logger.warning('Normalizing denominator.')
+        num = num / den[0]
+        den = den / den[0]
+
+    # TODO: Determine whether initial denominator must be constrained to be stable.
+    a_temp = apolystab(den)
+    if any(a_temp != den):
+        logger.warning('Stabilizing denominator.')
+        den = np.copy(a_temp)
+
+    # determine fitting orders
+    n = num.shape[0] - 1
+    m = den.shape[0] - 1
+
+    x = np.hstack((den[1:], num[:-p]))
+    return x, p, n, m
+
+
+def precompute_omega(f: ArrayLike, m: int) -> np.ndarray:
+    """Precompute required powers of angular frequencies."""
+    f = np.array(f)
     omega = np.ones((f.shape[0], m + 1), dtype=complex)
     w_meas = 2*np.pi*f
     for i in range(m):
@@ -61,34 +109,80 @@ def precompute_omega(f, m):
     return omega
 
 
-def model(x, omega, m, n, p):
+def _get_views(
+    x: ArrayLike, omega: ArrayLike,
+    m: int, n: int, p: int,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Get subsets of matrices needed for computations."""
+    x = np.array(x)
+    omega = np.array(omega)
+    x_a = x[:m]
+    x_b = x[m:]
+    omega_a = omega[:, 1:m + 1]
+    omega_b = omega[:, m - n:m - p + 1]
+    omega_m = omega[:, 0]
+    return x_a, x_b, omega_a, omega_b, omega_m
+
+
+def model(
+    x: ArrayLike, omega: ArrayLike,
+    m: int, n: int, p: int,
+) -> np.ndarray:
     """Compute fitted transfer function model as function of frequency."""
-    model_num = omega[:, m - n:m - p + 1] @ x[m:]
-    model_den = omega[:, 0] + omega[:, 1:m + 1] @ x[:m]
+    x_a, x_b, omega_a, omega_b, omega_m = _get_views(x, omega, m, n, p)
+
+    model_num = omega_b @ x_b
+    model_den = omega_m + omega_a @ x_a
     return model_num / model_den
 
 
-def residuals(x, omega, h_meas, weights, m, n, p):
+def residuals(
+    x: ArrayLike, omega: ArrayLike, h_meas: ArrayLike, weights: ArrayLike,
+    m: int, n: int, p: int,
+) -> np.ndarray:
     """Compute weighted mean squared error over all frequencies."""
+    x = np.array(x)
+    omega = np.array(omega)
+    h_meas = np.array(h_meas)
+    weights = np.array(weights)
+
     return weights * (model(x, omega, m, n, p) - h_meas)
 
 
-def real_residuals(x, omega, h_meas, weights, m, n, p):
-    """Convert residuals to vector of floats."""
+def real_residuals(
+    x: ArrayLike, omega: ArrayLike, h_meas: ArrayLike, weights: ArrayLike,
+    m: int, n: int, p: int,
+) -> np.ndarray:
+    """Convert residuals to vector of floats (wrapper for least_squares)."""
     return residuals(x, omega, h_meas, weights, m, n, p).view(float)
 
 
-def jacobian(x, omega, h_meas, weights, m, n, p):  # pylint: disable=unused-argument
+def jacobian(
+    x: ArrayLike, omega: ArrayLike,
+    h_meas: ArrayLike,  # pylint: disable=unused-argument
+    weights: ArrayLike,
+    m: int, n: int, p: int,
+) -> np.ndarray:
     """Compute partial derivatives of residuals wrt coefficients."""
-    model_num = omega[:, m - n:m - p + 1] @ x[m:]
-    model_den = omega[:, 0] + omega[:, 1:m + 1] @ x[:m]
-    part_a = -omega[:, 1:m + 1]*(model_num / model_den**2).reshape(-1, 1)
-    part_b = omega[:, m - n:m - p + 1] / model_den.reshape(-1, 1)
+    x_a, x_b, omega_a, omega_b, omega_m = _get_views(x, omega, m, n, p)
+
+    h_meas = np.array(h_meas)
+    weights = np.array(weights)
+
+    model_num = omega_b @ x_b
+    model_den = np.array(omega_m + omega_a @ x_a)
+    part_a = -omega_a*(model_num / model_den**2).reshape(-1, 1)
+    part_b = omega_b / model_den.reshape(-1, 1)
     return np.hstack((part_a, part_b))*weights.reshape(-1, 1)
 
 
-def real_jacobian(x, omega, h_meas, weights, m, n, p):
-    """Convert Jacobian to vector of floats."""
+def real_jacobian(
+    x: ArrayLike, omega: ArrayLike,
+    h_meas: ArrayLike,  # pylint: disable=unused-argument
+    weights: ArrayLike,
+    m: int, n: int, p: int,
+) -> np.ndarray:
+    """Convert Jacobian to vector of floats (wrapper for least_squares)."""
     result = jacobian(x, omega, h_meas, weights, m, n, p)
     return np.vstack((result.real, result.imag))
 
@@ -166,35 +260,8 @@ def fit_response(
     zpk_guess_unfixed = zpk_divide(zpk_guess, zpk_fixed)
     h_meas_unfixed = h_meas / zpk_fixed.freqresp(w=2*np.pi*f)[1]
     tf_guess = zpk_guess_unfixed.to_tf()
+    x_initial, p, n, m = extract_coefficients(tf_guess)
 
-    # extract coefficient vector
-    a_guess = tf_guess.den
-    b_guess = tf_guess.num
-    if a_guess[0] == 0:
-        logger.warning('Trimming leading zeroes from denominator coefficients.')
-        a_guess = np.trim_zeros(a_guess, trim='f')
-    if b_guess[0] == 0:
-        logger.warning('Trimming leading zeroes from numerator coefficients.')
-        b_guess = np.trim_zeros(b_guess, trim='f')
-
-    p = int(np.argmax(np.flip(b_guess != 0)))
-    logger.info('Fixing %d zeros at zero.', p)
-    b_guess = b_guess[:-p]
-
-    if a_guess[0] != 1:
-        logger.warning('Normalizing denominator of initial guess.')
-        b_guess = b_guess / a_guess[0]
-        a_guess = a_guess / a_guess[0]
-
-    # TODO: Determine whether initial denominator must be constrained to be stable.
-    a_temp = apolystab(a_guess)
-    if any(a_temp != a_guess):
-        logger.warning('Stabilizing denominator of initial guess.')
-        a_guess = np.copy(a_temp)
-
-    # determine fitting orders
-    n = b_guess.shape[0] + p - 1
-    m = a_guess.shape[0] - 1
     if n > m:
         raise ValueError(
             f'Transfer function must be proper, but numerator degree {n} '
@@ -208,7 +275,6 @@ def fit_response(
         'Fitting numerator/denominator degrees %d/%d at %d frequencies.',
         n, m, f.shape[0])
 
-    x_initial = np.hstack((a_guess[1:], b_guess))
     omega = precompute_omega(f, m)
     h_initial = model(x_initial, omega, m, n, p)
     weights = get_weights(weighting, f, var_meas, h_initial, var_lims)
@@ -216,10 +282,10 @@ def fit_response(
     if debug:
         _plot_possible_weights(weighting, f, var_meas, h_meas_unfixed, var_lims)
 
-    kwargs = dict(omega=omega, h_meas=h_meas_unfixed, weights=weights, m=m, n=n, p=p)
+    model_parameters = dict(omega=omega, h_meas=h_meas_unfixed, weights=weights, m=m, n=n, p=p)
     logger.info('Method: %s', method)
     if method == 'line_search':
-        x_fits, e_fits, message = least_squares_line_search(x_initial, **kwargs)
+        x_fits, e_fits, message = least_squares_line_search(x_initial, **model_parameters)
         logger.info('Termination condition: %s', message)
         logger.info('Cost reduced from %.2g to %.2g in %d iterations',
                     e_fits[0], e_fits[-1], len(e_fits))
@@ -229,7 +295,7 @@ def fit_response(
         with redirect_stdout(captured_stdout):
             result = least_squares(
                 real_residuals, x_initial, jac=real_jacobian, method='lm',
-                ftol=ftol, gtol=gtol, x_scale='jac', verbose=1, kwargs=kwargs)
+                ftol=ftol, gtol=gtol, x_scale='jac', verbose=1, kwargs=model_parameters)
         for line in captured_stdout.getvalue().split('\n'):
             if line:
                 logger.info(line)
@@ -250,7 +316,7 @@ def least_squares_line_search(
         x_initial: ArrayLike,
         g_tol: float = 1e-06,
         max_outer: int = 100,
-        **kwargs: Dict[str, Any],
+        **kwargs: int,
 ) -> Tuple[np.ndarray, np.ndarray, str]:
     """
     Least-squares minimization using line-search along Gauss-Newton gradient.
@@ -343,6 +409,22 @@ def least_squares_line_search(
     return x_fits, e_fits, message
 
 
+def apolystab(
+    polynomial: ArrayLike,
+) -> np.ndarray:
+    """Return stabilized denominator polynomial of real analog filter."""
+    polynomial = np.array(polynomial)
+    if polynomial.ndim != 1:
+        raise ValueError('Coefficients must be a vector.')
+    if polynomial.shape[0] > 0:
+        roots = np.roots(polynomial)
+        real_positive = np.real(roots) > 0
+        if real_positive.any():
+            roots[real_positive] = -roots[real_positive]
+            polynomial = np.real(np.poly(roots))
+    return polynomial
+
+
 def zpk_out_of_band(
     system: ZerosPolesGain,
     f: ArrayLike,
@@ -391,8 +473,15 @@ def zpk_out_of_band(
     return tf_out
 
 
-def get_weights(weighting, f_meas, var_meas, h_initial, var_lims):
+def get_weights(
+    weighting: Sequence[str],
+    f_meas: ArrayLike,
+    var_meas: ArrayLike,
+    h_initial: ArrayLike,
+    var_lims: Tuple[float, float]
+) -> np.ndarray:
     """Construct various kinds of weighting schemes."""
+    var_meas = np.array(var_meas)
     unsupported = [item for item in weighting if item not in WEIGHTING_SCHEMES]
     if any(unsupported):
         raise ValueError(
@@ -423,6 +512,7 @@ def phase_deg(values: ArrayLike) -> np.ndarray:
 
 
 def _plot_possible_weights(*args) -> None:
+    """Plot all possible weighting schemes. Same args as get_weights()."""
     fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
     example_weightings = []
     for num in range(len(WEIGHTING_SCHEMES) + 1):
@@ -439,17 +529,3 @@ def _plot_possible_weights(*args) -> None:
     getLogger(__name__).info('Writing: %s', weighting_png)
     fig.savefig(weighting_png, bbox_inches='tight')
 
-
-def apolystab(
-    polynomial: np.ndarray,
-) -> np.ndarray:
-    """Return stabilized denominator polynomial of real analog filter."""
-    if polynomial.ndim != 1:
-        raise ValueError('Coefficients must be a vector.')
-    if polynomial.shape[0] > 0:
-        roots = np.roots(polynomial)
-        real_positive = np.real(roots) > 0
-        if real_positive.any():
-            roots[real_positive] = -roots[real_positive]
-            polynomial = np.real(np.poly(roots))
-    return polynomial
