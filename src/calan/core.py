@@ -271,14 +271,14 @@ def zpk_cancel(
     This method only considers the absolute distance between each
     pole `p` and zero `z`:
 
-        `abs(z-p) < tolerance`
+        `abs(z-p) <= tolerance`
 
     The 'damping' method is an improvement whereby pole-zero pairs must be
     farther apart in order to be considered cancelling when the damping is low.
     In this case poles and zeros are considered to cancel when the following
     condition is met:
 
-        `abs(z-p)/sqrt(|z|*|p|)/sqrt(cos(angle(z))*cos(angle(p))) < tolerance`
+        `abs(z-p)/sqrt(|z|*|p|)/sqrt(cos(angle(z))*cos(angle(p))) <= tolerance`
 
     Parameters
     ----------
@@ -317,8 +317,9 @@ def zpk_cancel(
 
     z_new = sort_complex(old.zeros[~cancels.any(axis=1)])
     p_new = sort_complex(old.poles[~cancels.any(axis=0).T])
-    k_new = (sensitivity(old, f_norm) /
-             sensitivity(ZerosPolesGain(z_new, p_new, 1), f_norm))
+    new_unity = ZerosPolesGain(z_new, p_new, 1)
+    k_new = (old.freqresp(w=2*np.pi*f_norm)[1][0] /
+             new_unity.freqresp(w=2*np.pi*f_norm)[1][0])
     new = ZerosPolesGain(z_new, p_new, k_new)
 
     return new
