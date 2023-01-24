@@ -317,10 +317,8 @@ def zpk_cancel(
 
     z_new = sort_complex(old.zeros[~cancels.any(axis=1)])
     p_new = sort_complex(old.poles[~cancels.any(axis=0).T])
-    new_unity = ZerosPolesGain(z_new, p_new, 1)
-    k_new = (old.freqresp(w=2*np.pi*f_norm)[1][0] /
-             new_unity.freqresp(w=2*np.pi*f_norm)[1][0])
-    new = ZerosPolesGain(z_new, p_new, k_new)
+
+    new = ZerosPolesGain(z_new, p_new, old.to_tf().num[0])
 
     return new
 
