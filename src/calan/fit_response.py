@@ -40,7 +40,8 @@ from numpy.typing import ArrayLike
 from scipy.signal import ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares
 
-from calan.core import sort_complex, sensitivity, zpk_divide, zpk_multiply
+from calan.core import \
+    sort_complex, sensitivity, zpk_cancel, zpk_divide, zpk_multiply
 
 np.random.seed(seed=42)
 
@@ -93,7 +94,7 @@ def real_jacobian(x, omega, h_meas, weights, m, n, p):
     return np.vstack((result.real, result.imag))
 
 
-WEIGHTING_SCHEMES = ['variance', 'response', 'frequency']
+WEIGHTING_SCHEMES = ['variance', 'response']
 LEAST_SQUARES_METHODS = ['scipy.least_squares', 'line_search']
 
 
@@ -105,9 +106,9 @@ def fit_response(
     zpk_fixed: ZerosPolesGain = ZerosPolesGain([], [], 1),
     ftol: float = 1e-10,
     gtol: float = 1e-06,
-    var_lims: Tuple[float, float] = (1e-4, 0.1),
-    weighting: Sequence[str] = ('response', 'variance', 'frequency'),
-    method: str = 'scipy.least_squares',
+    var_lims: Tuple[float, float] = (1e-5, 0.1),
+    weighting: Sequence[str] = ('variance', 'response'),
+    method: str = 'line_search',
     debug: bool = False,
 ) -> ZerosPolesGain:
     """
@@ -164,7 +165,7 @@ def fit_response(
             'Fixing %d zeros and %d poles at nominal values.',
             len(zpk_fixed.zeros), len(zpk_fixed.poles))
     zpk_guess_unfixed = zpk_divide(zpk_guess, zpk_fixed)
-    h_meas /= np.abs(zpk_fixed.freqresp(w=2*np.pi*f)[1])
+    h_meas_unfixed = h_meas / zpk_fixed.freqresp(w=2*np.pi*f)[1]
     tf_guess = zpk_guess_unfixed.to_tf()
 
     # extract coefficient vector
@@ -214,9 +215,9 @@ def fit_response(
     weights = get_weights(weighting, f, var_meas, h_initial, var_lims)
 
     if debug:
-        _plot_possible_weights(f, var_meas, h_initial, var_lims)
+        _plot_possible_weights(weighting, f, var_meas, h_meas_unfixed, var_lims)
 
-    kwargs = dict(omega=omega, h_meas=h_meas, weights=weights, m=m, n=n, p=p)
+    kwargs = dict(omega=omega, h_meas=h_meas_unfixed, weights=weights, m=m, n=n, p=p)
     logger.info('Method: %s', method)
     if method == 'line_search':
         x_fits, e_fits, message = least_squares_line_search(x_initial, **kwargs)
@@ -355,7 +356,10 @@ def zpk_out_of_band(
 
     Band is expanded by configurable factor beyond given frequency range.
 
-    Tranfer function returned is constrained to have the sensitivity given at
+    System will have a flat passband (near-zero phase at the normalization
+    frequency) when out-of-band part is removed.
+
+    Out-of-band response is constrained to have the sensitivity given at
     the normalization frequency.
     """
     f = np.array(f)
@@ -374,9 +378,18 @@ def zpk_out_of_band(
     p_fixed += [pole for pole in poles if np.abs(pole) > w_max]
     z_fixed += [zero for zero in zeros if np.abs(zero) > w_max]
 
-    return ZerosPolesGain(
+    phase_norm = phase_deg(system.freqresp(2*np.pi*norm_freq_hz)[1])
+    integrations_required = -int(np.round(phase_norm/90))
+    if integrations_required > 0:
+        p_fixed = [0]*integrations_required + p_fixed
+    else:
+        z_fixed = [0]*(-integrations_required) + z_fixed
+
+    tf_out = zpk_cancel(ZerosPolesGain(
         z_fixed, p_fixed, set_sensitivity /
-        sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), norm_freq_hz))
+        sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), norm_freq_hz)))
+
+    return tf_out
 
 
 def get_weights(weighting, f_meas, var_meas, h_initial, var_lims):
@@ -400,13 +413,13 @@ def get_weights(weighting, f_meas, var_meas, h_initial, var_lims):
     return weights
 
 
-def gain(values: ArrayLike) -> np.ndarray:
-    """Return transfer function gain given complex values."""
+def gain_db(values: ArrayLike) -> np.ndarray:
+    """Return transfer function gain in dB, given complex values."""
     return 20*np.log10(np.abs(values))
 
 
-def phase(values: ArrayLike) -> np.ndarray:
-    """Return transfer function phase given complex values."""
+def phase_deg(values: ArrayLike) -> np.ndarray:
+    """Return transfer function phase in degrees, given complex values."""
     return np.angle(np.array(values), deg=True)
 
 
@@ -416,8 +429,10 @@ def _plot_possible_weights(*args) -> None:
     for num in range(len(WEIGHTING_SCHEMES) + 1):
         example_weightings += list(combinations(WEIGHTING_SCHEMES, num))
     for ex_weighting in example_weightings:
-        ex_weights = get_weights(ex_weighting, *args)
-        ax.loglog(args[0], ex_weights, label=','.join(ex_weighting) or 'none')
+        ex_weights = get_weights(ex_weighting, *args[1:])
+        width = 3 if set(ex_weighting) == set(args[0]) else 1.5
+        ax.loglog(args[1], ex_weights, label=','.join(ex_weighting) or 'none',
+                  linewidth=width)
     ax.set_ylabel('Weight')
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.set_xlabel('Frequency [Hz]')
