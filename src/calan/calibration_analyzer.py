@@ -966,7 +966,6 @@ class CalibrationAnalyzer():
         np.array of complex float
             nominal transfer function at given frequencies.
         """
-        # TODO can this be simplified using getattr?
         if model not in vars(self.lti):
             raise ValueError(
                 f"Model '{model}' not among supported: "

@@ -528,4 +528,3 @@ def _plot_possible_weights(*args) -> None:
     weighting_png = os.path.splitext(os.path.basename(__file__))[0] + '_weighting.png'
     getLogger(__name__).info('Writing: %s', weighting_png)
     fig.savefig(weighting_png, bbox_inches='tight')
-
