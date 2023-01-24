@@ -336,8 +336,8 @@ def least_squares_line_search(
         x_fits[outer] = x_new
         e_fits[outer] = e_new
 
-    if outer == max_outer:
-        message = 'Maximum number of iterations.'
+        if outer == max_outer:
+            message = 'Maximum number of iterations.'
 
     x_fits = np.array(x_fits[:outer])
     e_fits = e_fits[:outer]
@@ -436,10 +436,7 @@ def _plot_possible_weights(*args) -> None:
     ax.set_ylabel('Weight')
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.set_xlabel('Frequency [Hz]')
-    frame = inspect.stack()[1]
-    module = inspect.getmodule(frame[0])
-    assert module is not None
-    weighting_png = os.path.splitext(str(module.__file__))[0] + '_weighting.png'
+    weighting_png = os.path.splitext(os.path.basename(__file__))[0] + '_weighting.png'
     getLogger(__name__).info('Writing: %s', weighting_png)
     fig.savefig(weighting_png, bbox_inches='tight')
 
