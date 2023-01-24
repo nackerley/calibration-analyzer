@@ -28,7 +28,6 @@ $$J(x) = $$
 # TODO: give complete formula for Jacobian
 from io import StringIO
 import os
-import inspect
 from contextlib import redirect_stdout
 from typing import Any, Dict, Optional, Sequence, Tuple
 from logging import getLogger
@@ -94,7 +93,7 @@ def real_jacobian(x, omega, h_meas, weights, m, n, p):
     return np.vstack((result.real, result.imag))
 
 
-WEIGHTING_SCHEMES = ['variance', 'response']
+WEIGHTING_SCHEMES = ['variance', 'response', 'frequency']
 LEAST_SQUARES_METHODS = ['scipy.least_squares', 'line_search']
 
 
@@ -106,8 +105,8 @@ def fit_response(
     zpk_fixed: ZerosPolesGain = ZerosPolesGain([], [], 1),
     ftol: float = 1e-10,
     gtol: float = 1e-06,
-    var_lims: Tuple[float, float] = (1e-5, 0.1),
-    weighting: Sequence[str] = ('variance', 'response'),
+    var_lims: Tuple[float, float] = (0, 1),
+    weighting: Sequence[str] = ('variance', 'response', 'frequency'),
     method: str = 'line_search',
     debug: bool = False,
 ) -> ZerosPolesGain:
