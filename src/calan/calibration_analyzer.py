@@ -924,7 +924,7 @@ class CalibrationAnalyzer():
                 'Integrating %d times, from %s to %s',
                 integrations, cal.input_units, sensor.input_units)
             cal_poles = np.array([0]*integrations + list(cal_poles))
-            # TODO: verify minus sign
+            # TODO: verify minus sign - is this only Trillium 120?
             cal_gain /= (-2*np.pi*cal.normalization_frequency)**integrations
         self.lti.cal = zpk_from_zpsf(
             cal_zeros, cal_poles, cal_gain, cal.normalization_frequency)
@@ -1366,7 +1366,7 @@ class CalibrationAnalyzer():
         for label, tf_estimate, variance in zip(labels, tf_estimates, variances):
 
             self.logger.info('Fitting: %s', label)
-            zpk_fit, result = fit_response(
+            zpk_fit = fit_response(
                 zpk_nom, f, tf_estimate, variance, zpk_fixed, debug=True)
 
             self.logger.debug(zpk_fit)
@@ -1381,7 +1381,7 @@ class CalibrationAnalyzer():
                 'Fit sensitivity [%s at %g Hz]: %.5g', units, f_norm, sens_fit)
 
             self.lti.fits.append(zpk_fit)
-            self.zpk_fits.append(result)
+            # self.zpk_fits.append(result)
 
     def estimate_errors(
         self: CalibrationAnalyzer,
