@@ -17,6 +17,7 @@ from operator import attrgetter
 
 import requests
 import numpy as np
+from numpy.typing import ArrayLike
 import pandas as pd
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain
@@ -255,6 +256,16 @@ def sort_complex(array: np.ndarray) -> np.ndarray:
 def sensitivity(system: lti, f: float = 1) -> float:
     """Compute sensitivity at given frequency."""
     return np.abs(system.freqresp(w=2*np.pi*f)[1][0])
+
+
+def gain_db(values: ArrayLike) -> np.ndarray:
+    """Return transfer function gain in dB, given complex values."""
+    return 20*np.log10(np.abs(values))
+
+
+def phase_deg(values: ArrayLike) -> np.ndarray:
+    """Return transfer function phase in degrees, given complex values."""
+    return np.angle(np.array(values), deg=True)
 
 
 def zpk_cancel(

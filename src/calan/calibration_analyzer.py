@@ -63,7 +63,7 @@ from obspy.signal.invsim import simulate_seismometer
 from calan.core import (
     PACKAGE, VERSION, factor_names, subplots_squeeze, zpk_cancel,
     zpk_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
-    recompute_normalization_factors)
+    recompute_normalization_factors, gain_db, phase_deg)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
@@ -162,6 +162,7 @@ ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
 CHECK_PERCENT = 0.01
 CHECK_CLIP = 8000000
 PLOT_CHOICES = ['basic', 'diagnostic']
+PASS_FAIL = {True: 'PASS', False: 'FAIL'}
 
 
 # definitions
@@ -312,6 +313,9 @@ def calibration_analyzer(
         output_parts += pattern_slug.split('_')
     summary_csv = '_'.join(output_parts) + '.csv'
 
+    if len(ims_instrument_type) > 6:
+        raise ValueError('IMS instrument type must be 6 or less characters.')
+
     analyzer = CalibrationAnalyzer(savefig=plot != '', dpi=dpi)
 
     if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
@@ -456,7 +460,8 @@ class CalibrationInfo():
         self.spec_max_freq_hz: float = np.NaN
         self.spec_max_amp_pct: float = np.NaN
         self.spec_max_phase_deg: float = np.NaN
-        self.in_spec: Sequence[bool] = ()
+        self.amp_in_spec: Sequence[bool] = ()
+        self.phase_in_spec: Sequence[bool] = ()
 
     def __str__(self: CalibrationInfo) -> str:
         """Human-readable representation."""
@@ -560,9 +565,14 @@ class CalibrationAnalyzer():
             else:
                 self.logger.warning(
                     'Expected input file not found: %s', input_file)
+
         self.info.waveform_file = waveform_file
         self.info.start = self.stream[0].stats.starttime
         self.info.end = self.stream[0].stats.endtime
+        self.logger.info(
+            'Read %s at %.0f sps',
+            pd.to_timedelta(self.info.end - self.info.start, 's'),
+            self._sampling_rate())
 
         self.stream.sort()
         calibration_trace = next((trace for trace in self.stream
@@ -765,13 +775,15 @@ class CalibrationAnalyzer():
         last_start = max([trace.stats.starttime for trace in self.stream])
         if self.info.start < last_start:
             self.logger.warning(
-                'Data missing, delaying start to %s', last_start)
+                '%s data missing, delaying start to %s',
+                pd.to_timedelta(self.info.start - last_start, 's'), last_start)
             self.info.start = last_start + discard_s
 
         first_end = min([trace.stats.endtime for trace in self.stream])
         if self.info.end < first_end:
             self.logger.warning(
-                'Data missing, advancing end to %s', first_end)
+                '%s data missing, advancing end to %s',
+                pd.to_timedelta(first_end - self.info.end, 's'), first_end)
             self.info.end = first_end - discard_s
         self.logger.debug(str(self.stream))
 
@@ -1128,15 +1140,15 @@ class CalibrationAnalyzer():
             tf_nominal = self.tf_nominal('sensor')
 
             magnitude = pd.DataFrame(
-                np.vstack((20*np.log10(np.abs(tf_estimate)),
-                           20*np.log10(np.abs(tf_nominal)))).round(3),
+                np.vstack((gain_db(tf_estimate),
+                           gain_db(tf_nominal))).round(3),
                 columns=f, index=info.index)
             phase = pd.DataFrame(
-                np.vstack((np.angle(tf_estimate, deg=True),
-                           np.angle(tf_nominal, deg=True))).round(3),
+                np.vstack((phase_deg(tf_estimate),
+                           phase_deg(tf_nominal))).round(3),
                 columns=f, index=info.index)
             variance = pd.DataFrame(
-                np.vstack((20*np.log10(self.stft.variance()),
+                np.vstack((10*np.log10(self.stft.variance()),
                            np.full_like(f.values, np.NaN))).round(3),
                 columns=f, index=info.index)
 
@@ -1182,19 +1194,20 @@ class CalibrationAnalyzer():
         self.info.spec_max_amp_pct = max_amplitude_percent
         self.info.spec_max_phase_deg = max_phase_degrees
 
-        self.info.in_spec = ~np.any(
-            ((np.abs(100*(np.abs(tf_deviation) - 1)) >
-              self.info.spec_max_amp_pct) |
-             (np.abs(np.angle(tf_deviation, deg=True)) >
-              self.info.spec_max_phase_deg)) &
-            ((self.info.spec_min_freq_hz <= self.stft.f) &
-             (self.stft.f <= self.info.spec_max_freq_hz)), axis=1)
+        in_band = ~((self.info.spec_min_freq_hz <= self.stft.f) &
+                    (self.stft.f <= self.info.spec_max_freq_hz))
+        out_amp = np.abs(100*(np.abs(tf_deviation) - 1)) > self.info.spec_max_amp_pct
+        out_phase = np.abs(np.angle(tf_deviation, deg=True)) > self.info.spec_max_phase_deg
+        self.info.amp_in_spec = ~np.any(out_amp & in_band, axis=1)
+        self.info.phase_in_spec = ~np.any(out_phase & in_band, axis=1)
 
-        self.logger.info('Result: %s', ', '.join(
-            [': '.join(items) for items in zip(
-                [trace.id[-1] for trace in self.stream],
-                ['pass' if in_spec else 'fail'
-                 for in_spec in self.info.in_spec])]))
+        for label, results in zip(
+                ['Amplitude', 'Phase'],
+                [self.info.amp_in_spec, self.info.phase_in_spec]):
+            self.logger.info('%s: %s', label, ', '.join(
+                [f'{id}: {result}' for id, result in zip(
+                    [trace.id[-1] for trace in self.stream],
+                    ['PASS' if in_spec else 'FAIL' for in_spec in results])]))
 
     def write_calibrate_result(
         self: CalibrationAnalyzer,
@@ -1227,10 +1240,10 @@ class CalibrationAnalyzer():
                     station=self.stream[0].stats.station),
                 time_stamp=UTCDateTime().strftime(IMS_DATETIME_FMT)))
 
-            for trace, amplitudes, phases, in_spec in zip(
+            for trace, amplitudes, phases, amp_in_spec, phase_in_spec in zip(
                     self.stream, np.abs(tf_estimate),
                     np.angle(tf_estimate, deg=True),
-                    self.info.in_spec):
+                    self.info.amp_in_spec, self.info.phase_in_spec):
 
                 response = trace.stats.response
                 assert (response.instrument_sensitivity.frequency ==
@@ -1247,7 +1260,7 @@ class CalibrationAnalyzer():
                     channel=trace.stats.channel,
                     calib=calib,
                     calper=calper,
-                    in_spec='YES' if in_spec else 'NO'))
+                    in_spec='YES' if amp_in_spec and phase_in_spec else 'NO'))
                 file.write(CAL_BLOCK.format(
                     station=trace.stats.station,
                     channel=trace.stats.channel,
@@ -1498,13 +1511,11 @@ class CalibrationAnalyzer():
         else:
             f = self.stft.f
         tf_nominal = self.tf_nominal(model, f=f)
-        gain_db = 20*np.log10(np.abs(tf_nominal))
-        phase_deg = np.angle(tf_nominal, deg=True)
 
         width = plt.rcParams['figure.figsize'][0]
         fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
-        axes[0].semilogx(f, gain_db, label=model)
-        axes[1].semilogx(f, phase_deg, label=model)
+        axes[0].semilogx(f, gain_db(tf_nominal), label=model)
+        axes[1].semilogx(f, phase_deg(tf_nominal), label=model)
         axes[0].axvline(self._sampling_rate()/2, linestyle='--', color='0.5',
                         label='Nyquist')
         axes[1].axvline(self._sampling_rate()/2, linestyle='--', color='0.5',
@@ -1661,9 +1672,6 @@ class CalibrationAnalyzer():
             option_list.append('nominal_' + remove + '_removed')
 
         channels = factor_names(self._output_stream())[1]
-        results = ['pass' if item else 'fail' for item in self.info.in_spec]
-        labels = [f'{channel}: {result}' for channel, result in zip(channels, results)]
-
         f = self.stft.f
         tf_nominal = self.tf_nominal('system')
         tf_estimate = self.stft.tf_estimate()
@@ -1702,17 +1710,28 @@ class CalibrationAnalyzer():
         band_hz = (self.info.spec_min_freq_hz,
                    self.info.spec_max_freq_hz)
         spec = (f >= band_hz[0]) & (f <= band_hz[1])
-        gain_estimate = 20*np.log10(np.abs(tf_estimate))
-        gain_nominal = 20*np.log10(np.abs(tf_nominal))
+        gain_estimate = gain_db(tf_estimate)
+        gain_nominal = gain_db(tf_nominal)
         gain_spec = np.vstack((gain_estimate, gain_nominal))[:, spec]
-        phase_estimate = np.angle(tf_estimate, deg=True)
-        phase_nominal = np.angle(tf_nominal, deg=True)
+        phase_estimate = phase_deg(tf_estimate)
+        phase_nominal = phase_deg(tf_nominal)
         phase_spec = np.vstack((phase_estimate, phase_nominal))[:, spec]
 
         width = plt.rcParams['figure.figsize'][0]
         fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
 
-        for gain, label in zip(gain_estimate, labels):
+        if self.lti.fits:
+            gain_labels = channels
+            phase_labels = channels
+        else:
+            gain_labels = [
+                f'{label}: {PASS_FAIL[result]}'
+                for label, result in zip(channels, self.info.amp_in_spec)]
+            phase_labels = [
+                f'{label}: {PASS_FAIL[result]}'
+                for label, result in zip(channels, self.info.phase_in_spec)]
+
+        for gain, label in zip(gain_estimate, gain_labels):
             axes[0].plot(f, gain, label=label)
         axes[0].set_xlim((f[1], f[-1]))
         if not np.allclose(gain_nominal, 0):
@@ -1721,9 +1740,9 @@ class CalibrationAnalyzer():
                           ceil(gain_spec.max()) + 1))
 
         if errors == 'estimate':
-            axes[0].plot(f, 20*np.log10(np.abs(tf_error)), label='error')
+            axes[0].plot(f, gain_db(tf_error), label='error')
 
-        for phase, label in zip(phase_estimate, labels):
+        for phase, label in zip(phase_estimate, phase_labels):
             axes[1].plot(f, phase, label=label)
 
         axes[1].set_xlabel('Frequency [Hz]')
@@ -1736,31 +1755,38 @@ class CalibrationAnalyzer():
         if errors == 'estimate':
             axes[1].plot(f, np.angle(tf_error, deg=True), label='error')
 
-        for tf_fit, label in zip(tf_fits, labels):
-            gain_fit = 20*np.log10(np.abs(tf_fit))
-            phase_fit = np.angle(tf_fit, deg=True)
-            axes[0].plot(f, gain_fit, label=label)
-            axes[1].plot(f, phase_fit, label=label)
+        if self.lti.fits:
+            gain_labels = [
+                f'{label} fit: {PASS_FAIL[result]}'
+                for label, result in zip(channels, self.info.amp_in_spec)]
+            phase_labels = [
+                f'{label} fit: {PASS_FAIL[result]}'
+                for label, result in zip(channels, self.info.phase_in_spec)]
+
+            for tf_fit, label in zip(tf_fits, gain_labels):
+                axes[0].plot(f, gain_db(tf_fit), label=label)
+            for tf_fit, label in zip(tf_fits, phase_labels):
+                axes[1].plot(f, phase_deg(tf_fit), label=label)
 
         max_mag_db = 20*np.log10((1 + self.info.spec_max_amp_pct/100))
         max_phase_deg = self.info.spec_max_phase_deg
         ids_start = '\n'.join([
             factor_names(self.stream)[0],
             self.info.start.strftime('%Y-%m-%d %H:%M')])
-        test_limits = (
-            f'±{self.info.spec_max_amp_pct}%, '
-            f'±{self.info.spec_max_phase_deg}°\n'
-            f'{band_hz[0]} - {band_hz[1]} Hz')
+        amp_limits = (
+            f'±{self.info.spec_max_amp_pct}%, {band_hz[0]}-{band_hz[1]} Hz')
+        phase_limits = (
+            f'±{self.info.spec_max_phase_deg}°, {band_hz[0]}-{band_hz[1]} Hz')
         axes[0].annotate(ids_start, (0.025, 0.025), xycoords='axes fraction',
                          ha='left', va='bottom')
         axes[0].fill_between(f[spec],
                              gain_nominal[spec] - max_mag_db,
                              gain_nominal[spec] + max_mag_db,
-                             color='0.5', alpha=0.5, label=test_limits)
+                             color='0.5', alpha=0.5, label=amp_limits)
         axes[1].fill_between(f[spec],
                              phase_nominal[spec] - max_phase_deg,
                              phase_nominal[spec] + max_phase_deg,
-                             color='0.5', alpha=0.5, label=test_limits)
+                             color='0.5', alpha=0.5, label=phase_limits)
 
         if remove == 'system':
             axes[0].set_ylabel('Gain wrt nominal [dB]')
@@ -1785,6 +1811,7 @@ class CalibrationAnalyzer():
             option_list.append(scale)
 
         axes[0].legend(loc='lower right')
+        axes[1].legend(loc='upper right')
         subplots_squeeze(fig, hspace=0)
 
         self._save_image(fig, option_list)

@@ -45,8 +45,9 @@ from numpy.typing import ArrayLike
 from scipy.signal import lti, ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares
 
-from calan.core import \
-    sort_complex, sensitivity, zpk_cancel, zpk_divide, zpk_multiply
+from calan.core import (
+    sort_complex, sensitivity, zpk_cancel, zpk_divide, zpk_multiply,
+    phase_deg)
 
 np.random.seed(seed=42)
 
@@ -198,7 +199,7 @@ def fit_response(
     zpk_fixed: ZerosPolesGain = ZerosPolesGain([], [], 1),
     ftol: float = 1e-10,
     gtol: float = 1e-06,
-    var_lims: Tuple[float, float] = (0, 1),
+    var_lims: Tuple[float, float] = (1e-4, 0.1),
     weighting: Sequence[str] = ('variance', 'response', 'frequency'),
     method: str = 'line_search',
     debug: bool = False,
@@ -285,8 +286,8 @@ def fit_response(
     logger.info('Method: %s', method)
     if method == 'line_search':
         x_fits, e_fits, message = least_squares_line_search(x_initial, **model_parameters)
-        logger.info('Termination condition: %s', message)
-        logger.info('Cost reduced from %.2g to %.2g in %d iterations',
+        logger.info('Termination: %s', message)
+        logger.info('Cost reduced from %.2g to %.2g in %d iterations.',
                     e_fits[0], e_fits[-1], len(e_fits))
         x_fit = x_fits[-1]
     else:
@@ -498,16 +499,6 @@ def get_weights(
         weights /= np.sqrt(f_meas)
 
     return weights
-
-
-def gain_db(values: ArrayLike) -> np.ndarray:
-    """Return transfer function gain in dB, given complex values."""
-    return 20*np.log10(np.abs(values))
-
-
-def phase_deg(values: ArrayLike) -> np.ndarray:
-    """Return transfer function phase in degrees, given complex values."""
-    return np.angle(np.array(values), deg=True)
 
 
 def _plot_possible_weights(*args) -> None:
