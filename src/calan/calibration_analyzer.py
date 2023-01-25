@@ -310,6 +310,7 @@ def calibration_analyzer(
 ) -> str:
     """Do arbitrary-signal calibration analysis."""
     logger = logging.getLogger(__name__)
+    logger.info('{%s} {%s}', PACKAGE, VERSION)
 
     pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
                            if char.isalnum())
