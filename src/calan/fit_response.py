@@ -201,7 +201,7 @@ def fit_response(
     gtol: float = 1e-06,
     var_lims: Tuple[float, float] = (1e-4, 0.1),
     weighting: Sequence[str] = ('variance', 'response', 'frequency'),
-    method: str = 'scipy.least_squares',
+    method: str = 'line_search',
     debug: bool = False,
 ) -> ZerosPolesGain:
     """
