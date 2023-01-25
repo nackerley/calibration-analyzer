@@ -80,7 +80,7 @@ plt.rc('legend', fontsize='small')
 # defaults
 
 # analysis setup
-DEFAULT_NUM_WINDOWS = 30
+DEFAULT_NUM_WINDOWS = 15
 DEFAULT_WINDOW = 'hann'
 
 # inputs
@@ -1768,11 +1768,11 @@ class CalibrationAnalyzer():
 
         for gain, label in zip(gain_estimate, gain_labels):
             axes[0].plot(f, gain, label=label)
-        axes[0].set_xlim((f[1], f[-1]))
+        axes[0].set_xlim((f[0], f[-1]))
         if not np.allclose(gain_nominal, 0):
             axes[0].plot(f, gain_nominal, label='nominal')
-        axes[0].set_ylim((floor(gain_spec.min()) - 1,
-                          ceil(gain_spec.max()) + 1))
+        axes[0].set_ylim((floor(gain_spec.min()) - 3,
+                          ceil(gain_spec.max()) + 3))
 
         if errors == 'estimate':
             axes[0].plot(f, gain_db(tf_error), label='error')
@@ -1808,20 +1808,18 @@ class CalibrationAnalyzer():
         ids_start = '\n'.join([
             factor_names(self.stream)[0],
             self.info.start.strftime('%Y-%m-%d %H:%M')])
-        amp_limits = (
-            f'±{self.info.spec_max_amp_pct}%, {band_hz[0]}-{band_hz[1]} Hz')
-        phase_limits = (
-            f'±{self.info.spec_max_phase_deg}°, {band_hz[0]}-{band_hz[1]} Hz')
         axes[0].annotate(ids_start, (0.025, 0.95), xycoords='axes fraction',
                          ha='left', va='top')
         axes[0].fill_between(f[spec],
                              gain_nominal[spec] - max_mag_db,
                              gain_nominal[spec] + max_mag_db,
-                             color='0.5', alpha=0.5, label=amp_limits)
+                             color='0.5', alpha=0.5,
+                             label=f'±{self.info.spec_max_amp_pct}%')
         axes[1].fill_between(f[spec],
                              phase_nominal[spec] - max_phase_deg,
                              phase_nominal[spec] + max_phase_deg,
-                             color='0.5', alpha=0.5, label=phase_limits)
+                             color='0.5', alpha=0.5,
+                             label=f'±{self.info.spec_max_phase_deg}°')
 
         if remove == 'system':
             axes[0].set_ylabel('Gain wrt nominal [dB]')
