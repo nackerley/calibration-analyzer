@@ -167,7 +167,8 @@ ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
 
 CHECK_PERCENT = 0.01
 CHECK_CLIP = 8000000
-PLOT_CHOICES = ['basic', 'diagnostic', 'all']
+PLOT_CHOICES = ['none', 'basic', 'diagnostic', 'all']
+PLOT_LEVEL = {value: i for i, value in enumerate(PLOT_CHOICES)}
 PASS_FAIL = {True: 'PASS', False: 'FAIL'}
 
 
@@ -311,7 +312,7 @@ def calibration_analyzer(
 ) -> str:
     """Do arbitrary-signal calibration analysis."""
     logger = logging.getLogger(__name__)
-    logger.info('{%s} {%s}', PACKAGE, VERSION)
+    logger.info('%s %s', PACKAGE, VERSION)
 
     pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
                            if char.isalnum())
@@ -348,7 +349,8 @@ def calibration_analyzer(
         analyzer.setup_nominal_responses()
         analyzer.map_orientations(orientation_map)
 
-        if plot:
+        plot_level = PLOT_LEVEL[plot]
+        if plot_level >= PLOT_LEVEL['basic']:
             analyzer.plot_check('start')
             analyzer.plot_check('end')
 
@@ -361,19 +363,19 @@ def calibration_analyzer(
                       max_phase_degrees=test_limits[1])
         analyzer.estimate_errors()
 
-        if plot:
+        if plot_level >= PLOT_LEVEL['basic']:
             analyzer.plot_transfer_function(remove='system')
             analyzer.plot_transfer_function(remove='cal')
             analyzer.plot_variance()
 
-        if plot == 'diagnostic':
+        if plot_level >= PLOT_LEVEL['diagnostic']:
             analyzer.plot_response('sensor', f_limits=[1e-3, 1e2])
             analyzer.plot_transfer_function(remove='cal', errors='estimate')
             analyzer.plot_transfer_function(remove='system', errors='estimate',
                                             scale='linear')
             analyzer.plot_transfer_function(remove='system', errors='correct',
                                             scale='log')
-        if plot == 'all':
+        if plot_level == PLOT_LEVEL['all']:
             analyzer.plot_transfer_function(remove='', errors='')
             analyzer.plot_signal_to_noise()
             analyzer.plot_response('system', f_limits=[1e-3, 1e2])
@@ -1191,9 +1193,9 @@ class CalibrationAnalyzer():
         - `max_amplitude_percent`: maximum percentage deviation of amplitude
         - `max_phase_degrees`: maximum deviation of phase in degrees
         """
-        try:
+        if self.lti.fits:
             tf_estimate = self.tf_fits()
-        except AttributeError:
+        else:
             tf_estimate = self.stft.tf_estimate()
         tf_nominal = self.tf_nominal('system').reshape((1, -1))
         tf_deviation = tf_estimate/tf_nominal
@@ -1368,9 +1370,9 @@ class CalibrationAnalyzer():
                  f'({self._sensor_stage().input_units.lower()})')
         zpk_unfixed = zpk_divide(zpk_nom, zpk_fixed)
         self.logger.info(
-            'Nominal zeros [rad/s]: %s', feature_str(zpk_unfixed.zeros))
+            'Nominal zeros: %s', feature_str(zpk_unfixed.zeros))
         self.logger.info(
-            'Nominal poles [rad/s]: %s', feature_str(zpk_unfixed.poles))
+            'Nominal poles: %s', feature_str(zpk_unfixed.poles))
         self.logger.info(
             'Nominal sensitivity [%s at %g Hz]: %.5g', units, f_norm, sens_nom)
 
@@ -1388,9 +1390,9 @@ class CalibrationAnalyzer():
             f_norm, sens_fit = self.sensitivity(
                 zpk_divide(zpk_fit, self.lti.cal))
             self.logger.info(
-                'Fit zeros [rad/s]: %s', feature_str(zpk_unfixed.zeros))
+                'Fit zeros: %s', feature_str(zpk_unfixed.zeros))
             self.logger.info(
-                'Fit poles [rad/s]: %s', feature_str(zpk_unfixed.poles))
+                'Fit poles: %s', feature_str(zpk_unfixed.poles))
             self.logger.info(
                 'Fit sensitivity [%s at %g Hz]: %.5g', units, f_norm, sens_fit)
 
