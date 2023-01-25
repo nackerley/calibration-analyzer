@@ -80,7 +80,7 @@ plt.rc('legend', fontsize='small')
 # defaults
 
 # analysis setup
-DEFAULT_NUM_WINDOWS = 15
+DEFAULT_NUM_WINDOWS = 20
 DEFAULT_WINDOW = 'hann'
 
 # inputs
