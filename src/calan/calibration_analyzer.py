@@ -167,7 +167,7 @@ ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
 
 CHECK_PERCENT = 0.01
 CHECK_CLIP = 8000000
-PLOT_CHOICES = ['basic', 'diagnostic']
+PLOT_CHOICES = ['basic', 'diagnostic', 'all']
 PASS_FAIL = {True: 'PASS', False: 'FAIL'}
 
 
@@ -362,18 +362,20 @@ def calibration_analyzer(
         analyzer.estimate_errors()
 
         if plot:
-            analyzer.plot_transfer_function(remove='system', errors='estimate')
-            analyzer.plot_transfer_function(remove='cal', errors='estimate')
+            analyzer.plot_transfer_function(remove='system')
+            analyzer.plot_transfer_function(remove='cal')
             analyzer.plot_variance()
 
         if plot == 'diagnostic':
-            analyzer.plot_transfer_function(remove='', errors='')
+            analyzer.plot_response('sensor', f_limits=[1e-3, 1e2])
+            analyzer.plot_transfer_function(remove='cal', errors='estimate')
             analyzer.plot_transfer_function(remove='system', errors='estimate',
                                             scale='linear')
             analyzer.plot_transfer_function(remove='system', errors='correct',
                                             scale='log')
+        if plot == 'all':
+            analyzer.plot_transfer_function(remove='', errors='')
             analyzer.plot_signal_to_noise()
-            analyzer.plot_response('sensor', f_limits=[1e-3, 1e2])
             analyzer.plot_response('system', f_limits=[1e-3, 1e2])
             analyzer.plot_response('cal', f_limits=[1e-3, 1e2])
             analyzer.plot_simulated()
@@ -1673,7 +1675,7 @@ class CalibrationAnalyzer():
     def plot_transfer_function(
         self: CalibrationAnalyzer,
         remove: str = 'system',
-        errors: str = 'estimate',
+        errors: str = '',
         scale: str = 'log',
         variance_threshhold: float = np.NaN,
     ) -> None:
@@ -1810,8 +1812,8 @@ class CalibrationAnalyzer():
             f'±{self.info.spec_max_amp_pct}%, {band_hz[0]}-{band_hz[1]} Hz')
         phase_limits = (
             f'±{self.info.spec_max_phase_deg}°, {band_hz[0]}-{band_hz[1]} Hz')
-        axes[0].annotate(ids_start, (0.025, 0.025), xycoords='axes fraction',
-                         ha='left', va='bottom')
+        axes[0].annotate(ids_start, (0.025, 0.95), xycoords='axes fraction',
+                         ha='left', va='top')
         axes[0].fill_between(f[spec],
                              gain_nominal[spec] - max_mag_db,
                              gain_nominal[spec] + max_mag_db,
@@ -1832,10 +1834,10 @@ class CalibrationAnalyzer():
         axes[1].set_ylabel('Phase [°]')
 
         if errors:
-            axes[0].annotate(self.timing_gain_fit.gain_summary(), (0.025, 0.95),
-                             xycoords='axes fraction', ha='left', va='top')
-            axes[1].annotate(self.timing_gain_fit.timing_summary(), (0.025, 0.95),
-                             xycoords='axes fraction', ha='left', va='top')
+            axes[0].annotate(self.timing_gain_fit.gain_summary(), (0.025, 0.025),
+                             xycoords='axes fraction', ha='left', va='bottom')
+            axes[1].annotate(self.timing_gain_fit.timing_summary(), (0.025, 0.025),
+                             xycoords='axes fraction', ha='left', va='bottom')
         if errors:
             option_list.append(errors + '_errors')
 
