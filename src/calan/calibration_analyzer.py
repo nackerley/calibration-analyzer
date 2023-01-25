@@ -143,6 +143,11 @@ FAP_HEADER = (
     'FAP2 {stage:2d} {units:1.1s} {decimation:4.4s} {group_correction:8.3f} '
     '{count:3d} {description:25.25s}' + '\n')
 FAP_DATA = ' {frequency:10.5f} {amplitude:15.8e} {phase:4.0f}' + '\n'
+PAZ_HEADER = (
+    'PAZ2 {stage:2d} {units:1.1s} {scale_factor:15.8e} {decimation:4.4s} '
+    '{group_correction:8.3f} {num_poles:3d} {num_zeros:3d} {description:25.25s}' + '\n')
+PAZ_DATA = ' {real:15.8e} {imag:15.8e}' + '\n'
+
 MAX_FAP_LEN = 999
 IMS_FOOTER = 'stop' + '\n'
 
@@ -1217,13 +1222,19 @@ class CalibrationAnalyzer():
         keep = ((self.stft.f >= self.info.spec_min_freq_hz) &
                 (self.stft.f <= self.info.spec_max_freq_hz))
         f = self.stft.f[keep]
-        if len(f) >= MAX_FAP_LEN:
+        if len(f) >= MAX_FAP_LEN and not self.lti.fits:
             self.logger.warning(
                 '%d frequencies is more than %d supported by FAP2 format',
                 len(f), MAX_FAP_LEN)
         tf_estimate = (
             self.stft.tf_estimate()[:, keep] /
             self.tf_nominal('cal')[keep])
+
+        if self.lti.fits:
+            zpk_fits = [zpk_divide(zpk_fit, self.lti.cal)
+                        for zpk_fit in self.lti.fits]
+        else:
+            zpk_fits = [None]*len(tf_estimate)
 
         output_txt = '_'.join([
             'calibrate_result', self.stream[0].stats.station,
@@ -1240,9 +1251,8 @@ class CalibrationAnalyzer():
                     station=self.stream[0].stats.station),
                 time_stamp=UTCDateTime().strftime(IMS_DATETIME_FMT)))
 
-            for trace, amplitudes, phases, amp_in_spec, phase_in_spec in zip(
-                    self.stream, np.abs(tf_estimate),
-                    np.angle(tf_estimate, deg=True),
+            for trace, amplitudes, phases, zpk_fit, amp_in_spec, phase_in_spec in zip(
+                    self.stream, np.abs(tf_estimate), np.angle(tf_estimate, deg=True), zpk_fits,
                     self.info.amp_in_spec, self.info.phase_in_spec):
 
                 response = trace.stats.response
@@ -1253,8 +1263,12 @@ class CalibrationAnalyzer():
                 nominal_sensor = self._sensor_stage().stage_gain
                 nominal_instrument = response.instrument_sensitivity.value
                 nominal_digitizer = nominal_instrument/nominal_sensor
-                actual_sensor = amplitudes[np.argmax(f >= 1/calper)]
+                if zpk_fit:
+                    actual_sensor = np.abs(zpk_fit.freqresp(2*np.pi/calper)[1][0])
+                else:
+                    actual_sensor = amplitudes[np.argmax(f >= 1/calper)]
                 calib = 1e9*calper/(2*np.pi*actual_sensor*nominal_digitizer)
+
                 file.write(RESPONSE_HEADER.format(
                     station=trace.stats.station,
                     channel=trace.stats.channel,
@@ -1271,20 +1285,37 @@ class CalibrationAnalyzer():
                     sample_rate=self._sampling_rate(),
                     start=self.info.start.strftime(IMS_DATETIME_FMT),
                     end=self.info.end.strftime(IMS_DATETIME_FMT)))
-                file.write(FAP_HEADER.format(
-                    stage=1,
-                    units=self._sensor_stage().output_units,
-                    decimation='',
-                    group_correction=0,
-                    count=len(f),
-                    description=('Input units: ' +
-                                 self._sensor_stage().input_units.lower())))
-                for frequency, amplitude, phase in zip(
-                        f, amplitudes, phases):
-                    file.write(FAP_DATA.format(
-                        frequency=frequency,
-                        amplitude=amplitude,
-                        phase=phase))
+                input_units = self._sensor_stage().input_units.lower()
+                if zpk_fit:
+                    file.write(PAZ_HEADER.format(
+                        stage=1,
+                        units=self._sensor_stage().output_units,
+                        scale_factor=1,
+                        decimation='',
+                        group_correction=0,
+                        num_zeros=len(zpk_fit.zeros),
+                        num_poles=len(zpk_fit.poles),
+                        description=f'Input units: {input_units}'))
+                    for item in zpk_fit.poles:
+                        file.write(PAZ_DATA.format(real=np.real(item),
+                                                   imag=np.imag(item)))
+                    for item in zpk_fit.zeros:
+                        file.write(PAZ_DATA.format(real=np.real(item),
+                                                   imag=np.imag(item)))
+                else:
+                    file.write(FAP_HEADER.format(
+                        stage=1,
+                        units=self._sensor_stage().output_units,
+                        decimation='',
+                        group_correction=0,
+                        count=len(f),
+                        description=f'Input units: {input_units}'))
+                    for frequency, amplitude, phase in zip(
+                            f, amplitudes, phases):
+                        file.write(FAP_DATA.format(
+                            frequency=frequency,
+                            amplitude=amplitude,
+                            phase=phase))
 
             file.write(IMS_FOOTER)
 

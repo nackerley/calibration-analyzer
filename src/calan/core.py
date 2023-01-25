@@ -24,9 +24,10 @@ from scipy.signal import lti, ZerosPolesGain
 
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
-from obspy.core.inventory import CoefficientsTypeResponseStage
-from obspy.core.event import (
-    Pick, Arrival, Amplitude, StationMagnitude, WaveformStreamID)
+from obspy.core.inventory import \
+    CoefficientsTypeResponseStage, FIRResponseStage
+from obspy.core.event import \
+    Pick, Arrival, Amplitude, StationMagnitude, WaveformStreamID
 
 from calan.utilities import string_list
 from calan import chis_archive
@@ -631,17 +632,33 @@ def extract_decimation_coefficients(stages):
     b_stages = []
     factors = []
     for stage in stages:
-        if (isinstance(stage, CoefficientsTypeResponseStage) and
-                stage.decimation_factor > 1):
+        if stage.decimation_factor is not None and stage.decimation_factor > 1:
             if not factors:
-                logger.info('Input sample rate %g sps',
-                            stage.decimation_input_sample_rate)
+                logger.info(
+                    'Input sample rate %g sps',
+                    stage.decimation_input_sample_rate)
 
             factors.append(stage.decimation_factor)
-            b_stages.append(stage.numerator)
+            if isinstance(stage, CoefficientsTypeResponseStage):
+                if len(stage.denominator) != 0 or \
+                        stage.cf_transfer_function_type != 'DIGITAL':
+                    raise RuntimeError(
+                        f'Analog decimation stages nonsensical:\n{str(stage)}.')
+                coeffs = stage.numerator
+            elif isinstance(stage, FIRResponseStage):
+                coeffs = stage.coefficients
+                if stage.symmetry == 'EVEN':
+                    coeffs = np.hstack((coeffs, np.flip(coeffs)))
+                elif stage.symmetry == 'ODD':
+                    coeffs = np.hstack((coeffs, np.flip(coeffs[:-1])))
+            else:
+                raise RuntimeError(
+                    f'Decimation stage type not supported:\n{str(stage)}')
+            b_stages.append(coeffs)
+
             logger.info(
                 'Filter with %d coefficients and decimate by %d to %g sps',
-                len(stage.numerator), stage.decimation_factor,
+                len(b_stages[-1]), stage.decimation_factor,
                 stage.decimation_input_sample_rate/stage.decimation_factor)
     n_pad_upsample = compute_decim_delay(b_stages, factors)
     logger.info('Filtering and decimation by %d consumes %d samples',
