@@ -1362,8 +1362,9 @@ class CalibrationAnalyzer():
 
         f_norm, sens_nom = self.sensitivity(self.lti.sensor)
 
+        f_norm = self._sensor_stage().stage_gain_frequency
         zpk_fixed = zpk_out_of_band(self.lti.system, self.stft.f,
-                                    self._sensor_stage().stage_gain_frequency)
+                                    norm_freq_hz=f_norm)
         self.logger.debug(zpk_fixed)
 
         units = (f'{self._sensor_stage().output_units}/'
@@ -1383,7 +1384,7 @@ class CalibrationAnalyzer():
 
             self.logger.info('Fitting: %s', label)
             zpk_fit = fit_response(
-                zpk_nom, f, tf_estimate, variance, zpk_fixed, debug=True)
+                zpk_nom, f, tf_estimate, variance, zpk_fixed, debug=False)
 
             self.logger.debug(zpk_fit)
             zpk_unfixed = zpk_divide(zpk_fit, zpk_fixed)
