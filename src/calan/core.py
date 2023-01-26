@@ -20,7 +20,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 import scipy.signal as sp
-from scipy.signal import lti, ZerosPolesGain
+from scipy.signal import lti, ZerosPolesGain, TransferFunction
 
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
@@ -363,6 +363,14 @@ def zpk_multiply(
     gain = first.gain*second.gain
 
     return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
+
+
+def is_proper(system: lti) -> bool:
+    """Indicate whether transfer function is proper."""
+    if ~isinstance(system, TransferFunction):
+        system = system.to_tf()
+
+    return len(system.den) >= len(system.num)
 
 
 def flip(ndarray, axis):

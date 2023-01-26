@@ -32,8 +32,9 @@ $$w = \frac{1}{\hat \sigma \times |\hat H| \times f} $$
 
 @nackerle
 """
-from io import StringIO
 import os
+from math import log10
+from io import StringIO
 from contextlib import redirect_stdout
 from typing import Optional, Sequence, Tuple
 from logging import getLogger
@@ -46,7 +47,7 @@ from scipy.signal import lti, ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares
 
 from calan.core import (
-    sort_complex, sensitivity, zpk_cancel, zpk_divide, zpk_multiply,
+    sort_complex, sensitivity, zpk_cancel, zpk_divide, zpk_multiply, is_proper,
     phase_deg)
 
 np.random.seed(seed=42)
@@ -428,14 +429,15 @@ def apolystab(
 def zpk_out_of_band(
     system: ZerosPolesGain,
     f: ArrayLike,
-    factor: float = 2,
+    factor_lims: Tuple[float, float] = (2, 5),
     norm_freq_hz: float = 1,
     set_sensitivity: float = 1,
 ) -> ZerosPolesGain:
     """
     Construct out-of-band part of nominal response, with unity gain.
 
-    Band is expanded by configurable factor beyond given frequency range.
+    Band is expanded by configurable range of factor until a result is found
+    which results in a proper transfer function after fixed part is removed.
 
     System will have a flat passband (near-zero phase at the normalization
     frequency) when out-of-band part is removed.
@@ -445,32 +447,38 @@ def zpk_out_of_band(
     """
     f = np.array(f)
     f.sort()
-    w_min = f[0]/factor
-    w_max = f[-1]*factor
-    poles = sort_complex(system.poles)
-    zeros = sort_complex(system.zeros)
+    for factor in np.logspace(log10(factor_lims[0]),
+                              log10(factor_lims[1]),
+                              int(6*(factor_lims[1]/factor_lims[0]))):
+        w_min = f[0]/factor
+        w_max = f[-1]*factor
+        poles = sort_complex(system.poles)
+        zeros = sort_complex(system.zeros)
 
-    if (np.abs(poles) < w_min).any():
-        p_fixed, z_fixed = zip(*[
-            (pole, zero) for pole, zero in zip(poles, zeros)
-            if np.abs(pole) < w_min])
-    else:
-        p_fixed, z_fixed = [], []
-    p_fixed += [pole for pole in poles if np.abs(pole) > w_max]
-    z_fixed += [zero for zero in zeros if np.abs(zero) > w_max]
+        if (np.abs(poles) < w_min).any():
+            p_fixed, z_fixed = zip(*[
+                (pole, zero) for pole, zero in zip(poles, zeros)
+                if np.abs(pole) < w_min])
+        else:
+            p_fixed, z_fixed = [], []
+        p_fixed += [pole for pole in poles if np.abs(pole) > w_max]
+        z_fixed += [zero for zero in zeros if np.abs(zero) > w_max]
 
-    phase_norm = phase_deg(system.freqresp(2*np.pi*norm_freq_hz)[1])
-    integrations_required = -int(np.round(phase_norm/90))
-    if integrations_required > 0:
-        p_fixed = [0]*integrations_required + p_fixed
-    else:
-        z_fixed = [0]*(-integrations_required) + z_fixed
+        phase_norm = phase_deg(system.freqresp(2*np.pi*norm_freq_hz)[1])
+        integrations_required = -int(np.round(phase_norm/90))
+        if integrations_required > 0:
+            p_fixed = [0]*integrations_required + p_fixed
+        else:
+            z_fixed = [0]*(-integrations_required) + z_fixed
 
-    tf_out = zpk_cancel(ZerosPolesGain(
-        z_fixed, p_fixed, set_sensitivity /
-        sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), norm_freq_hz)))
+        zpk_out = zpk_cancel(ZerosPolesGain(
+            z_fixed, p_fixed, set_sensitivity /
+            sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), norm_freq_hz)))
 
-    return tf_out
+        if is_proper(zpk_divide(system, zpk_out)):
+            break
+
+    return zpk_out
 
 
 def get_weights(
