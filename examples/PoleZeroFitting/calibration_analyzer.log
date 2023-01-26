@@ -1,5 +1,7 @@
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.0
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Output.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Input.mseed
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
@@ -54,7 +56,7 @@ dt: None
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.292605455913913,
+15.29260545591391,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200624.1945.png
@@ -65,49 +67,45 @@ INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.292605455913913,
+15.29260545591391,
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([], dtype=float64),
-array([], dtype=float64),
-1.0,
+array([0]),
+62.83185307179586,
 dt: None
 )
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros [rad/s]: 
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal poles [rad/s]: 1.00 Hz (ζ = 0.623)
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 10 Hz]: 388
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
-INFO     fit_response.py:calan.fit_response:fit_response - Fixing 1 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/2 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 6.8e+02 to 8.3 in 5 iterations.
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.]),
-array([-2.902977-5.380643j, -2.902977+5.380643j]),
-2.1458894188309103,
+array([-3.909643-4.739571j, -3.909643+4.739571j]),
+2.142816033490268,
 dt: None
 )
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros [rad/s]: 
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles [rad/s]: 0.973 Hz (ζ = 0.475)
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 54.608
-INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.978 Hz (ζ = 0.636)
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 54.345
+INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -85.745% ±0.01% (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -2.35ms ±20us (95% conf.)
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200624.1945.png
+INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200624.1945.png
+INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200624.1945.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200624.1945.png
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 8957970.547630003
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200624.1945.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200624.1945.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:write_calibrate_result - calibrate_result_YKAT1_20200624.1945.txt
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-36.00_Output.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-36.00_Input.mseed
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
@@ -162,7 +160,7 @@ dt: None
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.292605455913913,
+15.29260545591391,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200110.1529.png
@@ -173,45 +171,40 @@ INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.292605455913913,
+15.29260545591391,
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([], dtype=float64),
-array([], dtype=float64),
-1.0,
+array([0]),
+62.83185307179586,
 dt: None
 )
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros [rad/s]: 
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal poles [rad/s]: 1.00 Hz (ζ = 0.623)
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 10 Hz]: 388
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
-INFO     fit_response.py:calan.fit_response:fit_response - Fixing 1 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/2 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 6.6e+02 to 9.2 in 5 iterations.
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.]),
-array([-3.383165-5.198613j, -3.383165+5.198613j]),
-2.4544027326484574,
+array([-4.320952-4.268006j, -4.320952+4.268006j]),
+2.4888648738884416,
 dt: None
 )
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros [rad/s]: 
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles [rad/s]: 0.987 Hz (ζ = 0.545)
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 62.38
-INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.967 Hz (ζ = 0.711)
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 62.999
+INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -83.74% ±0.03% (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -2.02ms ±40us (95% conf.)
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200110.1529.png
+INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200110.1529.png
+INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200110.1529.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200110.1529.png
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 8957970.547630003
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200110.1529.png
-INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200110.1529.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:write_calibrate_result - calibrate_result_YKAT1_20200110.1529.txt
 INFO     calibration_analyzer.py:__main__:calibration_analyzer - Summary: calibration_analyzer.csv

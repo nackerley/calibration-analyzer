@@ -8,7 +8,8 @@ info,spec_min_freq_hz,0.02,0.02,
 info,spec_max_freq_hz,16.0,16.0,
 info,spec_max_amp_pct,5.0,5.0,
 info,spec_max_phase_deg,5.0,5.0,
-info,in_spec,False,False,
+info,gain_in_spec,False,False,
+info,phase_in_spec,True,False,
 info,duration_s,604.0,604.0,
 info,pre_s,0.0,0.0,
 info,post_s,0.0,0.0,
@@ -21,14 +22,14 @@ info,gain error uncertainty [%],0.0146,0.033,
 info,confidence [%],0.95,0.95,
 info,output_units,V,V,V
 info,input_units,m/s,m/s,m/s
-info,calan,1.1.0,1.1.0,1.1.0
-pole_01,damping,0.474823,0.545449,0.623437
-pole_01,freq_hz,0.973042,0.987163,1.00001
-pole_01,imag_rad,-5.38064,-5.19861,-4.9127
-pole_01,real_rad,-2.90298,-3.38316,-3.9172
+info,calan,1.2.0,1.2.0,1.2.0
+pole_01,damping,0.636334,0.711452,0.623437
+pole_01,freq_hz,0.977849,0.966616,1.00001
+pole_01,imag_rad,-4.73957,-4.26801,-4.9127
+pole_01,real_rad,-3.90964,-4.32095,-3.9172
 zero_0,real_rad,0.0,0.0,0.0
 zero_0,freq_hz,0.0,0.0,0.0
 zero_1,real_rad,0.0,0.0,0.0
 zero_1,freq_hz,0.0,0.0,0.0
 f_norm,hz,10.0,10.0,10.0
-sensitivity,V/(m/s),54.6085,62.3805,388.0
+sensitivity,V/(m/s),54.3449,62.9992,388.0

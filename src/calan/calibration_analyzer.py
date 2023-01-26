@@ -170,7 +170,7 @@ CHECK_CLIP = 8000000
 PLOT_CHOICES = ['none', 'basic', 'diagnostic', 'all']
 PLOT_LEVEL = {value: i for i, value in enumerate(PLOT_CHOICES)}
 PASS_FAIL = {True: 'PASS', False: 'FAIL'}
-
+YES_NO = {True: 'YES', False: 'NO'}
 
 # definitions
 def _argparser() -> MyArgumentParser:
@@ -471,7 +471,7 @@ class CalibrationInfo():
         self.spec_max_freq_hz: float = np.NaN
         self.spec_max_amp_pct: float = np.NaN
         self.spec_max_phase_deg: float = np.NaN
-        self.amp_in_spec: Sequence[bool] = ()
+        self.gain_in_spec: Sequence[bool] = ()
         self.phase_in_spec: Sequence[bool] = ()
 
     def __str__(self: CalibrationInfo) -> str:
@@ -1205,20 +1205,22 @@ class CalibrationAnalyzer():
         self.info.spec_max_amp_pct = max_amplitude_percent
         self.info.spec_max_phase_deg = max_phase_degrees
 
-        in_band = ~((self.info.spec_min_freq_hz <= self.stft.f) &
-                    (self.stft.f <= self.info.spec_max_freq_hz))
-        out_amp = np.abs(100*(np.abs(tf_deviation) - 1)) > self.info.spec_max_amp_pct
-        out_phase = np.abs(np.angle(tf_deviation, deg=True)) > self.info.spec_max_phase_deg
-        self.info.amp_in_spec = ~np.any(out_amp & in_band, axis=1)
+        in_band = ((self.info.spec_min_freq_hz <= self.stft.f) &
+                   (self.stft.f <= self.info.spec_max_freq_hz))
+        out_gain = (np.abs((np.abs(tf_deviation) - 1)) >
+                    self.info.spec_max_amp_pct/100)
+        out_phase = (np.abs(np.angle(tf_deviation, deg=True)) >
+                     self.info.spec_max_phase_deg)
+        self.info.gain_in_spec = ~np.any(out_gain & in_band, axis=1)
         self.info.phase_in_spec = ~np.any(out_phase & in_band, axis=1)
 
         for label, results in zip(
                 ['Amplitude', 'Phase'],
-                [self.info.amp_in_spec, self.info.phase_in_spec]):
+                [self.info.gain_in_spec, self.info.phase_in_spec]):
             self.logger.info('%s: %s', label, ', '.join(
                 [f'{id}: {result}' for id, result in zip(
                     [trace.id[-1] for trace in self.stream],
-                    ['PASS' if in_spec else 'FAIL' for in_spec in results])]))
+                    [PASS_FAIL[in_spec] for in_spec in results])]))
 
     def write_calibrate_result(
         self: CalibrationAnalyzer,
@@ -1259,7 +1261,7 @@ class CalibrationAnalyzer():
 
             for trace, amplitudes, phases, zpk_fit, amp_in_spec, phase_in_spec in zip(
                     self.stream, np.abs(tf_estimate), np.angle(tf_estimate, deg=True), zpk_fits,
-                    self.info.amp_in_spec, self.info.phase_in_spec):
+                    self.info.gain_in_spec, self.info.phase_in_spec):
 
                 response = trace.stats.response
                 assert (response.instrument_sensitivity.frequency ==
@@ -1280,7 +1282,7 @@ class CalibrationAnalyzer():
                     channel=trace.stats.channel,
                     calib=calib,
                     calper=calper,
-                    in_spec='YES' if amp_in_spec and phase_in_spec else 'NO'))
+                    in_spec=YES_NO[amp_in_spec and phase_in_spec]))
                 file.write(CAL_BLOCK.format(
                     station=trace.stats.station,
                     channel=trace.stats.channel,
@@ -1764,7 +1766,7 @@ class CalibrationAnalyzer():
         else:
             gain_labels = [
                 f'{label}: {PASS_FAIL[result]}'
-                for label, result in zip(channels, self.info.amp_in_spec)]
+                for label, result in zip(channels, self.info.gain_in_spec)]
             phase_labels = [
                 f'{label}: {PASS_FAIL[result]}'
                 for label, result in zip(channels, self.info.phase_in_spec)]
@@ -1796,7 +1798,7 @@ class CalibrationAnalyzer():
         if self.lti.fits:
             gain_labels = [
                 f'{label} fit: {PASS_FAIL[result]}'
-                for label, result in zip(channels, self.info.amp_in_spec)]
+                for label, result in zip(channels, self.info.gain_in_spec)]
             phase_labels = [
                 f'{label} fit: {PASS_FAIL[result]}'
                 for label, result in zip(channels, self.info.phase_in_spec)]
