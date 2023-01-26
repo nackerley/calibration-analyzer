@@ -14,13 +14,14 @@ from glob import glob
 from time import time
 from tempfile import gettempdir
 from operator import attrgetter
+from typing import Type
 
 import requests
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 import scipy.signal as sp
-from scipy.signal import lti, ZerosPolesGain, TransferFunction
+from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
@@ -269,12 +270,12 @@ def phase_deg(values: ArrayLike) -> np.ndarray:
     return np.angle(np.array(values), deg=True)
 
 
-def zpk_cancel(
-    old: ZerosPolesGain,
+def lti_minreal(
+    old: lti,
     tolerance: float = 0,
     f_norm: float = 1,
     method: str = 'damping',
-):
+) -> lti:
     """
     Remove (nearly) identical zero-pole pairs from a transfer function.
 
@@ -302,6 +303,9 @@ def zpk_cancel(
     assert tolerance >= 0
     assert f_norm >= 0
     assert method in ['damping', 'octave']
+
+    old_type = type(old)
+    old = lti_convert(old, ZerosPolesGain)
 
     if len(old.zeros) == 0 or len(old.poles) == 0:
         return deepcopy(old)
@@ -332,40 +336,50 @@ def zpk_cancel(
 
     new = ZerosPolesGain(z_new, p_new, old.to_tf().num[0])
 
-    return new
+    return lti_convert(new, old_type)
 
 
-def zpk_divide(
-    num: ZerosPolesGain,
-    den: ZerosPolesGain,
-    tolerance: float = 0,
-) -> ZerosPolesGain:
+def lti_divide(num: lti, den: lti, tolerance: float = 0) -> lti:
     """Divide numerator by denominator, including pole-zero cancellation."""
+    num_type = type(num)
+    num = lti_convert(num, ZerosPolesGain)
+    den = lti_convert(den, ZerosPolesGain)
+
     zeros = np.hstack((num.zeros, den.poles))
-    zeros.sort()
     poles = np.hstack((num.poles, den.zeros))
-    poles.sort()
     gain = num.gain/den.gain
+    quotient = lti_minreal(ZerosPolesGain(zeros, poles, gain), tolerance)
 
-    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
+    return lti_convert(quotient, num_type)
 
 
-def zpk_multiply(
-    first: ZerosPolesGain,
-    second: ZerosPolesGain,
-    tolerance: float = 0,
-) -> ZerosPolesGain:
+def lti_multiply(first: lti, second: lti, tolerance: float = 0) -> lti:
     """Multiply first by second, including pole-zero cancellation."""
+    first_type = type(first)
+    first = lti_convert(first, ZerosPolesGain)
+    second = lti_convert(second, ZerosPolesGain)
+
     zeros = np.hstack((first.zeros, second.zeros))
-    zeros.sort()
     poles = np.hstack((first.poles, second.poles))
-    poles.sort()
     gain = first.gain*second.gain
+    product = lti_minreal(ZerosPolesGain(zeros, poles, gain), tolerance)
 
-    return zpk_cancel(ZerosPolesGain(zeros, poles, gain), tolerance)
+    return lti_convert(product, first_type)
 
 
-def is_proper(system: lti) -> bool:
+def lti_convert(system: lti, to_type: Type) -> lti:
+    """Convert system to specified type."""
+    if isinstance(system, to_type):
+        return system
+    if to_type == type(ZerosPolesGain):
+        return system.to_zpk()
+    if to_type == type(TransferFunction):
+        return system.to_tf()
+    if to_type == type(StateSpace):
+        return system.to_ss()
+
+
+def lti_is_proper(system: lti) -> bool:
     """Indicate whether transfer function is proper."""
     if ~isinstance(system, TransferFunction):
         system = system.to_tf()

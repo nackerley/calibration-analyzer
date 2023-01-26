@@ -47,8 +47,8 @@ from scipy.signal import lti, ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares
 
 from calan.core import (
-    sort_complex, sensitivity, zpk_cancel, zpk_divide, zpk_multiply, is_proper,
-    phase_deg)
+    sort_complex, sensitivity, phase_deg,
+    lti_minreal, lti_divide, lti_multiply, lti_is_proper)
 
 np.random.seed(seed=42)
 
@@ -258,10 +258,9 @@ def fit_response(
         logger.info(
             'Fixing %d zeros and %d poles at nominal values.',
             len(zpk_fixed.zeros), len(zpk_fixed.poles))
-    zpk_guess_unfixed = zpk_divide(zpk_guess, zpk_fixed)
+    zpk_guess_unfixed = lti_divide(zpk_guess, zpk_fixed)
     h_meas_unfixed = h_meas / zpk_fixed.freqresp(w=2*np.pi*f)[1]
-    tf_guess = zpk_guess_unfixed.to_tf()
-    x_initial, p, n, m = extract_coefficients(tf_guess)
+    x_initial, p, n, m = extract_coefficients(zpk_guess_unfixed)
 
     if n > m:
         raise ValueError(
@@ -308,7 +307,7 @@ def fit_response(
     zpk_fit = tf_fit.to_zpk()
 
     # restore fixed part
-    zpk_full = zpk_multiply(zpk_fit, zpk_fixed)
+    zpk_full = lti_multiply(zpk_fit, zpk_fixed)
 
     return zpk_full
 
@@ -471,11 +470,11 @@ def zpk_out_of_band(
         else:
             z_fixed = [0]*(-integrations_required) + z_fixed
 
-        zpk_out = zpk_cancel(ZerosPolesGain(
+        zpk_out = lti_minreal(ZerosPolesGain(
             z_fixed, p_fixed, set_sensitivity /
             sensitivity(ZerosPolesGain(z_fixed, p_fixed, 1), norm_freq_hz)))
 
-        if is_proper(zpk_divide(system, zpk_out)):
+        if lti_is_proper(lti_divide(system, zpk_out)):
             break
 
     return zpk_out

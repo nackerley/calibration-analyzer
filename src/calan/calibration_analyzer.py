@@ -61,15 +61,16 @@ from obspy.core.inventory import Inventory, Response, ResponseStage
 from obspy.signal.invsim import simulate_seismometer
 
 from calan.core import (
-    PACKAGE, VERSION, factor_names, subplots_squeeze, zpk_cancel,
-    zpk_from_zpsf, unwrap_mid, extract_decimation_coefficients, multi_decim,
-    recompute_normalization_factors, gain_db, phase_deg)
+    PACKAGE, VERSION, factor_names, subplots_squeeze,
+    gain_db, phase_deg, unwrap_mid, recompute_normalization_factors,
+    extract_decimation_coefficients, multi_decim,
+    zpk_from_zpsf, lti_multiply, lti_divide)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
 from calan.calibration_toolbox import (
     sample_hold_digitize, pad_for_decimation)
-from calan.fit_response import fit_response, zpk_divide, zpk_out_of_band
+from calan.fit_response import fit_response, zpk_out_of_band
 
 # setup
 warnings.simplefilter('error', category=BadCoefficients)
@@ -171,6 +172,7 @@ PLOT_CHOICES = ['none', 'basic', 'diagnostic', 'all']
 PLOT_LEVEL = {value: i for i, value in enumerate(PLOT_CHOICES)}
 PASS_FAIL = {True: 'PASS', False: 'FAIL'}
 YES_NO = {True: 'YES', False: 'NO'}
+
 
 # definitions
 def _argparser() -> MyArgumentParser:
@@ -944,13 +946,8 @@ class CalibrationAnalyzer():
             cal_zeros, cal_poles, cal_gain, cal.normalization_frequency)
         self.logger.debug('Cal: %s', self.lti.cal)
 
-        system_zeros = (self.lti.cal.zeros.tolist() +
-                        self.lti.sensor.zeros.tolist())
-        system_poles = (self.lti.cal.poles.tolist() +
-                        self.lti.sensor.poles.tolist())
-        system_gain = self.lti.cal.gain*self.lti.sensor.gain
-        self.lti.system = zpk_cancel(
-            lti(system_zeros, system_poles, system_gain))
+        self.lti.system = lti_multiply(self.lti.cal, self.lti.sensor)
+
         self.logger.debug('System: %s', self.lti.system)
 
     def map_orientations(self: CalibrationAnalyzer, mapping) -> None:
@@ -1118,14 +1115,14 @@ class CalibrationAnalyzer():
                  f'({self._sensor_stage().input_units.lower()})')
         if self.lti.fits:
             poles = pd.concat(
-                [feature_stats(zpk_divide(fit, self.lti.cal).poles, 'pole')
+                [feature_stats(lti_divide(fit, self.lti.cal).poles, 'pole')
                     for fit in self.lti.fits] +
                 [feature_stats(self.lti.sensor.poles, 'pole')]
             ).applymap(lambda x: round_sig(x, 6))
             poles.index = info.index
 
             zeros = pd.concat(
-                [feature_stats(zpk_divide(fit, self.lti.cal).zeros, 'zero')
+                [feature_stats(lti_divide(fit, self.lti.cal).zeros, 'zero')
                     for fit in self.lti.fits] +
                 [feature_stats(self.lti.sensor.zeros, 'zero')]
             ).applymap(lambda x: round_sig(x, 6))
@@ -1133,7 +1130,7 @@ class CalibrationAnalyzer():
 
             sensitivity = pd.DataFrame(
                 np.vstack(
-                    [self.sensitivity(zpk_divide(fit, self.lti.cal))
+                    [self.sensitivity(lti_divide(fit, self.lti.cal))
                      for fit in self.lti.fits] +
                     [self.sensitivity(self.lti.sensor)]),
                 columns=pd.MultiIndex.from_tuples([('f_norm', 'hz'),
@@ -1239,7 +1236,7 @@ class CalibrationAnalyzer():
             self.tf_nominal('cal')[keep])
 
         if self.lti.fits:
-            zpk_fits = [zpk_divide(zpk_fit, self.lti.cal)
+            zpk_fits = [lti_divide(zpk_fit, self.lti.cal)
                         for zpk_fit in self.lti.fits]
         else:
             zpk_fits = [None]*len(tf_estimate)
@@ -1371,7 +1368,7 @@ class CalibrationAnalyzer():
 
         units = (f'{self._sensor_stage().output_units}/'
                  f'({self._sensor_stage().input_units.lower()})')
-        zpk_unfixed = zpk_divide(zpk_nom, zpk_fixed)
+        zpk_unfixed = lti_divide(zpk_nom, zpk_fixed)
         self.logger.info(
             'Nominal zeros: %s', feature_str(zpk_unfixed.zeros))
         self.logger.info(
@@ -1389,9 +1386,9 @@ class CalibrationAnalyzer():
                 zpk_nom, f, tf_estimate, variance, zpk_fixed, debug=False)
 
             self.logger.debug(zpk_fit)
-            zpk_unfixed = zpk_divide(zpk_fit, zpk_fixed)
+            zpk_unfixed = lti_divide(zpk_fit, zpk_fixed)
             f_norm, sens_fit = self.sensitivity(
-                zpk_divide(zpk_fit, self.lti.cal))
+                lti_divide(zpk_fit, self.lti.cal))
             self.logger.info(
                 'Fit zeros: %s', feature_str(zpk_unfixed.zeros))
             self.logger.info(
