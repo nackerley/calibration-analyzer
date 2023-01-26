@@ -98,7 +98,7 @@ DEFAULT_LEAD_OUT = 360
 DEFAULT_PRE_TIME = 10
 DEFAULT_POST_TIME = 10
 DEFAULT_DELAY_START = 0
-DEFAULT_DISCARD = 0
+DEFAULT_DISCARD = (0, 0)
 
 # constants
 THIS_FILE_NAME = os.path.basename(__file__)
@@ -210,7 +210,8 @@ def _argparser() -> MyArgumentParser:
         '-d', '--delay-start', default=DEFAULT_DELAY_START, type=float,
         help='amount to delay calibration start time, in seconds')
     parser.add_argument(
-        '--discard-s', default=DEFAULT_DISCARD, type=float,
+        '--discard-s', nargs=2, type=float, default=DEFAULT_DISCARD,
+        metavar=('DISCARD_START_S', 'DISCARD_END_S'),
         help='duration to discard from start and end, in seconds')
     parser.add_argument(
         '-b', '--test-band-hz', nargs=2, type=float, default=TEST_BAND_HZ,
@@ -303,7 +304,7 @@ def calibration_analyzer(
     calibration_signal_file: str = DEFAULT_CAL_SIGNAL_FILE,
     calibration_response_file: str = DEFAULT_CAL_RESPONSE_FILE,
     delay_start: float = DEFAULT_DELAY_START,
-    discard_s: float = DEFAULT_DISCARD,
+    discard_s: Tuple[float, float] = DEFAULT_DISCARD,
     ims_instrument_type: str = '',
     test_band_hz: Tuple[float, float] = TEST_BAND_HZ,
     test_limits: Tuple[float, float] = (MAX_AMPLITUDE_PERCENT, MAX_PHASE_DEGREES),
@@ -774,7 +775,7 @@ class CalibrationAnalyzer():
 
     def check_stream(
         self: CalibrationAnalyzer,
-        discard_s: float = DEFAULT_DISCARD,
+        discard_s: Tuple[float, float] = DEFAULT_DISCARD,
     ) -> None:
         """
         Check for: clipping, gaps, misaligned start & end.
@@ -782,31 +783,31 @@ class CalibrationAnalyzer():
         An additional, small amount of data is discarded from start and end,
         before checking, required only for Guralp calibrations.
         """
-        self.info.start += discard_s
-        self.info.end -= discard_s
+        self.info.start += discard_s[0]
+        self.info.end -= discard_s[1]
 
         last_start = max([trace.stats.starttime for trace in self.stream])
         if self.info.start < last_start:
             self.logger.warning(
                 '%s data missing, delaying start to %s',
                 pd.to_timedelta(self.info.start - last_start, 's'), last_start)
-            self.info.start = last_start + discard_s
+            self.info.start = last_start + discard_s[0]
 
         first_end = min([trace.stats.endtime for trace in self.stream])
         if self.info.end < first_end:
             self.logger.warning(
                 '%s data missing, advancing end to %s',
                 pd.to_timedelta(first_end - self.info.end, 's'), first_end)
-            self.info.end = first_end - discard_s
+            self.info.end = first_end - discard_s[1]
         self.logger.debug(str(self.stream))
 
-        if self.stream.get_gaps():
+        if self.stream.slice(self.info.start, self.info.end).get_gaps():
             with StringIO() as buffer, redirect_stdout(buffer):
                 self.stream.print_gaps()
                 self.logger.warning(buffer.getvalue())
             raise RuntimeError('Cannot process waveforms with gaps.')
 
-        for trace in self._output_stream():
+        for trace in self._output_stream().slice(self.info.start, self.info.end):
             clipping = np.abs(trace.data) > CHECK_CLIP
             if any(clipping):
                 i = np.argmax(clipping)
@@ -1211,13 +1212,17 @@ class CalibrationAnalyzer():
         self.info.gain_in_spec = ~np.any(out_gain & in_band, axis=1)
         self.info.phase_in_spec = ~np.any(out_phase & in_band, axis=1)
 
-        for label, results in zip(
+        for label, passes in zip(
                 ['Amplitude', 'Phase'],
                 [self.info.gain_in_spec, self.info.phase_in_spec]):
-            self.logger.info('%s: %s', label, ', '.join(
+            if all(passes):
+                log = self.logger.info
+            else:
+                log = self.logger.warning
+            log('%s: %s', label, ', '.join(
                 [f'{id}: {result}' for id, result in zip(
                     [trace.id[-1] for trace in self.stream],
-                    [PASS_FAIL[in_spec] for in_spec in results])]))
+                    [PASS_FAIL[in_spec] for in_spec in passes])]))
 
     def write_calibrate_result(
         self: CalibrationAnalyzer,
@@ -1474,9 +1479,18 @@ class CalibrationAnalyzer():
         weights = np.sqrt(1/variance)
 
         self.timing_gain_fit.gain = sm.WLS(magnitude, np.ones_like(f), weights).fit()
-        self.logger.info(self.timing_gain_fit.gain_summary())
+        if np.abs(self.timing_gain_fit.gain.params - 1) > 0.3:  # i.e. 30%
+            log = self.logger.warning
+        else:
+            log = self.logger.info
+        log(self.timing_gain_fit.gain_summary())
+
         self.timing_gain_fit.timing = sm.WLS(phase, 2*np.pi*f, weights).fit()
-        self.logger.info(self.timing_gain_fit.timing_summary())
+        if np.abs(self.timing_gain_fit.timing.params) > 0.01:  # i.e. 10 ms
+            log = self.logger.warning
+        else:
+            log = self.logger.info
+        log(self.timing_gain_fit.timing_summary())
 
     def _save_image(self: CalibrationAnalyzer, fig, option_list=None):
         """Save a figure with an automatically descriptive file name."""

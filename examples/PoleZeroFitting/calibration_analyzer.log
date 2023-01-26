@@ -95,9 +95,9 @@ dt: None
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.978 Hz (ζ = 0.636)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 54.345
-INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
 INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
-INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -85.745% ±0.01% (95% conf.)
+WARNING  calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -85.745% ±0.01% (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -2.35ms ±20us (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200624.1945.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200624.1945.png
@@ -199,9 +199,9 @@ dt: None
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.967 Hz (ζ = 0.711)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 62.999
-INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
-INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
-INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -83.74% ±0.03% (95% conf.)
+WARNING  calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  calibration_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+WARNING  calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -83.74% ±0.03% (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -2.02ms ±40us (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200110.1529.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200110.1529.png
