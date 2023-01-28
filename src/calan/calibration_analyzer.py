@@ -8,8 +8,8 @@ metadata must be provided.
 Notes
 -----
 1. Transfer function model terminology:
-  * `sensor`: from ground motion (m/s or m/s^2) to V
-  * `cal`: from V to ground motion, typically m/s^2
+  * `sensor`: first stage from ground motion (m/s or m/s^2) to V
+  * `cal`: all other stages, from V to ground motion, typically m/s^2
   * `system` product of `sensor` and `cal`, dimensionless and typically
     having a slope proportional to 1/f in the passband.
 
@@ -44,7 +44,7 @@ from operator import mul
 from functools import reduce
 from math import log10, floor, ceil
 from tempfile import gettempdir
-from typing import Optional, Sequence, Tuple
+from typing import List, Literal, Optional, Sequence, Tuple, Union, get_args
 
 from scipy import special
 from scipy.signal import lti, BadCoefficients, ZerosPolesGain
@@ -64,7 +64,7 @@ from calan.core import (
     PACKAGE, VERSION, factor_names, subplots_squeeze,
     gain_db, phase_deg, unwrap_mid, recompute_normalization_factors,
     extract_decimation_coefficients, multi_decim,
-    zpk_from_zpsf, lti_multiply, lti_divide)
+    lti_multiply, lti_divide, zpk_cascade, stage2zpk, units)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
@@ -168,8 +168,8 @@ ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
 
 CHECK_PERCENT = 0.01
 CHECK_CLIP = 8000000
-PLOT_CHOICES = ['none', 'basic', 'diagnostic', 'all']
-PLOT_LEVEL = {value: i for i, value in enumerate(PLOT_CHOICES)}
+PlotChoices = Literal['none', 'basic', 'diagnostic', 'all']
+PLOT_LEVEL = {value: i for i, value in enumerate(get_args(PlotChoices))}
 PASS_FAIL = {True: 'PASS', False: 'FAIL'}
 YES_NO = {True: 'YES', False: 'NO'}
 
@@ -233,7 +233,7 @@ def _argparser() -> MyArgumentParser:
         '--fit', action='store_true',
         help='fit transfer function poles and zeros')
     parser.add_argument(
-        '-p', '--plot', default='none', choices=PLOT_CHOICES,
+        '-p', '--plot', default='none', choices=get_args(PlotChoices),
         help='generate basic (start & end check, transfer function and '
         'variance) or diagnostic plots for each calibration')
     parser.add_argument(
@@ -372,7 +372,7 @@ def calibration_analyzer(
             analyzer.plot_variance()
 
         if plot_level >= PLOT_LEVEL['diagnostic']:
-            analyzer.plot_response('sensor', f_limits=[1e-3, 1e2])
+            analyzer.plot_response('sensor', f_limits=(1e-3, 1e2))
             analyzer.plot_transfer_function(remove='cal', errors='estimate')
             analyzer.plot_transfer_function(remove='system', errors='estimate',
                                             scale='linear')
@@ -381,8 +381,8 @@ def calibration_analyzer(
         if plot_level == PLOT_LEVEL['all']:
             analyzer.plot_transfer_function(remove='', errors='')
             analyzer.plot_signal_to_noise()
-            analyzer.plot_response('system', f_limits=[1e-3, 1e2])
-            analyzer.plot_response('cal', f_limits=[1e-3, 1e2])
+            analyzer.plot_response('system', f_limits=(1e-3, 1e2))
+            analyzer.plot_response('cal', f_limits=(1e-3, 1e2))
             analyzer.plot_simulated()
             analyzer.plot_spectrogram()
 
@@ -618,31 +618,41 @@ class CalibrationAnalyzer():
         """Return sum of lead-out and event post-time."""
         return self.stream[0].stats.endtime - self.info.end
 
-    def _input_stream(self: CalibrationAnalyzer) -> Stream:
-        return self.stream.select(component=CAL_COMPONENT)
+    def get_stream(
+        self: CalibrationAnalyzer,
+        which: Literal['input', 'output'],
+    ) -> Stream:
+        """
+        Retrieve specified stream.
 
-    def _output_stream(self: CalibrationAnalyzer) -> Stream:
-        input_stream_ids = [trace.id for trace in self._input_stream()]
-        output_traces = [trace for trace in self.stream
-                         if trace.id not in input_stream_ids]
-        return Stream(output_traces)
+        The calibration input is identified by its orientation 'C';
+        all other orientations make up the output.
+        """
+        if which == 'input':
+            return self.stream.select(component=CAL_COMPONENT)
+
+        input_stream_ids = [trace.id for trace in self.get_stream('input')]
+        return Stream([
+            trace for trace in self.stream
+            if trace.id not in input_stream_ids])
 
     def load_response(self: CalibrationAnalyzer, pattern: str) -> None:
         """Load response file describing the system being calibrated."""
-        response_files = {trace.id: '' for trace in self._output_stream()}
+        output_stream = self.get_stream('output')
+        response_files = {trace.id: '' for trace in output_stream}
         self.logger.info(
             'Searching %s for: %s',
             pattern, ', '.join(sorted(response_files.keys())))
         for response_file in glob(pattern):
             inventory = read_inventory(response_file)
-            for trace in self._output_stream():
+            for trace in output_stream:
                 try:
                     trace.attach_response(inventory)
                 except ValueError:
                     pass
 
             found_ids = (
-                {trace.id for trace in self._output_stream()
+                {trace.id for trace in output_stream
                  if 'response' in trace.stats} -
                 {trace_id for trace_id, file_name in response_files.items()
                  if file_name})
@@ -654,10 +664,10 @@ class CalibrationAnalyzer():
                     response_files[trace_id] = response_file
 
             if all('response' in trace.stats
-                   for trace in self._output_stream()):
+                   for trace in output_stream):
                 break
 
-        missing_traces = [trace for trace in self._output_stream()
+        missing_traces = [trace for trace in output_stream
                           if 'response' not in trace.stats]
         if missing_traces:
             missing_ids = ', '.join(trace.id for trace in missing_traces)
@@ -665,20 +675,20 @@ class CalibrationAnalyzer():
 
         for trace in missing_traces:
             self.stream.remove(trace)
-        if not self._output_stream().traces:
+        if not output_stream.traces:
             raise RuntimeError('No waveforms with station metadata')
         self.info.response_file = [
             response_files[trace.id] if trace.id in response_files else ''
             for trace in self.stream]
 
-        sensor = self._sensor_stage()
-        if sensor.input_units.upper() not in MOTION:
+        input_units = output_stream[0].stats.response.response_stages[0].input_units
+        if input_units.upper() not in MOTION:
             self.logger.error(
-                'Sensor input units %s not among supported: ',
-                (sensor.input_units, ', '.join(sorted(MOTION.keys()))))
+                'Sensor input units %s not among supported: %s',
+                input_units, ', '.join(sorted(MOTION.keys())))
 
-        if self._output_stream() and isinstance(self._output_stream()[0], Trace):
-            first_trace = self._output_stream()[0]
+        if output_stream and isinstance(output_stream[0], Trace):
+            first_trace = output_stream[0]
             first_stats = first_trace.stats  # pylint: disable=no-member
             self.logger.debug(first_stats.response)
 
@@ -713,8 +723,8 @@ class CalibrationAnalyzer():
         it is assumed that all traces in the calibation stream have the same
         nominal response.
         """
-        if self._input_stream().traces:
-            self.logger.warning(
+        if self.get_stream('input').traces:
+            self.logger.info(
                 'Waveform data already includes calibration channel.')
             return
 
@@ -807,7 +817,8 @@ class CalibrationAnalyzer():
                 self.logger.warning(buffer.getvalue())
             raise RuntimeError('Cannot process waveforms with gaps.')
 
-        for trace in self._output_stream().slice(self.info.start, self.info.end):
+        for trace in self.get_stream('output').slice(self.info.start,
+                                                     self.info.end):
             clipping = np.abs(trace.data) > CHECK_CLIP
             if any(clipping):
                 i = np.argmax(clipping)
@@ -827,32 +838,39 @@ class CalibrationAnalyzer():
             samples,
             np.zeros(int(round(self._post_seconds()*sampling_rate)))))
 
-    def _sensor_stage(self: CalibrationAnalyzer) -> ResponseStage:
+    def split_stages(
+        self: CalibrationAnalyzer,
+        trace: Trace,
+    ) -> Tuple[List[ResponseStage], List[ResponseStage]]:
         """
-        Return sensor response stage.
+        Retrieve response stages and split into sensor and datalogger.
 
-        Note assumptions:
-            1. Sensor is a single stage.
-            2. All traces have the same response.
-        """
-        return self._output_stream()[0].stats.response.response_stages[0]  # pylint: disable=no-member
+        The heuristic used is to assign all stages before the first V/counts
+        stage to the sensor (even if it is in fact a preamp or other filter),
+        and assign all remaining stages to the datalogger.
 
-    def _cal_stage(self: CalibrationAnalyzer) -> ResponseStage:
+        Note that response is assumed to be the same as first all traces in
+        input and output streams.
         """
-        Return calibration response stage.
+        sensor_stages, datalogger_stages = [], []
+        is_sensor = True
+        for stage in trace.stats.response.response_stages:
+            if stage.input_units == 'V' and stage.output_units == 'COUNTS':
+                is_sensor = False
+            if is_sensor:
+                sensor_stages.append(stage)
+            else:
+                datalogger_stages.append(stage)
 
-        Note assumptions:
-            1. Sensor is a single stage.
-            2. All traces have the same response.
-        """
-        return self._input_stream()[0].stats.response.response_stages[0]
+        return sensor_stages, datalogger_stages
 
     def sensitivity(
         self: CalibrationAnalyzer,
         system: lti
     ) -> Tuple[float, float]:
         """Compute sensitivity at sensor stage gain frequency."""
-        f_norm = self._sensor_stage().stage_gain_frequency
+        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        f_norm = sensor_stages[0].stage_gain_frequency
         sensitivity = np.abs(system.freqresp(w=2*np.pi*f_norm)[1][0])
         return f_norm, sensitivity
 
@@ -864,11 +882,11 @@ class CalibrationAnalyzer():
         self.logger.info(response_file)
         inventory = read_inventory(response_file)
         cal_inventory = inventory.select(
-            network=self._input_stream()[0].stats.network,
-            station=self._input_stream()[0].stats.station,
-            location=self._input_stream()[0].stats.location,
-            channel=self._input_stream()[0].stats.channel,
-            time=self._input_stream()[0].stats.starttime,
+            network=self.get_stream('input')[0].stats.network,
+            station=self.get_stream('input')[0].stats.station,
+            location=self.get_stream('input')[0].stats.location,
+            channel=self.get_stream('input')[0].stats.channel,
+            time=self.get_stream('input')[0].stats.starttime,
         )
         if cal_inventory:
             response = cal_inventory[0][0][0].response
@@ -882,13 +900,13 @@ class CalibrationAnalyzer():
 
         if not np.isclose(response.instrument_sensitivity.value,
                           instrument_sensitivity, rtol=CHECK_PERCENT/100):
-            units = (
+            instrument_units = (
                 f'{response.instrument_sensitivity.output_units}/'
                 f'({response.instrument_sensitivity.input_units.lower()})')
             self.logger.warning(
                 'Instrument sensitivity %.6g %s in file differs from'
                 'recalculated value %.6g %s by more than %g%%.',
-                instrument_sensitivity, units,
+                instrument_sensitivity, instrument_units,
                 response.instrument_sensitivity.value, units, CHECK_PERCENT)
 
         recompute_normalization_factors(response, rtol=CHECK_PERCENT/100)
@@ -905,16 +923,16 @@ class CalibrationAnalyzer():
             stage for stage in response.response_stages
             if not stage.decimation_factor or stage.decimation_factor == 1]
 
-        self._input_stream()[0].stats.response = Response(
+        self.get_stream('input')[0].stats.response = Response(
             response_stages=input_stages + decimation_stages,
             instrument_sensitivity=response.instrument_sensitivity)
         for i, stage in enumerate(
-                self._input_stream()[0].stats.response.response_stages,
+                self.get_stream('input')[0].stats.response.response_stages,
                 start=1):
             stage.stage_sequence_number = i
 
         self.info.calibration_response_file = response_file
-        self.logger.debug(str(self._input_stream()[0].stats.response))
+        self.logger.debug(str(self.get_stream('input')[0].stats.response))
 
     def setup_nominal_responses(self: CalibrationAnalyzer) -> None:
         """
@@ -922,33 +940,39 @@ class CalibrationAnalyzer():
 
         system = calibration [m/s^2/V] * sensor [V/(m/s^n)] * integrator(2 - n)
 
-        Note that calibration response (as recorded in the station metadata) is
-        the conversion from ground motion to voltage, so to convert voltage to
-        ground motion it is inverted.
+        Note
+          1. The 'sensor' is the first stage in the 'output' response.
+          2. The 'cal' response is recorded in the station metadata as the
+            conversion from ground motion to voltage, so to convert voltage to
+            ground motion it is inverted.
         """
-        sensor = self._sensor_stage()
-        self.lti.sensor = zpk_from_zpsf(
-            sensor.zeros, sensor.poles,
-            sensor.stage_gain, sensor.normalization_frequency)
+        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        self.lti.sensor = stage2zpk(sensor_stages[0])
         self.logger.debug('Sensor: %s', str(self.lti.sensor))
 
-        cal = self._cal_stage()
-        cal_zeros, cal_poles, cal_gain = cal.poles, cal.zeros, 1/cal.stage_gain
-        integrations = (ORDER[MOTION[sensor.input_units.upper()]] -
-                        ORDER[MOTION[cal.input_units.upper()]])
-        if integrations:
+        cal_stages = self.split_stages(self.get_stream('input')[0])[0]
+
+        sensor_units = sensor_stages[0].input_units
+        cal_units = cal_stages[0].input_units
+        integrations = (ORDER[MOTION[sensor_units.upper()]] -
+                        ORDER[MOTION[cal_units.upper()]])
+        if integrations >= 0:
+            # TODO: is a minus sign needed here - or is this only Trillium 120?
+            integrator = ZerosPolesGain([], [0]*integrations, -1)
             self.logger.debug(
-                'Integrating %d times, from %s to %s',
-                integrations, cal.input_units, sensor.input_units)
-            cal_poles = np.array([0]*integrations + list(cal_poles))
-            # TODO: verify minus sign - is this only Trillium 120?
-            cal_gain /= (-2*np.pi*cal.normalization_frequency)**integrations
-        self.lti.cal = zpk_from_zpsf(
-            cal_zeros, cal_poles, cal_gain, cal.normalization_frequency)
+                'Integrating calibration response %d times, to get from %s to %s',
+                integrations, cal_units, sensor_units)
+        else:
+            raise RuntimeError(
+                'Calibration requiring differentiation to get '
+                f'from {cal_units} to {sensor_units} not supported.')
+
+        self.lti.cal = lti_divide(
+            lti_multiply(integrator, zpk_cascade(sensor_stages[1:])),
+            zpk_cascade(cal_stages))
         self.logger.debug('Cal: %s', self.lti.cal)
 
         self.lti.system = lti_multiply(self.lti.cal, self.lti.sensor)
-
         self.logger.debug('System: %s', self.lti.system)
 
     def map_orientations(self: CalibrationAnalyzer, mapping) -> None:
@@ -995,42 +1019,48 @@ class CalibrationAnalyzer():
 
     def voltage(
         self: CalibrationAnalyzer,
-        which: str = 'output',
+        which: Literal['input', 'output'] = 'output',
         trim: bool = True,
     ) -> np.ndarray:
         """
         Get digitizer input or output signals in volts.
 
         Arguments:
-        - `which`: "input" or "output"
+        - `which`: 'input' or 'output'
         - `trim`: remove padding (e.g. turn-on and turn-off times) by slicing
 
         Returns:
         - `signal`: one row per channel
         """
-        assert which in ['input', 'output']
-
-        if which == 'input':
-            stream = self._input_stream()
-        else:
-            stream = self._output_stream()
+        stream = self.get_stream(which)
 
         if trim:
             stream = stream.slice(self.info.start, self.info.end)
         signal = np.row_stack([trace.data for trace in stream]).astype(float)
 
-        digitizer_sensitivity = np.array([
-            trace.stats.response.instrument_sensitivity.value /
-            trace.stats.response.response_stages[0].stage_gain
-            for trace in stream]).reshape((-1, 1))
+        sensitivities = [
+            np.product([stage.stage_gain
+                        for stage in self.split_stages(trace)[1]])
+            for trace in stream]
+        digitizer_units = [
+            units(self.split_stages(trace)[1])['forward'] for trace in stream]
         self.logger.debug(
-            'Digitizer sensitivities: %s', digitizer_sensitivity.squeeze())
-        signal /= digitizer_sensitivity
+            'Digitizer sensitivities (%s): %s',
+            which,
+            ', '.join(f'{value} {units}' for value, units
+                      in zip(sensitivities, digitizer_units)))
+        sensitivity_array = np.array(sensitivities).reshape((-1, 1))
+        signal /= sensitivity_array
 
         return signal
 
-    def compute(self: CalibrationAnalyzer, len_fft=None, num_windows=30, fraction_overlap=0.5,
-                window=DEFAULT_WINDOW):
+    def compute(
+        self: CalibrationAnalyzer,
+        len_fft: Optional[int] = None,
+        num_windows: float = 30,
+        fraction_overlap: float = 0.5,
+        window: str = DEFAULT_WINDOW
+    ) -> None:
         """
         Time-consuming part of calibration analysis is done here.
 
@@ -1054,7 +1084,7 @@ class CalibrationAnalyzer():
         self.stft.compute(x, y, f_sample, len_fft, len_overlap, window)
         self.stft.trim(low_frequency_points=2)
 
-    def summary(self: CalibrationAnalyzer):
+    def summary(self: CalibrationAnalyzer) -> pd.DataFrame:
         """
         Summarize calibration result in a table, one row per trace.
 
@@ -1072,7 +1102,7 @@ class CalibrationAnalyzer():
         # first construct info for calibration outputs
         info = pd.DataFrame(index=pd.MultiIndex.from_product(
             [[pd.to_datetime(self.info.start.datetime)],
-             [trace.id for trace in self._output_stream()]],
+             [trace.id for trace in self.get_stream('output')]],
             names=['start', 'trace_id']))
 
         for key, value in pd.Series(vars(self.info)).drop(
@@ -1101,7 +1131,7 @@ class CalibrationAnalyzer():
 
         # now append row for calibration input
         info = pd.concat((info, pd.Series(
-            name=(pd.NaT, self._input_stream()[0].id),
+            name=(pd.NaT, self.get_stream('input')[0].id),
             dtype=float).to_frame().T))
         info.loc[info.index[-1], 'waveform_file'] = \
             self.info.calibration_signal_file
@@ -1109,11 +1139,12 @@ class CalibrationAnalyzer():
             self.info.calibration_response_file
 
         # finally add info relating to all rows
-        info['output_units'] = self._sensor_stage().output_units
-        info['input_units'] = self._sensor_stage().input_units.lower()
+        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        sensor_units = units(sensor_stages)
+        info['output_units'] = sensor_units['output']
+        info['input_units'] = sensor_units['input']
         info[PACKAGE] = VERSION
-        units = (f'{self._sensor_stage().output_units}/'
-                 f'({self._sensor_stage().input_units.lower()})')
+
         if self.lti.fits:
             poles = pd.concat(
                 [feature_stats(lti_divide(fit, self.lti.cal).poles, 'pole')
@@ -1134,8 +1165,9 @@ class CalibrationAnalyzer():
                     [self.sensitivity(lti_divide(fit, self.lti.cal))
                      for fit in self.lti.fits] +
                     [self.sensitivity(self.lti.sensor)]),
-                columns=pd.MultiIndex.from_tuples([('f_norm', 'hz'),
-                                                   ('sensitivity', units)]),
+                columns=pd.MultiIndex.from_tuples([
+                    ('f_norm', 'hz'),
+                    ('sensitivity', sensor_units['forward'])]),
                 index=info.index).applymap(lambda x: round_sig(x, 6))
 
             info.columns = pd.MultiIndex.from_product((['info'], info.columns))
@@ -1246,6 +1278,11 @@ class CalibrationAnalyzer():
         else:
             zpk_fits = [None]*len(tf_estimate)
 
+        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        calper = 1/sensor_stages[0].stage_gain_frequency
+        nominal_sensor = sensor_stages[0].stage_gain
+        sensor_units = units(sensor_stages)
+
         output_txt = '_'.join([
             'calibrate_result', self.stream[0].stats.station,
             self.info.start.strftime('%Y%m%d.%H%M')]) + '.txt'
@@ -1269,8 +1306,7 @@ class CalibrationAnalyzer():
                 assert (response.instrument_sensitivity.frequency ==
                         response.response_stages[0].stage_gain_frequency)
                 assert response.instrument_sensitivity.output_units == 'COUNTS'
-                calper = 1/self._sensor_stage().stage_gain_frequency
-                nominal_sensor = self._sensor_stage().stage_gain
+
                 nominal_instrument = response.instrument_sensitivity.value
                 nominal_digitizer = nominal_instrument/nominal_sensor
                 if zpk_fit:
@@ -1295,17 +1331,17 @@ class CalibrationAnalyzer():
                     sample_rate=self._sampling_rate(),
                     start=self.info.start.strftime(IMS_DATETIME_FMT),
                     end=self.info.end.strftime(IMS_DATETIME_FMT)))
-                input_units = self._sensor_stage().input_units.lower()
+
                 if zpk_fit:
                     file.write(PAZ_HEADER.format(
                         stage=1,
-                        units=self._sensor_stage().output_units,
+                        units=sensor_units['output'],
                         scale_factor=1,
                         decimation='',
                         group_correction=0,
                         num_zeros=len(zpk_fit.zeros),
                         num_poles=len(zpk_fit.poles),
-                        description=f'Input units: {input_units}'))
+                        description=f"Input units: {sensor_units['input']}"))
                     for item in zpk_fit.poles:
                         file.write(PAZ_DATA.format(real=np.real(item),
                                                    imag=np.imag(item)))
@@ -1315,11 +1351,11 @@ class CalibrationAnalyzer():
                 else:
                     file.write(FAP_HEADER.format(
                         stage=1,
-                        units=self._sensor_stage().output_units,
+                        units=sensor_units['output'],
                         decimation='',
                         group_correction=0,
                         count=len(f),
-                        description=f'Input units: {input_units}'))
+                        description=f"Input units: {sensor_units['input']}"))
                     for frequency, amplitude, phase in zip(
                             f, amplitudes, phases):
                         file.write(FAP_DATA.format(
@@ -1365,21 +1401,20 @@ class CalibrationAnalyzer():
         self.logger.debug(zpk_nom)
 
         f_norm, sens_nom = self.sensitivity(self.lti.sensor)
+        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        sensor_units = units(sensor_stages)['forward']
 
-        f_norm = self._sensor_stage().stage_gain_frequency
         zpk_fixed = zpk_out_of_band(self.lti.system, self.stft.f,
                                     norm_freq_hz=f_norm)
         self.logger.debug(zpk_fixed)
 
-        units = (f'{self._sensor_stage().output_units}/'
-                 f'({self._sensor_stage().input_units.lower()})')
         zpk_unfixed = lti_divide(zpk_nom, zpk_fixed)
         self.logger.info(
             'Nominal zeros: %s', feature_str(zpk_unfixed.zeros))
         self.logger.info(
             'Nominal poles: %s', feature_str(zpk_unfixed.poles))
         self.logger.info(
-            'Nominal sensitivity [%s at %g Hz]: %.5g', units, f_norm, sens_nom)
+            'Nominal sensitivity [%s at %g Hz]: %.5g', sensor_units, f_norm, sens_nom)
 
         self.lti.fits = []
         self.zpk_fits = []
@@ -1399,10 +1434,9 @@ class CalibrationAnalyzer():
             self.logger.info(
                 'Fit poles: %s', feature_str(zpk_unfixed.poles))
             self.logger.info(
-                'Fit sensitivity [%s at %g Hz]: %.5g', units, f_norm, sens_fit)
+                'Fit sensitivity [%s at %g Hz]: %.5g', sensor_units, f_norm, sens_fit)
 
             self.lti.fits.append(zpk_fit)
-            # self.zpk_fits.append(result)
 
     def estimate_errors(
         self: CalibrationAnalyzer,
@@ -1492,7 +1526,11 @@ class CalibrationAnalyzer():
             log = self.logger.info
         log(self.timing_gain_fit.timing_summary())
 
-    def _save_image(self: CalibrationAnalyzer, fig, option_list=None):
+    def _save_image(
+        self: CalibrationAnalyzer,
+        fig: plt.figure,
+        option_list: Optional[Union[str, Sequence[str]]] = None,
+    ) -> None:
         """Save a figure with an automatically descriptive file name."""
         if not self.savefig or not self.dpi:
             return
@@ -1523,7 +1561,11 @@ class CalibrationAnalyzer():
         self.logger.info(output_png)
         fig.savefig(output_png, dpi=self.dpi, bbox_inches='tight')
 
-    def plot_check(self: CalibrationAnalyzer, where='start', window_seconds=10):
+    def plot_check(
+        self: CalibrationAnalyzer,
+        where: str = 'start',
+        window_seconds: float = 10,
+    ) -> None:
         """Spot check critical times in the calibration."""
         assert where in ['start', 'end', 'on', 'off']
 
@@ -1547,7 +1589,11 @@ class CalibrationAnalyzer():
 
     ALLOWED_NOMINAL_MODEL_REMOVALS = ['system', 'cal']
 
-    def plot_response(self: CalibrationAnalyzer, model='system', f_limits=None):
+    def plot_response(
+        self: CalibrationAnalyzer,
+        model: str = 'system',
+        f_limits: Optional[Tuple[float, float]] = None,
+    ) -> None:
         """
         Plot nominal transfer function between specified frequency limits.
 
@@ -1575,14 +1621,11 @@ class CalibrationAnalyzer():
             axes[1].set_ylim([-180, 180])
             axes[1].set_yticks(np.arange(-180, 180 + 1, 45.))
 
+        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
         if model == 'cal':
-            output_units = self._sensor_stage().input_units.lower()
-            input_units = self._sensor_stage().output_units
-            axes[0].set_ylabel(f'Gain [dB wrt {output_units}/({input_units})]')
+            axes[0].set_ylabel(f"Gain [dB wrt {units(sensor_stages)['reverse']}]")
         elif model == 'sensor':
-            output_units = self._sensor_stage().output_units
-            input_units = self._sensor_stage().input_units.lower()
-            axes[0].set_ylabel(f'Gain [dB wrt {output_units}/({input_units})]')
+            axes[0].set_ylabel(f"Gain [dB wrt {units(sensor_stages)['forward']}]")
         else:
             axes[0].set_ylabel('Gain [dB]')
         axes[0].legend(loc='best')
@@ -1592,7 +1635,7 @@ class CalibrationAnalyzer():
 
         self._save_image(fig, model)
 
-    def plot_simulated(self: CalibrationAnalyzer, trim=True):
+    def plot_simulated(self: CalibrationAnalyzer, trim: bool = True) -> None:
         """Plot simulated calibration response in time domain."""
         simulated = self.simulate_response(trim=trim)
 
@@ -1611,7 +1654,7 @@ class CalibrationAnalyzer():
 
         self._save_image(fig)
 
-    def plot_signal_to_noise(self: CalibrationAnalyzer):
+    def plot_signal_to_noise(self: CalibrationAnalyzer) -> None:
         """Plot estimated signal-to-noise ratio."""
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
@@ -1628,7 +1671,7 @@ class CalibrationAnalyzer():
 
         self._save_image(fig)
 
-    def plot_spectrogram(self: CalibrationAnalyzer):
+    def plot_spectrogram(self: CalibrationAnalyzer) -> None:
         """Plot input and output spectrograms, referred to sensor input [V]."""
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
@@ -1664,7 +1707,7 @@ class CalibrationAnalyzer():
 
         self._save_image(fig)
 
-    def plot_variance(self: CalibrationAnalyzer, scale='log'):
+    def plot_variance(self: CalibrationAnalyzer, scale: str = 'log') -> None:
         """
         Plot variance on log or linear scale.
 
@@ -1690,8 +1733,8 @@ class CalibrationAnalyzer():
 
     def plot_transfer_function(
         self: CalibrationAnalyzer,
-        remove: str = 'system',
-        errors: str = '',
+        remove: Literal['', 'system', 'cal'] = 'system',
+        errors: Literal['', 'estimate', 'correct'] = '',
         scale: str = 'log',
         variance_threshhold: float = np.NaN,
     ) -> None:
@@ -1710,11 +1753,6 @@ class CalibrationAnalyzer():
             - 'correct': estimate and correct
         - `variance_threshhold`: plot only points with variance above this
         """
-        if remove and remove not in ['cal', 'system']:
-            raise ValueError(
-                f"Removal of '{remove}' response not supported")
-        if errors and errors not in ['estimate', 'correct']:
-            raise ValueError(f"Cannot '{errors}' errors")
         if self.stft.f is None:
             raise RuntimeError('Use compute() method first.')
 
@@ -1722,7 +1760,7 @@ class CalibrationAnalyzer():
         if remove:
             option_list.append('nominal_' + remove + '_removed')
 
-        channels = factor_names(self._output_stream())[1]
+        channels = factor_names(self.get_stream('output'))[1]
         f = self.stft.f
         tf_nominal = self.tf_nominal('system')
         tf_estimate = self.stft.tf_estimate()
@@ -1840,9 +1878,8 @@ class CalibrationAnalyzer():
         if remove == 'system':
             axes[0].set_ylabel('Gain wrt nominal [dB]')
         elif remove == 'cal':
-            axes[0].set_ylabel(
-                f'Gain [dB wrt {self._sensor_stage().output_units}/'
-                f'({self._sensor_stage().input_units.lower()})]')
+            sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+            axes[0].set_ylabel(f"Gain [dB wrt {units(sensor_stages)['forward']}]")
         else:
             axes[0].set_ylabel('Gain [dB]')
         axes[1].set_ylabel('Phase [°]')
@@ -1901,7 +1938,7 @@ LOG_SETTINGS = {
 }
 
 
-def main(argv=None):
+def main(argv=None) -> int:
     """Run analysis and return system exit code."""
     if argv is None:
         argv = sys.argv

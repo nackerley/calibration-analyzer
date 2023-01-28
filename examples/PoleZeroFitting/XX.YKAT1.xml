@@ -2114,7 +2114,7 @@
           </Stage>
           <Stage number="2">
             <PolesZeros name="Guralp|Preamp Model MAN-ELP-0110">
-              <Description>S/N nan</Description>
+              <Description>S/N unknown</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>voltage</Description>

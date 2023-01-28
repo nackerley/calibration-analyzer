@@ -1,4 +1,4 @@
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.0
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.1
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Output.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Input.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
@@ -20,7 +20,7 @@ DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Res
 		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
 		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
 		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
 	From m/s**2 (acceleration) to COUNTS (Digital Counts)
@@ -46,28 +46,28 @@ array([-3.9172-4.9127j, -3.9172+4.9127j]),
 array([387.154569]),
 dt: None
 )
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
 array([], dtype=float64),
-array([0]),
-array([0.0395]),
+array([0.]),
+array([0.123169]),
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.29260545591391,
+47.68549834001927,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200624.1945.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200624.1945.png
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 8957970.547630003
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 349160.0 counts/V
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
 INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.29260545591391,
+47.68549834001927,
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
@@ -89,7 +89,7 @@ INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 6.8
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.]),
 array([-3.909643-4.739571j, -3.909643+4.739571j]),
-2.142816033490268,
+6.681742408286069,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
@@ -124,7 +124,7 @@ DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Res
 		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
 		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
 		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
 	From m/s**2 (acceleration) to COUNTS (Digital Counts)
@@ -150,28 +150,28 @@ array([-3.9172-4.9127j, -3.9172+4.9127j]),
 array([387.154569]),
 dt: None
 )
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
 array([], dtype=float64),
-array([0]),
-array([0.0395]),
+array([0.]),
+array([0.123169]),
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.29260545591391,
+47.68549834001927,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200110.1529.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200110.1529.png
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 8957970.547630003
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 349160.0 counts/V
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
 INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([-3.9172-4.9127j, -3.9172+4.9127j]),
-15.29260545591391,
+47.68549834001927,
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
@@ -193,7 +193,7 @@ INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 6.6
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.]),
 array([-4.320952-4.268006j, -4.320952+4.268006j]),
-2.4888648738884416,
+7.760794074919583,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 

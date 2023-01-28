@@ -14,7 +14,7 @@ from glob import glob
 from time import time
 from tempfile import gettempdir
 from operator import attrgetter
-from typing import Type
+from typing import Dict, Sequence, Type
 
 import requests
 import numpy as np
@@ -25,8 +25,9 @@ from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
-from obspy.core.inventory import \
-    CoefficientsTypeResponseStage, FIRResponseStage
+from obspy.core.inventory import (
+    ResponseStage, PolesZerosResponseStage,
+    CoefficientsTypeResponseStage, FIRResponseStage)
 from obspy.core.event import \
     Pick, Arrival, Amplitude, StationMagnitude, WaveformStreamID
 
@@ -36,7 +37,7 @@ from calan import chis_archive
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 PACKAGE = os.path.basename(os.path.dirname(__file__))
-VERSION = '1.2.1'
+VERSION = '1.2.2'
 
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
@@ -367,6 +368,61 @@ def lti_multiply(first: lti, second: lti, tolerance: float = 0) -> lti:
     return lti_convert(product, first_type)
 
 
+def stage2zpk(stage: PolesZerosResponseStage):
+    """
+    Generate a LinearTimeInvariant model.
+
+    Inputs are zeros, poles, sensitivity and frequency at which sensitivity is
+    specified.
+    """
+    model = ZerosPolesGain(stage.zeros, stage.poles, 1)
+    midband = abs(model.freqresp(2*np.pi*stage.normalization_frequency)[1])
+    return ZerosPolesGain(
+        sort_complex(stage.zeros), sort_complex(stage.poles),
+        stage.stage_gain/midband)
+
+
+def zpk_cascade(
+    stages: Sequence[ResponseStage],
+    initial: ZerosPolesGain = ZerosPolesGain([], [], 1),
+) -> ZerosPolesGain:
+    """Cascade obspy response stages into a scipy ZerosPolesGain system."""
+    zpk = initial
+    for stage in stages:
+        if isinstance(stage, PolesZerosResponseStage):
+            zpk = lti_multiply(zpk, stage2zpk(stage))
+        elif isinstance(stage, ResponseStage):
+            zpk = lti_multiply(zpk, ZerosPolesGain([], [], stage.stage_gain))
+        else:
+            raise RuntimeError(
+                f'Unrecognized sensor stage type: {type(stage)}')
+    return zpk
+
+
+def units(stages: ResponseStage) -> Dict[str, str]:
+    """Massage units from a series of stages into readable form."""
+    input_ = (stages[0].input_units.replace('COUNTS', 'counts')
+              .replace('M', 'm').replace('S', 's'))
+    output = (stages[-1].input_units.replace('COUNTS', 'counts')
+              .replace('M', 'm').replace('S', 's'))
+
+    if '/' in input_:
+        forward = f'{output}/({input_})'
+    else:
+        forward = f'{output}/{input_}'
+    if '/' in output:
+        reverse = f'{input_}/({output})'
+    else:
+        reverse = f'{input_}/{output}'
+
+    return {
+        'input': input_,
+        'output': output,
+        'forward': forward,
+        'reverse': reverse,
+    }
+
+
 def lti_convert(system: lti, to_type: Type) -> lti:
     """Convert system to specified type."""
     if isinstance(system, to_type):
@@ -464,19 +520,6 @@ def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1, discont=np.pi):
     return np.concatenate((phase_below, phase_above), axis)
 
 
-def zpk_from_zpsf(zeros, poles, sens, frequency):
-    """
-    Generate a LinearTimeInvariant model.
-
-    Inputs are zeros, poles, sensitivity and frequency at which sensitivity is
-    specified.
-    """
-    model = ZerosPolesGain(zeros, poles, 1)
-    midband = abs(model.freqresp(2*np.pi*frequency)[1])
-    return ZerosPolesGain(
-        sort_complex(zeros), sort_complex(poles), sens/midband)
-
-
 def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
     """Construct a list of names for the traces in a stream."""
     return ['.'.join([('%' + str(width) + 's') % trace.stats[part]
@@ -511,9 +554,7 @@ def recompute_normalization_factors(response, rtol=0.0002):
             normalization_factor = stage.normalization_factor
         except AttributeError:
             continue
-        stage_lti = zpk_from_zpsf(
-            stage.zeros, stage.poles, stage.stage_gain,
-            stage.normalization_frequency)
+        stage_lti = stage2zpk(stage)
         stage_gain = sp.freqresp(
             stage_lti,
             2*np.pi*stage.normalization_frequency)[1][0]
