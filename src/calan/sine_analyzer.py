@@ -18,6 +18,7 @@ import sys
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
+from urllib.error import HTTPError
 from urllib.parse import urlencode, urlunsplit
 
 import numpy as np
@@ -35,6 +36,7 @@ from calan.utilities import MyArgumentParser, MyFormatter
 from calan.stft import Stft
 
 # calibration circuit parameter estimates
+# FIXME: parameters not used; misleading.
 MASS_KG = 5
 GENERATOR_VMS = 629
 COIL_OHM = 3600
@@ -63,6 +65,7 @@ WEATHER_PATH = '/climate_data/bulk_data_e.html'
 WEATHER_STATION_ID = 51058
 WEATHER_STATION_TIME_ZONE = 'America/Yellowknife'
 WEATHER_QUERY = dict(format='csv', submit='Download+Data', timeframe=1)
+WEATHER_TIME = 'Date/Time (LST)'
 
 # bookkeeping
 THIS_FILE_NAME = os.path.basename(__file__)
@@ -97,6 +100,8 @@ class SynchronousCalibrationAnalyzer():
     def __init__(self, plot=False, dpi=DPI):
 
         # helpers
+        if os.path.isfile(LOG_FILE_NAME):
+            os.remove(LOG_FILE_NAME)
         self.logger = get_logger(__name__, LOG_FILE_NAME)
         self.plot = plot
         self.dpi = dpi
@@ -173,6 +178,8 @@ class SynchronousCalibrationAnalyzer():
                       motor_ms2v=MOTOR_MS2V, dac_gain=DAC_GAIN):
         """
         Load nominal input and output responses.
+
+        FIXME: Unused, misleading.
         """
         inventory_xml = self.stream[1].id + '.xml'
         # copy response from known station
@@ -316,7 +323,7 @@ class SynchronousCalibrationAnalyzer():
         url = urlunsplit((WEATHER_SCHEME, WEATHER_NETLOC, WEATHER_PATH,
                           urlencode(query), ''))
         try:
-            df = pd.read_csv(url, parse_dates=['Date/Time'])
+            df = pd.read_csv(url, parse_dates=[WEATHER_TIME])
             actual_tz = pytz.timezone(self.TIME_ZONE_FINDER.timezone_at(
                 lat=df['Latitude (y)'].mean(), lng=df['Longitude (x)'].mean()))
             if actual_tz != time_zone:
@@ -324,13 +331,13 @@ class SynchronousCalibrationAnalyzer():
                     'Data is from time zone "%s"; expected "%s".',
                     actual_tz.zone, time_zone)
 
-            df['Date/Time'] = df['Date/Time'].dt.tz_localize(
+            df[WEATHER_TIME] = df[WEATHER_TIME].dt.tz_localize(
                 time_zone, ambiguous=True, nonexistent='NaT')
-            df['Date/Time [UTC]'] = df['Date/Time'].dt.tz_convert(None)
+            df[WEATHER_TIME] = df[WEATHER_TIME].dt.tz_convert(None)
 
-            index = (df['Date/Time [UTC]'] > dt_utc).idxmax()
+            index = (df[WEATHER_TIME] > dt_utc).idxmax()
             result = df.at[index, 'Temp (°C)']
-        except Exception as ex:  # pylint: disable=broad-except
+        except HTTPError as ex:
             self.logger.error(repr(ex))
             result = np.NaN
 
@@ -342,7 +349,7 @@ class SynchronousCalibrationAnalyzer():
         """
         Summarize result.
         """
-        result = pd.Series()
+        result = pd.Series(dtype=object)
         result['test name'] = self.test_name
         result['channel id'] = self.stream[1].id
         result['start'] = pd.to_datetime(
