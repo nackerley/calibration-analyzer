@@ -1,0 +1,815 @@
+2022-11-30 13:56:10 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 13:56:10 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 13:56:10 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 13:56:11 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 13:56:11 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 13:56:11 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 13:56:11 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 13:56:11 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 13:56:11 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 13:56:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 13:56:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 13:56:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 13:56:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 13:56:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 13:56:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 13:56:12 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:14 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:14 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 13:56:14 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 13:56:14 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 13:56:14 - INFO     fit_response.py:station_tools.fit_response:fit_response - Fixing 1 zeros at zero.
+2022-11-30 13:56:14 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit -  active_mask: array([0, 0, 0])
+        cost: 1.9982543928998344e+18
+         fun: array([  -171379.35060912,   -205773.49834981,   -915346.75942183, ...,
+       -20465908.49129719, -17340117.01722724, -23486564.0827337 ])
+        grad: array([ 3.05083198e+12,  1.13388104e+12, -5.87968520e+02])
+         jac: array([[ 5.90072480e+04, -1.76120027e+04,  6.36582172e-02],
+       [ 1.28487181e+05, -3.84989248e+04,  1.39105283e-01],
+       [ 2.12775172e+05, -6.41041098e+04,  2.31512936e-01],
+       ...,
+       [ 6.24221048e+05, -5.55227605e+04, -1.07860018e+02],
+       [ 5.20779701e+05, -4.63227343e+04, -9.02128977e+01],
+       [ 6.75269185e+05, -6.00654231e+04, -1.17268844e+02]])
+     message: '`ftol` termination condition is satisfied.'
+        nfev: 33
+        njev: 29
+  optimality: 3050831982472.599
+      status: 2
+     success: True
+           x: array([5.58284290e+00, 3.75252287e+01, 5.18949127e+06])
+2022-11-30 13:56:14 - INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit: ZerosPolesGainContinuous(
+array([0.]),
+array([-2.79142145+5.45281533j, -2.79142145-5.45281533j]),
+5189491.26856241,
+dt: None
+)
+2022-11-30 13:56:14 - INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+2022-11-30 13:56:14 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 3.458e+07% ±40000% (95% conf.)
+2022-11-30 13:56:14 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 44ms ±1ms (95% conf.)
+2022-11-30 13:56:15 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:16 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:17 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:19 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:20 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:20 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:21 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:22 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:25 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:26 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 13:56:26 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 13:56:26 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 13:56:27 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:20 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 14:36:20 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 14:36:20 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 14:36:21 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 14:36:21 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 14:36:21 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 14:36:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 14:36:21 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 14:36:21 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 14:36:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 14:36:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 14:36:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 14:36:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 14:36:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 14:36:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 14:36:22 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:23 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:24 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 14:36:24 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 14:36:24 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 14:36:24 - INFO     fit_response.py:station_tools.fit_response:fit_response - Fixing 1 zeros at zero.
+2022-11-30 14:36:24 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit -  active_mask: array([0, 0, 0])
+        cost: 1.9982543928998344e+18
+         fun: array([  -171379.35060912,   -205773.49834981,   -915346.75942183, ...,
+       -20465908.49129719, -17340117.01722724, -23486564.0827337 ])
+        grad: array([ 3.05083198e+12,  1.13388104e+12, -5.87968520e+02])
+         jac: array([[ 5.90072480e+04, -1.76120027e+04,  6.36582172e-02],
+       [ 1.28487181e+05, -3.84989248e+04,  1.39105283e-01],
+       [ 2.12775172e+05, -6.41041098e+04,  2.31512936e-01],
+       ...,
+       [ 6.24221048e+05, -5.55227605e+04, -1.07860018e+02],
+       [ 5.20779701e+05, -4.63227343e+04, -9.02128977e+01],
+       [ 6.75269185e+05, -6.00654231e+04, -1.17268844e+02]])
+     message: '`ftol` termination condition is satisfied.'
+        nfev: 33
+        njev: 29
+  optimality: 3050831982472.599
+      status: 2
+     success: True
+           x: array([5.58284290e+00, 3.75252287e+01, 5.18949127e+06])
+2022-11-30 14:36:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit: ZerosPolesGainContinuous(
+array([0.]),
+array([-2.79142145+5.45281533j, -2.79142145-5.45281533j]),
+5189491.26856241,
+dt: None
+)
+2022-11-30 14:36:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+2022-11-30 14:36:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 3.458e+07% ±40000% (95% conf.)
+2022-11-30 14:36:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 44ms ±1ms (95% conf.)
+2022-11-30 14:36:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:26 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:27 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:28 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:29 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:30 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:31 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:31 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:33 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 14:36:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 14:36:36 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:36:36 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:30 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 14:39:30 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 14:39:30 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 14:39:31 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 14:39:31 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 14:39:32 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 14:39:32 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 14:39:32 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 14:39:32 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 14:39:32 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 14:39:32 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 14:39:32 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 14:39:32 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 14:39:32 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 14:39:32 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 14:39:33 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:34 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 14:39:34 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 14:39:34 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 14:39:34 - INFO     fit_response.py:station_tools.fit_response:fit_response - Fixing 1 zeros at zero.
+2022-11-30 14:39:34 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit -  active_mask: array([0, 0, 0])
+        cost: 1.9982543928998344e+18
+         fun: array([  -171379.35060912,   -205773.49834981,   -915346.75942183, ...,
+       -20465908.49129719, -17340117.01722724, -23486564.0827337 ])
+        grad: array([ 3.05083198e+12,  1.13388104e+12, -5.87968520e+02])
+         jac: array([[ 5.90072480e+04, -1.76120027e+04,  6.36582172e-02],
+       [ 1.28487181e+05, -3.84989248e+04,  1.39105283e-01],
+       [ 2.12775172e+05, -6.41041098e+04,  2.31512936e-01],
+       ...,
+       [ 6.24221048e+05, -5.55227605e+04, -1.07860018e+02],
+       [ 5.20779701e+05, -4.63227343e+04, -9.02128977e+01],
+       [ 6.75269185e+05, -6.00654231e+04, -1.17268844e+02]])
+     message: '`ftol` termination condition is satisfied.'
+        nfev: 33
+        njev: 29
+  optimality: 3050831982472.599
+      status: 2
+     success: True
+           x: array([5.58284290e+00, 3.75252287e+01, 5.18949127e+06])
+2022-11-30 14:39:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit: ZerosPolesGainContinuous(
+array([0.]),
+array([-2.79142145+5.45281533j, -2.79142145-5.45281533j]),
+5189491.26856241,
+dt: None
+)
+2022-11-30 14:39:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+2022-11-30 14:39:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 3.458e+07% ±40000% (95% conf.)
+2022-11-30 14:39:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 44ms ±1ms (95% conf.)
+2022-11-30 14:39:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:36 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:37 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:39 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:40 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:40 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:41 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:42 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:43 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:45 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:46 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 14:39:46 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 14:39:46 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 14:39:47 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:39 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 15:47:39 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 15:47:39 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 15:47:40 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 15:47:40 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 15:47:40 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 15:47:40 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 15:47:40 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 15:47:40 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 15:47:40 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 15:47:40 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 15:47:40 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 15:47:40 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 15:47:40 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 15:47:40 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 15:47:41 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:42 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:43 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 15:47:43 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 15:47:43 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 15:47:43 - INFO     fit_response.py:station_tools.fit_response:fit_response - Fixing 1 zeros at zero.
+2022-11-30 15:47:43 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit -  active_mask: array([0, 0, 0])
+        cost: 1.9982543928998344e+18
+         fun: array([  -171379.35060912,   -205773.49834981,   -915346.75942183, ...,
+       -20465908.49129719, -17340117.01722724, -23486564.0827337 ])
+        grad: array([ 3.05083198e+12,  1.13388104e+12, -5.87968520e+02])
+         jac: array([[ 5.90072480e+04, -1.76120027e+04,  6.36582172e-02],
+       [ 1.28487181e+05, -3.84989248e+04,  1.39105283e-01],
+       [ 2.12775172e+05, -6.41041098e+04,  2.31512936e-01],
+       ...,
+       [ 6.24221048e+05, -5.55227605e+04, -1.07860018e+02],
+       [ 5.20779701e+05, -4.63227343e+04, -9.02128977e+01],
+       [ 6.75269185e+05, -6.00654231e+04, -1.17268844e+02]])
+     message: '`ftol` termination condition is satisfied.'
+        nfev: 33
+        njev: 29
+  optimality: 3050831982472.599
+      status: 2
+     success: True
+           x: array([5.58284290e+00, 3.75252287e+01, 5.18949127e+06])
+2022-11-30 15:47:43 - INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit: ZerosPolesGainContinuous(
+array([0.]),
+array([-2.79142145+5.45281533j, -2.79142145-5.45281533j]),
+5189491.26856241,
+dt: None
+)
+2022-11-30 15:47:43 - INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+2022-11-30 15:47:43 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 3.458e+07% ±40000% (95% conf.)
+2022-11-30 15:47:43 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 44ms ±1ms (95% conf.)
+2022-11-30 15:47:43 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:45 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:46 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:47 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:48 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:49 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:50 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:50 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:52 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:53 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:54 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 15:47:55 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 15:47:55 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 15:47:55 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:19 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 16:02:19 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 16:02:19 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 16:02:20 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 16:02:20 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 16:02:20 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 16:02:20 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 16:02:20 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 16:02:20 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 16:02:20 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 16:02:20 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 16:02:20 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 16:02:20 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 16:02:20 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 16:02:21 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 16:02:21 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:22 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:23 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 16:02:23 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 16:02:23 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 16:02:23 - INFO     fit_response.py:station_tools.fit_response:fit_response - Fixing 1 zeros at zero.
+2022-11-30 16:02:23 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit -  active_mask: array([0, 0, 0])
+        cost: 1.9982543928998344e+18
+         fun: array([  -171379.35060912,   -205773.49834981,   -915346.75942183, ...,
+       -20465908.49129719, -17340117.01722724, -23486564.0827337 ])
+        grad: array([ 3.05083198e+12,  1.13388104e+12, -5.87968520e+02])
+         jac: array([[ 5.90072480e+04, -1.76120027e+04,  6.36582172e-02],
+       [ 1.28487181e+05, -3.84989248e+04,  1.39105283e-01],
+       [ 2.12775172e+05, -6.41041098e+04,  2.31512936e-01],
+       ...,
+       [ 6.24221048e+05, -5.55227605e+04, -1.07860018e+02],
+       [ 5.20779701e+05, -4.63227343e+04, -9.02128977e+01],
+       [ 6.75269185e+05, -6.00654231e+04, -1.17268844e+02]])
+     message: '`ftol` termination condition is satisfied.'
+        nfev: 33
+        njev: 29
+  optimality: 3050831982472.599
+      status: 2
+     success: True
+           x: array([5.58284290e+00, 3.75252287e+01, 5.18949127e+06])
+2022-11-30 16:02:23 - INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit: ZerosPolesGainContinuous(
+array([0.]),
+array([-2.79142145+5.45281533j, -2.79142145-5.45281533j]),
+5189491.26856241,
+dt: None
+)
+2022-11-30 16:02:23 - INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+2022-11-30 16:02:23 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 3.458e+07% ±40000% (95% conf.)
+2022-11-30 16:02:23 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 44ms ±1ms (95% conf.)
+2022-11-30 16:02:23 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:25 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:26 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:27 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:28 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:29 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:30 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:31 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:32 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:34 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:35 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 16:02:35 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 16:02:35 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 16:02:36 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:08 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 18:55:08 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 18:55:08 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 18:55:09 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 18:55:09 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 18:55:09 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 18:55:09 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 18:55:09 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 18:55:09 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 18:55:09 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 18:55:09 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 18:55:09 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 18:55:09 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 18:55:09 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 18:55:09 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 18:55:10 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:11 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 18:55:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 18:55:12 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 18:55:12 - INFO     fit_response.py:station_tools.fit_response:fit_response - Fixing 1 zeros at zero.
+2022-11-30 18:55:12 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit -  active_mask: array([0, 0, 0])
+        cost: 1.9982543928998344e+18
+         fun: array([  -171379.35060912,   -205773.49834981,   -915346.75942183, ...,
+       -20465908.49129719, -17340117.01722724, -23486564.0827337 ])
+        grad: array([ 3.05083198e+12,  1.13388104e+12, -5.87968520e+02])
+         jac: array([[ 5.90072480e+04, -1.76120027e+04,  6.36582172e-02],
+       [ 1.28487181e+05, -3.84989248e+04,  1.39105283e-01],
+       [ 2.12775172e+05, -6.41041098e+04,  2.31512936e-01],
+       ...,
+       [ 6.24221048e+05, -5.55227605e+04, -1.07860018e+02],
+       [ 5.20779701e+05, -4.63227343e+04, -9.02128977e+01],
+       [ 6.75269185e+05, -6.00654231e+04, -1.17268844e+02]])
+     message: '`ftol` termination condition is satisfied.'
+        nfev: 33
+        njev: 29
+  optimality: 3050831982472.599
+      status: 2
+     success: True
+           x: array([5.58284290e+00, 3.75252287e+01, 5.18949127e+06])
+2022-11-30 18:55:12 - INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit: ZerosPolesGainContinuous(
+array([0.]),
+array([-2.79142145+5.45281533j, -2.79142145-5.45281533j]),
+5189491.26856241,
+dt: None
+)
+2022-11-30 18:55:12 - INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+2022-11-30 18:55:12 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 3.458e+07% ±40000% (95% conf.)
+2022-11-30 18:55:12 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 44ms ±1ms (95% conf.)
+2022-11-30 18:55:12 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:14 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:15 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:16 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:17 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:18 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:19 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:19 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:21 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:22 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:24 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 18:55:24 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 18:55:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:24 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 18:55:42 - INFO     calibration_analyzer.py:CalibrationAnalyzer:write_calibrate_result - calibrate_result_YKAT1_20200527.2000.txt
+2022-11-30 18:55:42 - INFO     calibration_analyzer.py:__main__:calibration_analyzer - Summary: calibration_analyzer_PRB1744.csv
+2022-11-30 19:00:03 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 19:00:03 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 19:00:03 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 19:00:04 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 19:00:04 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 19:00:04 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 19:00:04 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 19:00:04 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 19:00:04 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 19:00:04 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 19:00:04 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 19:00:04 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 19:00:04 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 19:00:04 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 19:00:04 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 19:00:05 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:00:06 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:00:07 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 19:00:07 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 19:00:07 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 19:09:35 - INFO     core.py:CalibrationAnalyzer:get_logger - Logfile: ~/studies/Yellowknife/calibration/calibration_analyzer.log
+2022-11-30 19:09:35 - INFO     core.py:CalibrationAnalyzer:get_logger - Package: station_tools v1.1.0
+2022-11-30 19:09:35 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+2022-11-30 19:09:35 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+2022-11-30 19:09:35 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+2022-11-30 19:09:35 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+2022-11-30 19:09:35 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to COUNTS (Digital Counts)
+	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 19:09:35 - WARNING  calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+2022-11-30 19:09:35 - INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+2022-11-30 19:09:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to COUNTS (Digital Counts)
+	Overall Sensitivity: 5.34868e+14 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 2.35849e+06
+		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+2022-11-30 19:09:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+2022-11-30 19:09:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+array([387.1545685]),
+dt: None
+)
+2022-11-30 19:09:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating 1 times, from m/s**2 to m/s
+2022-11-30 19:09:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+array([-0.0395]),
+dt: None
+)
+2022-11-30 19:09:36 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([-3.9172+4.9127j, -3.9172-4.9127j]),
+15.292605455913911,
+dt: None
+)
+2022-11-30 19:09:36 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:37 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:38 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 19:09:38 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 19:09:38 - INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+2022-11-30 19:09:38 - INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Result: Z: fail
+2022-11-30 19:09:38 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 3.458e+07% ±40000% (95% conf.)
+2022-11-30 19:09:38 - INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 44ms ±1ms (95% conf.)
+2022-11-30 19:09:38 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:40 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_estimate_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:41 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:42 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:43 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_estimate_errors_linear_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:44 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_correct_errors_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:45 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - signal_to_noise_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:45 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_sensor_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:47 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_system_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:48 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - response_cal_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:49 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 21127289027429.254
+2022-11-30 19:09:50 - DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities: 27932800.0
+2022-11-30 19:09:50 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:50 - INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_XX.YKAT1..SH_20200527.2000.png
+2022-11-30 19:09:51 - INFO     calibration_analyzer.py:CalibrationAnalyzer:write_calibrate_result - calibrate_result_YKAT1_20200527.2000.txt
+2022-11-30 19:09:51 - INFO     calibration_analyzer.py:__main__:calibration_analyzer - Summary: calibration_analyzer_PRB1744.csv
