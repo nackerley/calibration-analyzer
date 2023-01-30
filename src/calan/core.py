@@ -37,7 +37,7 @@ from calan import chis_archive
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 PACKAGE = os.path.basename(os.path.dirname(__file__))
-VERSION = '1.2.2'
+VERSION = '1.2.3'
 
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
