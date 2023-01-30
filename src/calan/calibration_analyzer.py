@@ -855,7 +855,8 @@ class CalibrationAnalyzer():
         sensor_stages, datalogger_stages = [], []
         is_sensor = True
         for stage in trace.stats.response.response_stages:
-            if stage.input_units == 'V' and stage.output_units == 'COUNTS':
+            if stage.input_units.upper() == 'V' and \
+                    stage.output_units.upper() == 'COUNTS':
                 is_sensor = False
             if is_sensor:
                 sensor_stages.append(stage)
@@ -957,8 +958,7 @@ class CalibrationAnalyzer():
         integrations = (ORDER[MOTION[sensor_units.upper()]] -
                         ORDER[MOTION[cal_units.upper()]])
         if integrations >= 0:
-            # TODO: is a minus sign needed here - or is this only Trillium 120?
-            integrator = ZerosPolesGain([], [0]*integrations, -1)
+            integrator = ZerosPolesGain([], [0]*integrations, 1)
             self.logger.debug(
                 'Integrating calibration response %d times, to get from %s to %s',
                 integrations, cal_units, sensor_units)
@@ -1303,9 +1303,18 @@ class CalibrationAnalyzer():
                     self.info.gain_in_spec, self.info.phase_in_spec):
 
                 response = trace.stats.response
-                assert (response.instrument_sensitivity.frequency ==
+                if not np.isclose(
+                        response.instrument_sensitivity.frequency,
+                        response.response_stages[0].stage_gain_frequency):
+                    self.logger.warning(
+                        'Instrument sensitivity frequency %g Hz '
+                        'should be same as first stage gain frequency %g Hz',
+                        response.instrument_sensitivity.frequency,
                         response.response_stages[0].stage_gain_frequency)
-                assert response.instrument_sensitivity.output_units == 'COUNTS'
+
+                if response.instrument_sensitivity.output_units.upper() != 'COUNTS':
+                    self.logger.warning(
+                        'Instrument sensitivity output units should be counts.')
 
                 nominal_instrument = response.instrument_sensitivity.value
                 nominal_digitizer = nominal_instrument/nominal_sensor
@@ -1563,12 +1572,10 @@ class CalibrationAnalyzer():
 
     def plot_check(
         self: CalibrationAnalyzer,
-        where: str = 'start',
+        where: Literal['start', 'end', 'on', 'off'] = 'start',
         window_seconds: float = 10,
     ) -> None:
         """Spot check critical times in the calibration."""
-        assert where in ['start', 'end', 'on', 'off']
-
         if where == 'on':
             target_time = self.stream[0].stats.starttime + window_seconds/2
         elif where == 'off':
@@ -1587,21 +1594,13 @@ class CalibrationAnalyzer():
 
         self._save_image(fig, option_list=where)
 
-    ALLOWED_NOMINAL_MODEL_REMOVALS = ['system', 'cal']
-
     def plot_response(
         self: CalibrationAnalyzer,
-        model: str = 'system',
+        model: Literal['sensor', 'cal', 'system'] = 'system',
         f_limits: Optional[Tuple[float, float]] = None,
     ) -> None:
         """
         Plot nominal transfer function between specified frequency limits.
-
-        Arguments:
-        - `model`:
-            - 'sensor' for the sensor itself,
-            - 'cal' for calibration input or
-            - 'system' for the combination of the two
         """
         if f_limits:
             f = logspace(f_limits[0], f_limits[1], 24)
