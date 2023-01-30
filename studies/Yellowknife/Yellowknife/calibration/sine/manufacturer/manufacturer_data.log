@@ -1,6 +1,6 @@
-INFO     shared.py:__main__:get_logger - Logfile: ~/studies/calibration/manufacturer/manufacturer_data.log
+INFO     shared.py:__main__:get_logger - Logfile: ~/studies/Yellowknife/calibration/sine/manufacturer/manufacturer_data.log
 INFO     manufacturer_data.py:__main__:<module> - Client: http://fdsn.seismo.nrcan.gc.ca
-INFO     manufacturer_data.py:__main__:<module> - Loading: ~/studies/calibration/manufacturer/CalibrationSheets.csv
+INFO     manufacturer_data.py:__main__:<module> - Loading: ~/studies/Yellowknife/calibration/sine/manufacturer/CalibrationSheets.csv
 INFO     manufacturer_data.py:__main__:<module> - Saving: CN.YKA_existing.xml
 INFO     manufacturer_data.py:__main__:<module> - Writing: XX.YKNOM.xml
 INFO     manufacturer_data.py:__main__:<module> - Updating: YKAB0
@@ -24,4 +24,4 @@ INFO     manufacturer_data.py:__main__:<module> - Updating: YKAR9
 INFO     manufacturer_data.py:__main__:<module> - Writing: XX.YKAT1.xml
 INFO     manufacturer_data.py:__main__:<module> - Writing: XX.IDEAL.xml
 INFO     manufacturer_data.py:__main__:<module> - Saving: CN.YKA_new.xml
-INFO     manufacturer_data.py:__main__:<module> - Saving: ~/studies/calibration/manufacturer/CalibrationSheetsDerived.csv
+INFO     manufacturer_data.py:__main__:<module> - Saving: ~/studies/Yellowknife/calibration/sine/manufacturer/CalibrationSheetsDerived.csv
