@@ -17,19 +17,19 @@ info,sampling_rate_sps,40.0,40.0,
 info,windows,23.0,23.0,
 info,timing error estimate [s],-0.002346,-0.002023,
 info,timing error uncertainty [s],2.2e-05,3.6e-05,
-info,gain error estimate [%],-85.745,-83.7409,
-info,gain error uncertainty [%],0.0146,0.033,
+info,gain error estimate [%],-3.7106,9.8268,
+info,gain error uncertainty [%],0.0986,0.2226,
 info,confidence [%],0.95,0.95,
 info,output_units,V,V,V
 info,input_units,m/s,m/s,m/s
-info,calan,1.2.1,1.2.1,1.2.1
-pole_01,damping,0.636334,0.711452,0.623437
-pole_01,freq_hz,0.977849,0.966616,1.00001
-pole_01,imag_rad,-4.73957,-4.26801,-4.9127
-pole_01,real_rad,-3.90964,-4.32095,-3.9172
+info,calan,1.2.2,1.2.2,1.2.2
+pole_01,damping,0.636335,0.711445,0.623437
+pole_01,freq_hz,0.97785,0.966612,1.00001
+pole_01,imag_rad,-4.73957,-4.26803,-4.9127
+pole_01,real_rad,-3.90965,-4.32089,-3.9172
 zero_0,real_rad,0.0,0.0,0.0
 zero_0,freq_hz,0.0,0.0,0.0
 zero_1,real_rad,0.0,0.0,0.0
 zero_1,freq_hz,0.0,0.0,0.0
 f_norm,hz,10.0,10.0,10.0
-sensitivity,V/(m/s),54.3449,62.9992,388.0
+sensitivity,V/(m/s),367.089,425.543,388.0

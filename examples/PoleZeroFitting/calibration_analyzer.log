@@ -1,42 +1,43 @@
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.1
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.2
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Output.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Input.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
-	From m/s (velocity) to COUNTS (Digital Counts)
+	From m/s (velocity) to counts (Digital Counts)
 	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
 	12 stages:
 		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
 		Stage 2: PolesZerosResponseStage from V to V, gain: 40
 		Stage 3: ResponseStage from V to V, gain: 2
-		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
-		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
-	From m/s**2 (acceleration) to COUNTS (Digital Counts)
-	Overall Sensitivity: -2.26784e+08 defined at UNKNOWN Hz
-	11 stages:
-		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: -25.3165
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
 		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
-		Stage 3: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
-		Stage 4: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
 XX.YKAT1..SHZ | 2020-06-24T19:45:15.000000Z - 2020-06-24T19:55:19.000000Z | 40.0 Hz, 24161 samples
 XX.YKAT1..SHC | 2020-06-24T19:45:15.000000Z - 2020-06-24T19:55:19.000000Z | 40.0 Hz, 24161 samples
@@ -61,7 +62,7 @@ dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200624.1945.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200624.1945.png
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 349160.0 counts/V
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
 INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
@@ -85,19 +86,19 @@ INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zero
 INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/2 at 799 frequencies.
 INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
 INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
-INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 6.8e+02 to 8.3 in 5 iterations.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 68 to 56 in 4 iterations.
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.]),
-array([-3.909643-4.739571j, -3.909643+4.739571j]),
-6.681742408286069,
+array([-3.909649-4.739573j, -3.909649+4.739573j]),
+45.133764406832256,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.978 Hz (ζ = 0.636)
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 54.345
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 367.09
 WARNING  calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
 INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
-WARNING  calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -85.745% ±0.01% (95% conf.)
+INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -3.71% ±0.1% (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -2.35ms ±20us (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200624.1945.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200624.1945.png
@@ -109,38 +110,39 @@ INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 0
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
-	From m/s (velocity) to COUNTS (Digital Counts)
+	From m/s (velocity) to counts (Digital Counts)
 	Overall Sensitivity: 1.08379e+10 defined at 10.000 Hz
 	12 stages:
 		Stage 1: PolesZerosResponseStage from m/s to V, gain: 388
 		Stage 2: PolesZerosResponseStage from V to V, gain: 40
 		Stage 3: ResponseStage from V to V, gain: 2
-		Stage 4: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
-		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 12: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
-	From m/s**2 (acceleration) to COUNTS (Digital Counts)
-	Overall Sensitivity: -2.26784e+08 defined at UNKNOWN Hz
-	11 stages:
-		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: -25.3165
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
 		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
-		Stage 3: CoefficientsTypeResponseStage from V to COUNTS, gain: 349160
-		Stage 4: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 6: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 7: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 8: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 9: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 10: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 11: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
 XX.YKAT1..SHZ | 2020-01-10T15:29:32.450000Z - 2020-01-10T15:39:36.450000Z | 40.0 Hz, 24161 samples
 XX.YKAT1..SHC | 2020-01-10T15:29:32.450000Z - 2020-01-10T15:39:36.450000Z | 40.0 Hz, 24161 samples
@@ -165,7 +167,7 @@ dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200110.1529.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200110.1529.png
-DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 349160.0 counts/V
+DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
 INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
@@ -189,19 +191,19 @@ INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zero
 INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/2 at 799 frequencies.
 INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
 INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
-INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 6.6e+02 to 9.2 in 5 iterations.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1.1e+02 to 62 in 5 iterations.
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.]),
-array([-4.320952-4.268006j, -4.320952+4.268006j]),
-7.760794074919583,
+array([-4.320892-4.268029j, -4.320892+4.268029j]),
+52.42212010082239,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.967 Hz (ζ = 0.711)
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 62.999
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 10 Hz]: 425.54
 WARNING  calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
 WARNING  calibration_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
-WARNING  calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -83.74% ±0.03% (95% conf.)
+INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 9.83% ±0.2% (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -2.02ms ±40us (95% conf.)
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200110.1529.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200110.1529.png
