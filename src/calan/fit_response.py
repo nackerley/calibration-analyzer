@@ -428,7 +428,7 @@ def apolystab(
 def zpk_out_of_band(
     system: ZerosPolesGain,
     f: ArrayLike,
-    factor_lims: Tuple[float, float] = (2, 5),
+    factor_lims: Tuple[float, float] = (5, 2),
     norm_freq_hz: float = 1,
     set_sensitivity: float = 1,
 ) -> ZerosPolesGain:
@@ -449,8 +449,8 @@ def zpk_out_of_band(
     for factor in np.logspace(log10(factor_lims[0]),
                               log10(factor_lims[1]),
                               int(6*(factor_lims[1]/factor_lims[0]))):
-        w_min = f[0]/factor
-        w_max = f[-1]*factor
+        w_min = 2*np.pi*f[0]/factor
+        w_max = 2*np.pi*f[-1]*factor
         poles = sort_complex(system.poles)
         zeros = sort_complex(system.zeros)
 
