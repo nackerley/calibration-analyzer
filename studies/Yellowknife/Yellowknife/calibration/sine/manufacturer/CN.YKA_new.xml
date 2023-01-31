@@ -3,7 +3,7 @@
   <Source>SeisComP</Source>
   <Module/>
   <ModuleURI/>
-  <Created>2023-01-30T22:15:05.831833Z</Created>
+  <Created>2023-01-31T15:37:54.847205Z</Created>
   <Network code="CN" startDate="1980-01-01T00:00:00.000000Z" restrictedStatus="open">
     <Description>Canadian National Seismograph Network</Description>
     <Station code="YKAB0" startDate="2013-06-26T00:00:00.000000Z" restrictedStatus="open">
@@ -60,7 +60,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99774</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -96,12 +96,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -111,7 +115,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3292</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -2110,7 +2115,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99763</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -2146,12 +2151,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -2161,7 +2170,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3085</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -4160,7 +4170,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99765</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -4196,12 +4206,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -4211,7 +4225,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3087</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -6210,7 +6225,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99751</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -6246,12 +6261,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -6261,7 +6280,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3080</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -8260,7 +8280,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99802</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -8296,12 +8316,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -8311,7 +8335,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3180</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -10310,7 +10335,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99789</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -10346,12 +10371,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -10361,7 +10390,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3036</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -12360,7 +12390,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99792</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -12396,12 +12426,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -12411,7 +12445,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3086</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -14410,7 +14445,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99789</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -14446,12 +14481,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -14461,7 +14500,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A4549</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -16460,7 +16500,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.9975</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -16496,12 +16536,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -16511,7 +16555,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3072</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -18510,7 +18555,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99782</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -18546,12 +18591,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -18561,7 +18610,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3079</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -20560,7 +20610,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99821</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -20596,12 +20646,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -20611,7 +20665,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3076</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -22610,7 +22665,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.9978</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -22646,12 +22701,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -22661,7 +22720,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3073</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -24660,7 +24720,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99822</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -24696,12 +24756,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -24711,7 +24775,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3081</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -26710,7 +26775,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99776</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -26746,12 +26811,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -26761,7 +26830,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3077</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -28760,7 +28830,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99796</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -28796,12 +28866,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -28811,7 +28885,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3038</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -30810,7 +30885,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99814</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -30846,12 +30921,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -30861,7 +30940,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3074</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -32860,7 +32940,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99753</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -32896,12 +32976,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -32911,7 +32995,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A2165</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>
@@ -34910,7 +34995,7 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.998</NormalizationFactor>
+              <NormalizationFactor>0.99776</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
@@ -34946,12 +35031,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>1.0</NormalizationFactor>
+              <NormalizationFactor>6283.2</NormalizationFactor>
               <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <Pole number="0">
+                <Real>-6283.2</Real>
+                <Imaginary>0.0</Imaginary>
+              </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>0</Frequency>
+              <Frequency>1</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -34961,7 +35050,8 @@
             </StageGain>
           </Stage>
           <Stage number="4" resourceId="NRL:ADC_SF352113_IR512000_ED0">
-            <Coefficients>
+            <Coefficients name="Guralp|Datalogger Model CMG-DM24S3EAM">
+              <Description>S/N A3291</Description>
               <InputUnits>
                 <Name>V</Name>
                 <Description>Volts</Description>

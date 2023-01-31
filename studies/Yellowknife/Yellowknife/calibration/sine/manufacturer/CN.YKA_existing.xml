@@ -3,7 +3,7 @@
   <Source>SeisComP</Source>
   <Module/>
   <ModuleURI/>
-  <Created>2023-01-30T22:15:05.831833Z</Created>
+  <Created>2023-01-31T15:37:54.847205Z</Created>
   <Network code="CN" startDate="1980-01-01T00:00:00.000000Z" restrictedStatus="open">
     <Description>Canadian National Seismograph Network</Description>
     <Station code="YKAB0" startDate="2013-06-26T00:00:00.000000Z" restrictedStatus="open">

@@ -7,13 +7,17 @@ Created on Wed Feb  5 10:19:39 2020
 import os
 import sys
 import numpy as np
+from json import dumps
+from getpass import getuser
 from copy import deepcopy
+from scipy.signal import ZerosPolesGain
 
 import pandas as pd
 
 from obspy import UTCDateTime, read_inventory
 from obspy.core.inventory import (
-    Inventory, Response, PolesZerosResponseStage, InstrumentSensitivity)
+    Inventory, Response, PolesZerosResponseStage, InstrumentSensitivity,
+    Comment, Person)
 from obspy.clients.fdsn import Client
 
 from station_tools.core import CHIS_FDSN_SERVERS
@@ -48,6 +52,25 @@ NEW_XML = f'{NETWORK}.{STATION_PREFIX}_new.xml'
 
 BASE_NAME = os.path.join(current_dir,
                          os.path.basename(os.path.splitext(__file__)[0]))
+
+np.seterr(all='raise')
+
+if getuser() == 'nackerle':
+    AUTHOR = Person(emails=['nicholas.ackerley@nrcan-rncan.gc.ca'])
+else:
+    raise RuntimeError(f'Add email for user: {getuser()}')
+
+
+def stage_params(zeros, poles, gain, norm_freq, gain_freq):
+    """
+    Compute stage normalization factor and gain at normalization frequency.
+    """
+    zpk_unity = ZerosPolesGain(zeros, poles, 1)
+    norm_factor = 1/np.abs(zpk_unity.freqresp(2*np.pi*norm_freq)[1][0])
+    zpk_gain = ZerosPolesGain(zeros, poles, norm_factor)
+    gain_at_norm_freq = gain/np.abs(zpk_gain.freqresp(2*np.pi*gain_freq)[1][0])
+    return norm_factor, gain_at_norm_freq
+
 
 if __name__ == '__main__':
 
@@ -107,51 +130,49 @@ if __name__ == '__main__':
     for station_code, mfg in mfg_df.iterrows():
 
         pole = (-2*np.pi*mfg.f0*(mfg.lambda0 - 1j*np.sqrt(1 - mfg.lambda0**2)))
-        pole = round_sig(pole.real, PRECISION) + 1j*round_sig(pole.imag,
-                                                              PRECISION)
+        pole = (round_sig(pole.real, PRECISION) +
+                1j*round_sig(pole.imag, PRECISION))
+
+        sensor_zeros = [0, 0]
+        sensor_poles = [pole, pole.conj()]
+        sensor_norm_factor, sensor_gain = stage_params(
+            sensor_zeros, sensor_poles, mfg.Sg,
+            SENSOR_NORMALIZATION_FREQUENCY, 10**(PRECISION + 1))
 
         sensor = PolesZerosResponseStage(
             stage_sequence_number=1,
-            stage_gain=1,
+            stage_gain=round_sig(sensor_gain, PRECISION),
             stage_gain_frequency=SENSOR_NORMALIZATION_FREQUENCY,
             input_units='m/s',
             output_units='V',
             pz_transfer_function_type='LAPLACE (RADIANS/SECOND)',
             normalization_frequency=SENSOR_NORMALIZATION_FREQUENCY,
-            zeros=[0, 0],
-            poles=[pole, pole.conj()],
-            normalization_factor=1,
+            zeros=sensor_zeros,
+            poles=sensor_poles,
+            normalization_factor=round_sig(sensor_norm_factor, PRECISION),
             name=f'Geotech|Sensor Model {mfg.sensor_model}',
             input_units_description='velocity',
             output_units_description='voltage',
-            description=('S/N %s with %g ohm damping resistor' %
-                         (mfg.sensor_id, mfg.Rd)))
-        sensor_response = Response(
-            response_stages=[sensor],
-            instrument_sensitivity=InstrumentSensitivity(
-                    value=sensor.stage_gain,
-                    frequency=sensor.stage_gain_frequency,
-                    input_units=sensor.input_units,
-                    output_units=sensor.output_units,
-                    input_units_description=sensor.input_units_description,
-                    output_units_description=sensor.output_units_description))
-        norm_resp = np.abs(
-            sensor_response.get_evalresp_response_for_frequencies(
-                np.array([sensor.normalization_frequency]).astype(float)))[0]
-        sensor.stage_gain = round_sig(mfg.Sg*norm_resp, PRECISION)
-        sensor.normalization_factor = round_sig(1/norm_resp)
+            description=(f'S/N {mfg.sensor_id} with {mfg.Rd} ohm damping '
+                         'resistor'))
+
+        preamp_zeros = []
+        preamp_poles = [-round_sig(2*np.pi*1e3, PRECISION)]
+        preamp_gain = mfg.Kp
+        preamp_norm_freq = 1
+        preamp_norm_factor = -preamp_poles[0]
 
         preamp = PolesZerosResponseStage(
             stage_sequence_number=1,
-            stage_gain=mfg.Kp,
-            stage_gain_frequency=0,
+            stage_gain=round_sig(preamp_gain, PRECISION),
+            stage_gain_frequency=preamp_norm_freq,
             input_units='V',
             output_units='V',
             pz_transfer_function_type='LAPLACE (RADIANS/SECOND)',
-            normalization_frequency=1,
-            zeros=[],
-            poles=[],
-            normalization_factor=1,
+            normalization_frequency=preamp_norm_freq,
+            zeros=preamp_zeros,
+            poles=preamp_poles,
+            normalization_factor=preamp_norm_factor,
             name=f'Guralp|Preamp Model {mfg.preamp_model}',
             input_units_description='voltage',
             output_units_description='voltage',
@@ -160,10 +181,12 @@ if __name__ == '__main__':
         datalogger_stages = deepcopy(nrl_datalogger_stages)
 
         datalogger_stages[0].stage_gain = mfg.Kd
-        datalogger_stages[0].description = f'S/N {mfg.digitizer_id}'
-        datalogger_stages[0].name = \
-            f'Guralp|Datalogger Model {mfg.digitizer_model}'
+        datalogger_stages[0].input_units = 'V'  # silences warning in evalresp
+        datalogger_stages[0].output_units = 'V'
         datalogger_stages[1].stage_gain = round_sig(1/mfg.Si, PRECISION)
+        datalogger_stages[1].description = f'S/N {mfg.digitizer_id}'
+        datalogger_stages[1].name = \
+            f'Guralp|Datalogger Model {mfg.digitizer_model}'
 
         response_stages = [sensor, preamp] + datalogger_stages
         for i, stage in enumerate(response_stages, start=1):
@@ -180,12 +203,10 @@ if __name__ == '__main__':
             instrument_sensitivity=sensitivity,
             response_stages=response_stages)
 
-        ncalib_resp = np.abs(response.get_evalresp_response_for_frequencies(
-                np.array([1/mfg.NCALPER]).astype(float),
-                start_stage=1, end_stage=1))
-        gain_adjustment = ncalib_resp[0]/sensor.stage_gain
-        mfg_df.at[station_code, 'NCALIB'] = mfg.NCALIB0/gain_adjustment
-        mfg_df.at[station_code, 'gain_expected'] = mfg.gain0*gain_adjustment
+        ncalib = 1e9/np.abs(
+            response.get_evalresp_response_for_frequencies(
+                [1/mfg.NCALPER], output="disp")[0])
+        mfg_df.at[station_code, 'NCALIB'] = ncalib
 
         cal_sensor = PolesZerosResponseStage(
             stage_sequence_number=1,
@@ -240,6 +261,16 @@ if __name__ == '__main__':
             instrument_sensitivity=cal_sensitivity,
             response_stages=cal_stages)
 
+        # work around https://github.com/obspy/obspy/issues/3262
+        cal_response_copy = deepcopy(cal_response)
+        for stage in cal_response_copy.response_stages:
+            stage.input_units = stage.input_units.replace('A', 'V')
+            stage.output_units = stage.output_units.replace('A', 'V')
+        ncalib_cal = 1e9/np.abs(
+            cal_response_copy.get_evalresp_response_for_frequencies(
+                [1/mfg.NCALPER], output="disp")[0])
+        mfg_df.at[station_code, 'gain_expected'] = ncalib / ncalib_cal
+
         try:
             network, station, channel = next(
                 items for items in inventory_items(new_inventory)
@@ -254,10 +285,20 @@ if __name__ == '__main__':
             channel.description = 'Dummy Channel'
             channel.start_date = None
             channel.code = 'SHZ'
+            channel.comments = [Comment(
+                value=dumps({'NCALIB': round_sig(ncalib, PRECISION),
+                             'NCALPER': mfg.NCALPER}),
+                subject='IDC nominal response',
+                authors=[AUTHOR])]
 
             cal_channel = channel.copy()
             cal_channel.response = cal_response
             cal_channel.code = channel.code[:2] + 'C'
+            cal_channel.comments = [Comment(
+                value=dumps({'NCALIB': round_sig(ncalib_cal, PRECISION),
+                             'NCALPER': mfg.NCALPER}),
+                subject='IDC nominal response',
+                authors=[AUTHOR])]
 
             station = new_inventory[0][0].copy()
             station.code = station_code.upper()[:5]
