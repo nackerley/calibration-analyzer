@@ -64,7 +64,7 @@ from calan.core import (
     PACKAGE, VERSION, factor_names, subplots_squeeze,
     gain_db, phase_deg, unwrap_mid, recompute_normalization_factors,
     extract_decimation_coefficients, multi_decim,
-    lti_multiply, lti_divide, zpk_cascade, stage2zpk, units)
+    lti_multiply, lti_divide, zpk_cascade, units)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
@@ -99,6 +99,8 @@ DEFAULT_PRE_TIME = 10
 DEFAULT_POST_TIME = 10
 DEFAULT_DELAY_START = 0
 DEFAULT_DISCARD = (0, 0)
+DEFAULT_FIT_STAGES = 0
+DEFAULT_OUT_OF_BAND_RANGE = (2, 5)
 
 # constants
 THIS_FILE_NAME = os.path.basename(__file__)
@@ -186,7 +188,7 @@ def _argparser() -> MyArgumentParser:
         help='glob pattern matching calibration output files, '
         'in any format readable by obspy.read()')
     parser.add_argument(
-        '-n', '--num-windows', default=DEFAULT_NUM_WINDOWS, type=int,
+        '--num-windows', default=DEFAULT_NUM_WINDOWS, type=int,
         help="number of windows to used for Welch's method")
     parser.add_argument(
         '--len-fft', default=None, type=int,
@@ -230,8 +232,13 @@ def _argparser() -> MyArgumentParser:
         '--ims-instrument-type', default='',
         help='if provided, write IMS2.0 CALIBRATE_RESULT message with this type')
     parser.add_argument(
-        '--fit', action='store_true',
-        help='fit transfer function poles and zeros')
+        '--fit', type=int, metavar=('N'), default=DEFAULT_FIT_STAGES,
+        help='fit the first N stages of the sensor response poles and zeros')
+    parser.add_argument(
+        '--out-of-band', nargs=2, type=float, metavar=('FACTOR_1', 'FACTOR_2'),
+        default=DEFAULT_OUT_OF_BAND_RANGE,
+        help='fix poles and zeroes more than this factor beyond available '
+        'frequency range')
     parser.add_argument(
         '-p', '--plot', default='none', choices=get_args(PlotChoices),
         help='generate basic (start & end check, transfer function and '
@@ -310,7 +317,8 @@ def calibration_analyzer(
     test_limits: Tuple[float, float] = (MAX_AMPLITUDE_PERCENT, MAX_PHASE_DEGREES),
     orientation_map: Tuple[str, str] = DEFAULT_ORIENTATION_MAP,
     plot: str = '',
-    fit: bool = False,
+    fit: int = DEFAULT_FIT_STAGES,
+    out_of_band: Tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
     dpi: float = DEFAULT_DPI,
 ) -> str:
     """Do arbitrary-signal calibration analysis."""
@@ -349,7 +357,7 @@ def calibration_analyzer(
         analyzer.load_calibration_signal(calibration_signal_file)
         analyzer.load_calibration_response(calibration_response_file)
         analyzer.check_stream(discard_s=discard_s)
-        analyzer.setup_nominal_responses()
+        analyzer.setup_nominal_responses(n=min(fit, 1))
         analyzer.map_orientations(orientation_map)
 
         plot_level = PLOT_LEVEL[plot]
@@ -360,7 +368,7 @@ def calibration_analyzer(
         analyzer.compute(num_windows=num_windows, len_fft=len_fft or None,
                          window=window)
         if fit:
-            analyzer.fit()
+            analyzer.fit(out_of_band=out_of_band)
         analyzer.test(test_band_hz=test_band_hz,
                       max_amplitude_percent=test_limits[0],
                       max_phase_degrees=test_limits[1])
@@ -935,20 +943,20 @@ class CalibrationAnalyzer():
         self.info.calibration_response_file = response_file
         self.logger.debug(str(self.get_stream('input')[0].stats.response))
 
-    def setup_nominal_responses(self: CalibrationAnalyzer) -> None:
+    def setup_nominal_responses(self: CalibrationAnalyzer, n: int = 1) -> None:
         """
         Set up nominal sensor, cal & system (linear time-invariant) responses.
 
-        system = calibration [m/s^2/V] * sensor [V/(m/s^n)] * integrator(2 - n)
+        system = calibration [m/s^2/V] * sensor [V/(m/s^k)] * integrator(2 - k)
 
         Note
-          1. The 'sensor' is the first stage in the 'output' response.
+          1. The 'sensor' is the n first stages in the 'output' response.
           2. The 'cal' response is recorded in the station metadata as the
             conversion from ground motion to voltage, so to convert voltage to
             ground motion it is inverted.
         """
         sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
-        self.lti.sensor = stage2zpk(sensor_stages[0])
+        self.lti.sensor = zpk_cascade(sensor_stages[0:n])
         self.logger.debug('Sensor: %s', str(self.lti.sensor))
 
         cal_stages = self.split_stages(self.get_stream('input')[0])[0]
@@ -968,7 +976,7 @@ class CalibrationAnalyzer():
                 f'from {cal_units} to {sensor_units} not supported.')
 
         self.lti.cal = lti_divide(
-            lti_multiply(integrator, zpk_cascade(sensor_stages[1:])),
+            lti_multiply(integrator, zpk_cascade(sensor_stages[n:])),
             zpk_cascade(cal_stages))
         self.logger.debug('Cal: %s', self.lti.cal)
 
@@ -984,38 +992,18 @@ class CalibrationAnalyzer():
 
     def tf_nominal(
         self: CalibrationAnalyzer,
-        model: str,
+        model: Literal['sensor', 'cal', 'system'],
         f: Optional[ArrayLike] = None,
     ) -> np.ndarray:
         """
         Return nominal transfer function evaluated at frequencies.
-
-        Arguments:
-        - `model`: typically 'sensor', 'cal' or 'system'
-        - `f`: frequencies in Hz, defaults to those of self.stft
-
-        Returns:
-        - `tf`: nominal transfer function at given frequencies.
         """
-        if model not in vars(self.lti):
-            raise ValueError(
-                f"Model '{model}' not among supported: "
-                ', '.join(vars(self.lti)))
         if f is None:
             f = self.stft.f
         else:
             f = np.array(f)
 
-        omegas = 2*np.pi*f
-        tf_sensor = self.lti.sensor.freqresp(omegas)[1]
-        tf_cal = self.lti.cal.freqresp(omegas)[1]
-
-        if model == 'cal':
-            return tf_cal
-        elif model == 'sensor':
-            return tf_sensor
-        else:
-            return tf_sensor*tf_cal
+        return getattr(self.lti, model).freqresp(2*np.pi*f)[1]
 
     def voltage(
         self: CalibrationAnalyzer,
@@ -1147,23 +1135,23 @@ class CalibrationAnalyzer():
 
         if self.lti.fits:
             poles = pd.concat(
-                [feature_stats(lti_divide(fit, self.lti.cal).poles, 'pole')
-                    for fit in self.lti.fits] +
+                [feature_stats(lti_divide(lti_fit, self.lti.cal).poles, 'pole')
+                    for lti_fit in self.lti.fits] +
                 [feature_stats(self.lti.sensor.poles, 'pole')]
             ).applymap(lambda x: round_sig(x, 6))
             poles.index = info.index
 
             zeros = pd.concat(
-                [feature_stats(lti_divide(fit, self.lti.cal).zeros, 'zero')
-                    for fit in self.lti.fits] +
+                [feature_stats(lti_divide(lti_fit, self.lti.cal).zeros, 'zero')
+                    for lti_fit in self.lti.fits] +
                 [feature_stats(self.lti.sensor.zeros, 'zero')]
             ).applymap(lambda x: round_sig(x, 6))
             zeros.index = info.index
 
             sensitivity = pd.DataFrame(
                 np.vstack(
-                    [self.sensitivity(lti_divide(fit, self.lti.cal))
-                     for fit in self.lti.fits] +
+                    [self.sensitivity(lti_divide(lti_fit, self.lti.cal))
+                     for lti_fit in self.lti.fits] +
                     [self.sensitivity(self.lti.sensor)]),
                 columns=pd.MultiIndex.from_tuples([
                     ('f_norm', 'hz'),
@@ -1205,7 +1193,8 @@ class CalibrationAnalyzer():
     def tf_fits(self: CalibrationAnalyzer) -> np.ndarray:
         """Compute fitted transfer functions at measured frequencies."""
         return np.array([
-            fit.freqresp(2*np.pi*self.stft.f)[1] for fit in self.lti.fits])
+            lti_fit.freqresp(2*np.pi*self.stft.f)[1]
+            for lti_fit in self.lti.fits])
 
     def test(
         self: CalibrationAnalyzer,
@@ -1397,7 +1386,10 @@ class CalibrationAnalyzer():
 
         return signal
 
-    def fit(self: CalibrationAnalyzer) -> None:
+    def fit(
+        self: CalibrationAnalyzer,
+        out_of_band: Tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
+    ) -> None:
         """Least-squares estimation of poles and zeros."""
         f = self.stft.f
         if len(f) < 1:
@@ -1414,7 +1406,8 @@ class CalibrationAnalyzer():
         sensor_units = units(sensor_stages)['forward']
 
         zpk_fixed = zpk_out_of_band(self.lti.system, self.stft.f,
-                                    norm_freq_hz=f_norm)
+                                    norm_freq_hz=f_norm,
+                                    factor_lims=out_of_band)
         self.logger.debug(zpk_fixed)
 
         zpk_unfixed = lti_divide(zpk_nom, zpk_fixed)
@@ -1947,6 +1940,8 @@ def main(argv=None) -> int:
     if os.path.isfile(LOG_FILE_NAME):
         os.remove(LOG_FILE_NAME)
     logging.config.dictConfig(LOG_SETTINGS)
+    logger = logging.getLogger(__name__)
+    logger.info('Arguments: %s', ' '.join(argv[1:]))
 
     config = vars(args).copy()
     result = calibration_analyzer(**config)
