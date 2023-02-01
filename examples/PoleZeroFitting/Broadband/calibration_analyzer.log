@@ -9,6 +9,7 @@ INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - Searching *
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - CN.TOTT2.HHE.resp: CN.TOTT2..HHE
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - CN.TOTT2.HHN.resp: CN.TOTT2..HHN
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - CN.TOTT2.HHZ.resp: CN.TOTT2..HHZ
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 1 Hz => calper 1 s
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
 	From M/S (Velocity in Meters per Second) to COUNTS (Digital Counts)
 	Overall Sensitivity: 4.77413e+08 defined at 1.000 Hz
@@ -31,12 +32,9 @@ INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response -
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
 	From M/S**2 (Acceleration) to COUNTS (Digital Counts)
 	Overall Sensitivity: 641101 defined at 1.000 Hz
-	5 stages:
+	2 stages:
 		Stage 1: PolesZerosResponseStage from M/S**2 to V, gain: 97.8273
 		Stage 2: CoefficientsTypeResponseStage from V to COUNTS, gain: 6553.4
-		Stage 3: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 4: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
-		Stage 5: CoefficientsTypeResponseStage from COUNTS to COUNTS, gain: 1
 WARNING  calibration_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:06:10 data missing, advancing end to 2020-03-30T19:56:32.990000Z
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 4 Trace(s) in Stream:
 CN.TOTT2..HHE | 2020-03-30T17:04:13.000000Z - 2020-03-30T19:56:32.990000Z | 100.0 Hz, 1034000 samples

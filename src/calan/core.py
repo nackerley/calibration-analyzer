@@ -14,7 +14,7 @@ from glob import glob
 from time import time
 from tempfile import gettempdir
 from operator import attrgetter
-from typing import Dict, Sequence, Type
+from typing import Dict, Sequence, Type, Union
 
 import requests
 import numpy as np
@@ -26,7 +26,7 @@ from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 from obspy import read_inventory, UTCDateTime
 from obspy.clients import fdsn
 from obspy.core.inventory import (
-    ResponseStage, PolesZerosResponseStage,
+    ResponseStage, InstrumentSensitivity, PolesZerosResponseStage,
     CoefficientsTypeResponseStage, FIRResponseStage)
 from obspy.core.event import \
     Pick, Arrival, Amplitude, StationMagnitude, WaveformStreamID
@@ -395,15 +395,21 @@ def zpk_cascade(
             zpk = lti_multiply(zpk, ZerosPolesGain([], [], stage.stage_gain))
         else:
             raise RuntimeError(
-                f'Unrecognized sensor stage type: {type(stage)}')
+                f'Unsupported stage type: {type(stage)}')
     return zpk
 
 
-def units(stages: ResponseStage) -> Dict[str, str]:
-    """Massage units from a series of stages into readable form."""
+def stage_units(
+    stages: Union[ResponseStage, Sequence[ResponseStage],
+                  InstrumentSensitivity, Sequence[InstrumentSensitivity]],
+) -> Dict[str, str]:
+    """Clean up and return a dictionary of relevant units."""
+    if isinstance(stages, (ResponseStage, InstrumentSensitivity)):
+        stages = [stages]
+
     input_ = (stages[0].input_units.replace('COUNTS', 'counts')
               .replace('M', 'm').replace('S', 's'))
-    output = (stages[-1].input_units.replace('COUNTS', 'counts')
+    output = (stages[-1].output_units.replace('COUNTS', 'counts')
               .replace('M', 'm').replace('S', 's'))
 
     if '/' in input_:
@@ -1098,7 +1104,7 @@ def channels2df(inventory):
         station table with index 'network', 'station','location' 'channel'
         and columns 'start' and 'end'.
     """
-    # TODO: consider merging contiguous time ranges, but carefully!
+    # TODO: consider carefully merging contiguous time ranges
     df = pd.DataFrame()
     df['network'] = [network.code
                      for network, _, _ in inventory_items(inventory)]
@@ -1153,7 +1159,7 @@ def stations2df(inventory):
         station table with index 'network', 'station','location' 'channel'
         and columns 'start' and 'end'.
     """
-    # TODO: consider merging contiguous time ranges, but carefully!
+    # TODO: consider carefully merging contiguous time ranges
     df = pd.DataFrame()
     df['network'] = [network.code
                      for network, _ in inventory_stations(inventory)]

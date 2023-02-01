@@ -12,18 +12,22 @@ Notes
   * `cal`: all other stages, from V to ground motion, typically m/s^2
   * `system` product of `sensor` and `cal`, dimensionless and typically
     having a slope proportional to 1/f in the passband.
-
-2. The length of FFT segments can be specified directly, and is efficient
-for any number with a large number of small factors (not just powers
-of 2), but it is generally more convenient to specify a target number
-of segments as it is the (actual) number of segments in Welch's method
-which reduces the variance in the result.
-
-3. Not all of the calibration input response metadata is used. In particular,
-network, station, location and channel codes are ignored. Only the first two
-stages of the response are retained. The first is assumed to be the sensor
-poles and zeros, while the second gives the digitial-to-analog conversion
-sensitivity.
+2. Splitting of response stages:
+  * `datalogger`: defined as stages including and after counts/V transition
+    * datalogger stages are considered flat with respect to frequency
+    * datalogger preamps are considered part of the sensor
+  * `sensor`: stanges going from ground motion to V
+    * user specified `n` permits control over inclusion of preamps in fitting
+3. The length of FFT segments can be specified directly, and is efficient
+   for any number with a large number of small factors (not just powers
+   of 2), but it is generally more convenient to specify a target number
+   of segments as it is the (actual) number of segments in Welch's method
+   which reduces the variance in the result.
+4. Not all of the calibration input response metadata is used. In particular,
+   network, station, location and channel codes are ignored. Only the first two
+   stages of the response are retained. The first is assumed to be the sensor
+   poles and zeros, while the second gives the digitial-to-analog conversion
+   sensitivity.
 
 Authors
 -------
@@ -57,14 +61,14 @@ import pandas as pd
 import statsmodels.api as sm
 
 from obspy import read, read_inventory, Trace, Stream, UTCDateTime
-from obspy.core.inventory import Inventory, Response, ResponseStage
+from obspy.core.inventory import Response, ResponseStage, InstrumentSensitivity
 from obspy.signal.invsim import simulate_seismometer
 
 from calan.core import (
     PACKAGE, VERSION, factor_names, subplots_squeeze,
-    gain_db, phase_deg, unwrap_mid, recompute_normalization_factors,
+    gain_db, phase_deg, unwrap_mid,
     extract_decimation_coefficients, multi_decim,
-    lti_multiply, lti_divide, zpk_cascade, units)
+    lti_multiply, lti_divide, zpk_cascade, stage_units)
 from calan.utilities import (
     logspace, pretty_duration, round_sig, str_sig, MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
@@ -115,11 +119,12 @@ CAL_COMPONENT = 'C'
 DAC_BITS = 16
 CALIBRATION_DTYPE = f'int{DAC_BITS}'
 
-# IDC-ENG-SPC-103-Rev.7.3, May 2017
+# Typical IMS requirements, not sure where these are defined
 TEST_BAND_HZ = (0.02, 16)
 MAX_AMPLITUDE_PERCENT = 5
 MAX_PHASE_DEGREES = 5
 
+# IDC-ENG-SPC-103-Rev.7.3, May 2017
 CAL_RESULT_MSG_ID = 'CAL_{year:4d}_1_{station}_cr'
 CAL_RESULT_REF_ID = 'CAL_{year:4d}_1_{station}_cs'
 IMS_DATETIME_FMT = '%Y/%m/%d %H:%M'
@@ -155,6 +160,7 @@ PAZ_DATA = ' {real:15.8e} {imag:15.8e}' + '\n'
 MAX_FAP_LEN = 999
 IMS_FOOTER = 'stop' + '\n'
 
+# constants
 OUTPUT_UNIT_MAP = {
     "DISP": ["M"],
     "VEL": ["M/S", "M/SEC"],
@@ -168,7 +174,7 @@ for motion, motion_units in OUTPUT_UNIT_MAP.items():
         MOTION[unit] = motion
 ORDER = {'ACC': 0, 'VEL': 1, 'DISP': 2}
 
-CHECK_PERCENT = 0.01
+CHECK_INST_SENS_PERCENT = 0.01
 CHECK_CLIP = 8000000
 PlotChoices = Literal['none', 'basic', 'diagnostic', 'all']
 PLOT_LEVEL = {value: i for i, value in enumerate(get_args(PlotChoices))}
@@ -357,7 +363,7 @@ def calibration_analyzer(
         analyzer.load_calibration_signal(calibration_signal_file)
         analyzer.load_calibration_response(calibration_response_file)
         analyzer.check_stream(discard_s=discard_s)
-        analyzer.setup_nominal_responses(n=min(fit, 1))
+        analyzer.setup_nominal_responses(n=max(fit, 1))
         analyzer.map_orientations(orientation_map)
 
         plot_level = PLOT_LEVEL[plot]
@@ -397,7 +403,7 @@ def calibration_analyzer(
         dfs.append(analyzer.summary())
 
         if ims_instrument_type:
-            analyzer.write_calibrate_result(ims_instrument_type)
+            analyzer.write_calibrate_result(ims_instrument_type, n=max(fit, 1))
 
     if not dfs:
         logger.error('No valid calibration results.')
@@ -695,30 +701,55 @@ class CalibrationAnalyzer():
                 'Sensor input units %s not among supported: %s',
                 input_units, ', '.join(sorted(MOTION.keys())))
 
-        if output_stream and isinstance(output_stream[0], Trace):
+        for trace in output_stream.traces:
+            self.check_response(trace.stats.response)
+
+        if output_stream.traces:
             first_trace = output_stream[0]
-            first_stats = first_trace.stats  # pylint: disable=no-member
-            self.logger.debug(first_stats.response)
+            first_response = first_trace.stats.response
+            calper = 1/first_response.response_stages[0].stage_gain_frequency
+            self.logger.info(
+                'First stage gain frequency %g Hz => calper %g s',
+                1/calper, calper)
+            self.logger.debug(first_response)
 
-    def _force_response_match_deprecated(
+    def check_response(
         self: CalibrationAnalyzer,
-        inventory: Inventory,
-        stream: Stream,
+        response: Response,
+        rtol: float = CHECK_INST_SENS_PERCENT/100
     ) -> None:
-        """Force inventory to have same NSLC codes as stream."""
-        network_codes = {trace.stats.network for trace in stream}
-        station_codes = {trace.stats.station for trace in stream}
-        location_codes = {trace.stats.location for trace in stream}
-        channel_codes = {trace.stats.channel for trace in stream}
+        """Verify instrument sensitivity matches cascaded stages at calper."""
+        stages = response.response_stages
+        inst_sens = response.instrument_sensitivity
+        if not np.isclose(inst_sens.frequency, stages[0].stage_gain_frequency):
+            self.logger.warning(
+                'Instrument sensitivity frequency %g Hz '
+                'should be same as first stage gain frequency %g Hz',
+                inst_sens.frequency, stages[0].stage_gain_frequency)
 
-        for network, network_code in zip(inventory, network_codes):
-            network.code = network_code
-            for station, station_code in zip(network, station_codes):
-                station.code = station_code
-                for channel, location_code, channel_code in zip(
-                        station, location_codes, channel_codes):
-                    channel.location_code = location_code
-                    channel.code = channel_code
+        if (stage_units(inst_sens)['forward'].upper() !=
+                stage_units(stages)['forward'].upper()):
+            self.logger.warning(
+                'Instrument sensitivity units %s '
+                'should be same as stage units %s',
+                stage_units(inst_sens)['forward'], stage_units(stages)['forward'], )
+        if inst_sens.output_units.upper() != 'COUNTS':
+            self.logger.warning(
+                "Instrument sensitivity output units '%s' should be 'counts'.",
+                inst_sens.output_units)
+
+        sensor_stages, datalogger_stages = self.split_stages(stages)
+        sensor_value = np.abs(zpk_cascade(sensor_stages).freqresp(
+            2*np.pi*stages[0].stage_gain_frequency)[1][0])
+        datalogger_value = np.product(
+            [stage.stage_gain for stage in datalogger_stages])
+        stages_value = sensor_value*datalogger_value
+        if not np.isclose(inst_sens.value, stages_value, rtol=rtol):
+            self.logger.warning(
+                'Instrument sensitivity, %g %s, should be close '
+                'to that of cascaded stages, %g %s, but is not used',
+                inst_sens.value, stage_units(inst_sens)['forward'],
+                stages_value, stage_units(stages)['forward'])
 
     def load_calibration_signal(
         self: CalibrationAnalyzer,
@@ -846,12 +877,19 @@ class CalibrationAnalyzer():
             samples,
             np.zeros(int(round(self._post_seconds()*sampling_rate)))))
 
-    def split_stages(
+    def trace_stages(
         self: CalibrationAnalyzer,
         trace: Trace,
     ) -> Tuple[List[ResponseStage], List[ResponseStage]]:
+        """Retrieve response stages and split into sensor and datalogger."""
+        return self.split_stages(trace.stats.response.response_stages)
+
+    def split_stages(
+        self: CalibrationAnalyzer,
+        stages: Sequence[ResponseStage],
+    ) -> Tuple[List[ResponseStage], List[ResponseStage]]:
         """
-        Retrieve response stages and split into sensor and datalogger.
+        Associate stages with sensor and datalogger.
 
         The heuristic used is to assign all stages before the first V/counts
         stage to the sensor (even if it is in fact a preamp or other filter),
@@ -862,7 +900,7 @@ class CalibrationAnalyzer():
         """
         sensor_stages, datalogger_stages = [], []
         is_sensor = True
-        for stage in trace.stats.response.response_stages:
+        for stage in stages:
             if stage.input_units.upper() == 'V' and \
                     stage.output_units.upper() == 'COUNTS':
                 is_sensor = False
@@ -878,7 +916,7 @@ class CalibrationAnalyzer():
         system: lti
     ) -> Tuple[float, float]:
         """Compute sensitivity at sensor stage gain frequency."""
-        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        sensor_stages = self.trace_stages(self.get_stream('output')[0])[0]
         f_norm = sensor_stages[0].stage_gain_frequency
         sensitivity = np.abs(system.freqresp(w=2*np.pi*f_norm)[1][0])
         return f_norm, sensitivity
@@ -887,61 +925,61 @@ class CalibrationAnalyzer():
         self: CalibrationAnalyzer,
         response_file: str = '',
     ) -> None:
-        """Set up calibration input response."""
+        """
+        Set up calibration input response.
+
+        If NSLC doesn't match, the first channels is used.
+
+        If no datalogger is specified, that of the first output trace is used.
+        """
         self.logger.info(response_file)
         inventory = read_inventory(response_file)
+        input_trace = self.get_stream('input')[0]
+
         cal_inventory = inventory.select(
-            network=self.get_stream('input')[0].stats.network,
-            station=self.get_stream('input')[0].stats.station,
-            location=self.get_stream('input')[0].stats.location,
-            channel=self.get_stream('input')[0].stats.channel,
-            time=self.get_stream('input')[0].stats.starttime,
+            network=input_trace.stats.network,
+            station=input_trace.stats.station,
+            location=input_trace.stats.location,
+            channel=input_trace.stats.channel,
+            time=input_trace.stats.starttime,
         )
         if cal_inventory:
             response = cal_inventory[0][0][0].response
         else:
             response = inventory[0][0][0].response
-        instrument_sensitivity = response.instrument_sensitivity.value
-        # n.b. can't use response.recalculate_overall_sensitivity() because it
-        # takes the absolute value!
-        response.instrument_sensitivity.value = np.prod([
-            stage.stage_gain for stage in response.response_stages])
 
-        if not np.isclose(response.instrument_sensitivity.value,
-                          instrument_sensitivity, rtol=CHECK_PERCENT/100):
-            instrument_units = (
-                f'{response.instrument_sensitivity.output_units}/'
-                f'({response.instrument_sensitivity.input_units.lower()})')
-            self.logger.warning(
-                'Instrument sensitivity %.6g %s in file differs from'
-                'recalculated value %.6g %s by more than %g%%.',
-                instrument_sensitivity, instrument_units,
-                response.instrument_sensitivity.value, units, CHECK_PERCENT)
+        cal_stages, datalogger_stages = self.split_stages(response.response_stages)
 
-        recompute_normalization_factors(response, rtol=CHECK_PERCENT/100)
+        if not datalogger_stages:
+            self.logger.info(
+                'No calibration input datalogger; assume same as output signal')
+            sensor_stages, datalogger_stages = self.trace_stages(
+                self.get_stream('output')[0])
+            norm_freq = sensor_stages[0].stage_gain_frequency
+            cal_sensitivity = (
+                np.product([stage.stage_gain for stage in datalogger_stages]) *
+                np.abs(zpk_cascade(cal_stages).freqresp(2*np.pi*norm_freq)[1][0]))
+            instrument_sensitivity = InstrumentSensitivity(
+                value=cal_sensitivity,
+                frequency=norm_freq,
+                input_units=cal_stages[0].input_units,
+                output_units=datalogger_stages[-1].output_units)
+            response = Response(
+                response_stages=cal_stages + datalogger_stages,
+                instrument_sensitivity=instrument_sensitivity)
+            for i, stage in enumerate(response.response_stages, start=1):
+                stage.stage_sequence_number = i
 
         if MOTION[response.response_stages[0].input_units.upper()] != 'ACC':
             self.logger.warning(
                 'Expected calibration input [%s] to be acceleration [%s]: ',
                 response.response_stages[0].input_unit, UNITS['ACC'])
 
-        decimation_stages = [
-            stage for stage in self.stream[0].stats.response.response_stages
-            if stage.decimation_factor and stage.decimation_factor > 1]
-        input_stages = [
-            stage for stage in response.response_stages
-            if not stage.decimation_factor or stage.decimation_factor == 1]
-
-        self.get_stream('input')[0].stats.response = Response(
-            response_stages=input_stages + decimation_stages,
-            instrument_sensitivity=response.instrument_sensitivity)
-        for i, stage in enumerate(
-                self.get_stream('input')[0].stats.response.response_stages,
-                start=1):
-            stage.stage_sequence_number = i
+        self.logger.debug(response)
+        self.check_response(response)
+        input_trace.stats.response = response
 
         self.info.calibration_response_file = response_file
-        self.logger.debug(str(self.get_stream('input')[0].stats.response))
 
     def setup_nominal_responses(self: CalibrationAnalyzer, n: int = 1) -> None:
         """
@@ -955,11 +993,11 @@ class CalibrationAnalyzer():
             conversion from ground motion to voltage, so to convert voltage to
             ground motion it is inverted.
         """
-        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        sensor_stages = self.trace_stages(self.get_stream('output')[0])[0]
         self.lti.sensor = zpk_cascade(sensor_stages[0:n])
         self.logger.debug('Sensor: %s', str(self.lti.sensor))
 
-        cal_stages = self.split_stages(self.get_stream('input')[0])[0]
+        cal_stages = self.trace_stages(self.get_stream('input')[0])[0]
 
         sensor_units = sensor_stages[0].input_units
         cal_units = cal_stages[0].input_units
@@ -1011,14 +1049,9 @@ class CalibrationAnalyzer():
         trim: bool = True,
     ) -> np.ndarray:
         """
-        Get digitizer input or output signals in volts.
+        Get datalogger input or output signals in volts.
 
-        Arguments:
-        - `which`: 'input' or 'output'
-        - `trim`: remove padding (e.g. turn-on and turn-off times) by slicing
-
-        Returns:
-        - `signal`: one row per channel
+        Optionally trim padding (e.g. turn-on and turn-off times) by slicing.
         """
         stream = self.get_stream(which)
 
@@ -1028,10 +1061,10 @@ class CalibrationAnalyzer():
 
         sensitivities = [
             np.product([stage.stage_gain
-                        for stage in self.split_stages(trace)[1]])
+                        for stage in self.trace_stages(trace)[1]])
             for trace in stream]
         digitizer_units = [
-            units(self.split_stages(trace)[1])['forward'] for trace in stream]
+            stage_units(self.trace_stages(trace)[1])['forward'] for trace in stream]
         self.logger.debug(
             'Digitizer sensitivities (%s): %s',
             which,
@@ -1127,8 +1160,8 @@ class CalibrationAnalyzer():
             self.info.calibration_response_file
 
         # finally add info relating to all rows
-        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
-        sensor_units = units(sensor_stages)
+        sensor_stages = self.trace_stages(self.get_stream('output')[0])[0]
+        sensor_units = stage_units(sensor_stages)
         info['output_units'] = sensor_units['output']
         info['input_units'] = sensor_units['input']
         info[PACKAGE] = VERSION
@@ -1247,9 +1280,15 @@ class CalibrationAnalyzer():
 
     def write_calibrate_result(
         self: CalibrationAnalyzer,
-        ims_instrument_type: str = ''
+        ims_instrument_type: str,
+        n: int = 1,
     ) -> None:
-        """Write IMS2.0 CALIBRATE_RESULT message with CAL2 and FAP2."""
+        """
+        Write IMS2.0 CALIBRATE_RESULT message with CAL2 and PAZ2 or FAP2.
+
+        The response written is that of the first n stages of the sensor
+        response, cascaded.
+        """
         keep = ((self.stft.f >= self.info.spec_min_freq_hz) &
                 (self.stft.f <= self.info.spec_max_freq_hz))
         f = self.stft.f[keep]
@@ -1257,20 +1296,24 @@ class CalibrationAnalyzer():
             self.logger.warning(
                 '%d frequencies is more than %d supported by FAP2 format',
                 len(f), MAX_FAP_LEN)
-        tf_estimate = (
-            self.stft.tf_estimate()[:, keep] /
-            self.tf_nominal('cal')[keep])
+
+        sensor_stages, datalogger_stages = self.trace_stages(self.get_stream('output')[0])
+        zpk_unfit = zpk_cascade(sensor_stages[n:])
+
+        tf_estimates = (self.stft.tf_estimate()[:, keep] /
+                        (self.tf_nominal('cal')[keep]))
 
         if self.lti.fits:
             zpk_fits = [lti_divide(zpk_fit, self.lti.cal)
                         for zpk_fit in self.lti.fits]
         else:
-            zpk_fits = [None]*len(tf_estimate)
+            zpk_fits = [None]*len(tf_estimates)
 
-        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
         calper = 1/sensor_stages[0].stage_gain_frequency
-        nominal_sensor = sensor_stages[0].stage_gain
-        sensor_units = units(sensor_stages)
+        nominal_datalogger = (
+            np.product([stage.stage_gain for stage in datalogger_stages]) *
+            np.abs(zpk_unfit.freqresp(2*np.pi/calper)[1][0]))
+        fit_units = stage_units(sensor_stages[:n])
 
         output_txt = '_'.join([
             'calibrate_result', self.stream[0].stats.station,
@@ -1287,31 +1330,15 @@ class CalibrationAnalyzer():
                     station=self.stream[0].stats.station),
                 time_stamp=UTCDateTime().strftime(IMS_DATETIME_FMT)))
 
-            for trace, amplitudes, phases, zpk_fit, amp_in_spec, phase_in_spec in zip(
-                    self.stream, np.abs(tf_estimate), np.angle(tf_estimate, deg=True), zpk_fits,
+            for trace, tf_estimate, zpk_fit, amp_in_spec, phase_in_spec in zip(
+                    self.stream, tf_estimates, zpk_fits,
                     self.info.gain_in_spec, self.info.phase_in_spec):
 
-                response = trace.stats.response
-                if not np.isclose(
-                        response.instrument_sensitivity.frequency,
-                        response.response_stages[0].stage_gain_frequency):
-                    self.logger.warning(
-                        'Instrument sensitivity frequency %g Hz '
-                        'should be same as first stage gain frequency %g Hz',
-                        response.instrument_sensitivity.frequency,
-                        response.response_stages[0].stage_gain_frequency)
-
-                if response.instrument_sensitivity.output_units.upper() != 'COUNTS':
-                    self.logger.warning(
-                        'Instrument sensitivity output units should be counts.')
-
-                nominal_instrument = response.instrument_sensitivity.value
-                nominal_digitizer = nominal_instrument/nominal_sensor
                 if zpk_fit:
                     actual_sensor = np.abs(zpk_fit.freqresp(2*np.pi/calper)[1][0])
                 else:
-                    actual_sensor = amplitudes[np.argmax(f >= 1/calper)]
-                calib = 1e9*calper/(2*np.pi*actual_sensor*nominal_digitizer)
+                    actual_sensor = np.abs(tf_estimate[np.argmax(f >= 1/calper)])
+                calib = 1e9*calper/(2*np.pi*actual_sensor*nominal_datalogger)
 
                 file.write(RESPONSE_HEADER.format(
                     station=trace.stats.station,
@@ -1333,13 +1360,13 @@ class CalibrationAnalyzer():
                 if zpk_fit:
                     file.write(PAZ_HEADER.format(
                         stage=1,
-                        units=sensor_units['output'],
+                        units=fit_units['output'],
                         scale_factor=1,
                         decimation='',
                         group_correction=0,
                         num_zeros=len(zpk_fit.zeros),
                         num_poles=len(zpk_fit.poles),
-                        description=f"Input units: {sensor_units['input']}"))
+                        description=f"Input units: {fit_units['input']}"))
                     for item in zpk_fit.poles:
                         file.write(PAZ_DATA.format(real=np.real(item),
                                                    imag=np.imag(item)))
@@ -1349,13 +1376,14 @@ class CalibrationAnalyzer():
                 else:
                     file.write(FAP_HEADER.format(
                         stage=1,
-                        units=sensor_units['output'],
+                        units=fit_units['output'],
                         decimation='',
                         group_correction=0,
                         count=len(f),
-                        description=f"Input units: {sensor_units['input']}"))
+                        description=f"Input units: {fit_units['input']}"))
                     for frequency, amplitude, phase in zip(
-                            f, amplitudes, phases):
+                            f, np.abs(tf_estimate),
+                            np.angle(tf_estimate, deg=True)):
                         file.write(FAP_DATA.format(
                             frequency=frequency,
                             amplitude=amplitude,
@@ -1402,8 +1430,8 @@ class CalibrationAnalyzer():
         self.logger.debug(zpk_nom)
 
         f_norm, sens_nom = self.sensitivity(self.lti.sensor)
-        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
-        sensor_units = units(sensor_stages)['forward']
+        sensor_units = stage_units(
+            self.trace_stages(self.get_stream('output')[0])[0])['forward']
 
         zpk_fixed = zpk_out_of_band(self.lti.system, self.stft.f,
                                     norm_freq_hz=f_norm,
@@ -1613,11 +1641,11 @@ class CalibrationAnalyzer():
             axes[1].set_ylim([-180, 180])
             axes[1].set_yticks(np.arange(-180, 180 + 1, 45.))
 
-        sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
+        sensor_stages = self.trace_stages(self.get_stream('output')[0])[0]
         if model == 'cal':
-            axes[0].set_ylabel(f"Gain [dB wrt {units(sensor_stages)['reverse']}]")
+            axes[0].set_ylabel(f"Gain [dB wrt {stage_units(sensor_stages)['reverse']}]")
         elif model == 'sensor':
-            axes[0].set_ylabel(f"Gain [dB wrt {units(sensor_stages)['forward']}]")
+            axes[0].set_ylabel(f"Gain [dB wrt {stage_units(sensor_stages)['forward']}]")
         else:
             axes[0].set_ylabel('Gain [dB]')
         axes[0].legend(loc='best')
@@ -1870,8 +1898,8 @@ class CalibrationAnalyzer():
         if remove == 'system':
             axes[0].set_ylabel('Gain wrt nominal [dB]')
         elif remove == 'cal':
-            sensor_stages = self.split_stages(self.get_stream('output')[0])[0]
-            axes[0].set_ylabel(f"Gain [dB wrt {units(sensor_stages)['forward']}]")
+            sensor_stages = self.trace_stages(self.get_stream('output')[0])[0]
+            axes[0].set_ylabel(f"Gain [dB wrt {stage_units(sensor_stages)['forward']}]")
         else:
             axes[0].set_ylabel('Gain [dB]')
         axes[1].set_ylabel('Phase [°]')
