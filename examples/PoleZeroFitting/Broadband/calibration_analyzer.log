@@ -35,7 +35,6 @@ DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response -
 	2 stages:
 		Stage 1: PolesZerosResponseStage from M/S**2 to V, gain: 97.8273
 		Stage 2: CoefficientsTypeResponseStage from V to COUNTS, gain: 6553.4
-WARNING  calibration_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:06:10 data missing, advancing end to 2020-03-30T19:56:32.990000Z
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:check_stream - 4 Trace(s) in Stream:
 CN.TOTT2..HHE | 2020-03-30T17:04:13.000000Z - 2020-03-30T19:56:32.990000Z | 100.0 Hz, 1034000 samples
 CN.TOTT2..HHN | 2020-03-30T17:04:13.000000Z - 2020-03-30T19:56:32.990000Z | 100.0 Hz, 1034000 samples

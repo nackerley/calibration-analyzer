@@ -843,7 +843,7 @@ class CalibrationAnalyzer():
             self.info.start = last_start + discard_s[0]
 
         first_end = min([trace.stats.endtime for trace in self.stream])
-        if self.info.end < first_end:
+        if first_end < self.info.end:
             self.logger.warning(
                 '%s data missing, advancing end to %s',
                 pd.to_timedelta(first_end - self.info.end, 's'), first_end)
