@@ -5,10 +5,12 @@ from math import floor, log10
 from operator import mul
 from functools import reduce
 import argparse
-from typing import Literal, Optional, Sequence, Union
+from typing import List, Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
+
+import pandas as pd
 
 
 # %% argument parsing
@@ -20,19 +22,21 @@ class MyFormatter(argparse.ArgumentDefaultsHelpFormatter,
 class MyArgumentParser(argparse.ArgumentParser):
     """Trigger printing of help on any argument parsing error."""
 
-    def error(self, message):
+    def error(self, message: str):  # type: ignore
         """Display help and exit."""
         self.print_help()
         sys.exit('Error parsing arguments: ' + message + '\n')
 
 
-def string_list(argument):
+def string_list(
+    argument: Optional[Union[str, Sequence[str]]]
+) -> List[str]:
     """Turn an argument which might be a string or a tuple into a list."""
-    if isinstance(argument, str) or argument is None:
-        argument = [argument]
-    elif isinstance(argument, tuple):
-        argument = list(argument)
-    return argument
+    if argument is None:
+        return []
+    if isinstance(argument, str):
+        return [argument]
+    return list(argument)
 
 
 # %% formatting
@@ -215,7 +219,7 @@ def parse_voltage(
     return parse_units(string, output_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS)
 
 
-def to_string_no_index(df, **kwargs):
+def to_string_no_index(df: pd.DataFrame, **kwargs: str) -> str:
     """
     Work around issue with pandas.DataFrame.to_string().
 
@@ -225,7 +229,7 @@ def to_string_no_index(df, **kwargs):
     See https://github.com/pydata/pandas/issues/13032
     """
     index_width = max([len(str(i)) for i in df.index]) + 1
-    lines = df.to_string(**kwargs).split('\n')
+    lines = df.to_string(**kwargs).split('\n')  # type: ignore
     string = '\n'.join([line[index_width:] for line in lines]) + '\n'
     return string
 

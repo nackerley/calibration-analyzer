@@ -515,16 +515,23 @@ def get_weights(
     return weights
 
 
-def _plot_possible_weights(*args) -> None:
+def _plot_possible_weights(
+    weighting: Sequence[str],
+    f_meas: ArrayLike,
+    var_meas: ArrayLike,
+    h_initial: ArrayLike,
+    var_lims: Tuple[float, float]
+) -> None:
     """Plot all possible weighting schemes. Same args as get_weights()."""
     fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
     example_weightings = []
     for num in range(len(WEIGHTING_SCHEMES) + 1):
         example_weightings += list(combinations(WEIGHTING_SCHEMES, num))
     for ex_weighting in example_weightings:
-        ex_weights = get_weights(ex_weighting, *args[1:])
-        width = 3 if set(ex_weighting) == set(args[0]) else 1.5
-        ax.loglog(args[1], ex_weights, label=','.join(ex_weighting) or 'none',
+        ex_weights = get_weights(
+            ex_weighting, f_meas, var_meas, h_initial, var_lims)
+        width = 3 if set(ex_weighting) == set(weighting) else 1.5
+        ax.loglog(f_meas, ex_weights, label=','.join(ex_weighting) or 'none',
                   linewidth=width)
     ax.set_ylabel('Weight')
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))

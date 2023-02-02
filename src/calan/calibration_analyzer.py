@@ -56,7 +56,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 import pandas as pd
-import statsmodels.api as sm
+import statsmodels.api as sm  # type: ignore
 
 from obspy import read, read_inventory, Trace, Stream, UTCDateTime
 from obspy.core.inventory import Response, ResponseStage, InstrumentSensitivity
@@ -1029,7 +1029,7 @@ class CalibrationAnalyzer():
         self.lti.system = lti_multiply(self.lti.cal, self.lti.sensor)
         self.logger.debug('System: %s', self.lti.system)
 
-    def map_orientations(self, mapping) -> None:
+    def map_orientations(self, mapping: Tuple[str, str]) -> None:
         """Account for differences between outputs and internal mechanics."""
         for trace in self.stream:
             for output, internal in zip(*mapping):
@@ -1980,7 +1980,7 @@ LOG_SETTINGS = {
 }
 
 
-def main(argv=None) -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     """Run analysis and return system exit code."""
     if argv is None:
         argv = sys.argv
