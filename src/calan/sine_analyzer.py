@@ -27,23 +27,11 @@ import matplotlib.pyplot as plt
 import pytz
 from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
-from obspy import read, read_inventory
-from obspy.core.inventory.response import \
-    PolesZerosResponseStage, CoefficientsTypeResponseStage
+from obspy import read
 
 from calan.core import PACKAGE, VERSION, get_clients, get_logger
 from calan.utilities import MyArgumentParser, MyFormatter
 from calan.stft import Stft
-
-# calibration circuit parameter estimates
-# FIXME: parameters not used; misleading.
-MASS_KG = 5
-GENERATOR_VMS = 629
-COIL_OHM = 3600
-CAL_OHM = 23
-MOTOR_MS2A = GENERATOR_VMS/MASS_KG*CAL_OHM/COIL_OHM
-MOTOR_MS2V = MOTOR_MS2A*CAL_OHM
-DAC_GAIN = 2**12/5
 
 # default values for analysis
 LEN_FFT = 200
@@ -91,14 +79,12 @@ def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
 
 
 class SynchronousCalibrationAnalyzer():
-    """
-    Calibration analyzer for ObsPy stream including calibration signal.
-    """
+    """Calibration analyzer for ObsPy stream including calibration signal."""
 
     TIME_ZONE_FINDER = TimezoneFinder()
 
     def __init__(self, plot=False, dpi=DPI):
-
+        """Construct analyzer."""
         # helpers
         if os.path.isfile(LOG_FILE_NAME):
             os.remove(LOG_FILE_NAME)
@@ -124,9 +110,7 @@ class SynchronousCalibrationAnalyzer():
 
     def load_waveforms(self, output_file, trim_s=TRIM_S,
                        output_label=OUTPUT_LABEL, input_label=INPUT_LABEL):
-        """
-        Load and preserve synchronous portions of input and output traces.
-        """
+        """Load and preserve synchronous portions of input & output traces."""
         input_file = output_file.replace(output_label, input_label)
         self.test_name = (os.path.splitext(output_file)[0]
                           .replace(output_label, ''))
@@ -174,55 +158,9 @@ class SynchronousCalibrationAnalyzer():
         if self.stream.get_gaps():
             raise RuntimeError('Gaps detected.')
 
-    def load_response(self, template_station='YKAR1', template_channel='SHZ',
-                      motor_ms2v=MOTOR_MS2V, dac_gain=DAC_GAIN):
-        """
-        Load nominal input and output responses.
-
-        FIXME: Unused, misleading.
-        """
-        inventory_xml = self.stream[1].id + '.xml'
-        # copy response from known station
-        if not os.path.isfile(inventory_xml):
-            inventory = self.client.get_stations(station=template_station,
-                                                 channel=template_channel,
-                                                 level='response')
-            network = inventory[0]
-            station = network[0]
-            assert len(inventory) == len(network) == len(station) == 1
-            network.code = self.stream[0].stats.network
-            station.code = self.stream[0].stats.station
-            station[0].location_code = self.stream[0].stats.location
-            station[0].code = self.stream[0].stats.channel
-            station.channels.append(station[0].copy())
-            station[1].code = self.stream[1].stats.channel
-
-            calibration = station[0].response
-            f_sample = calibration.response_stages[2].decimation_input_sample_rate
-            calibration.response_stages[0] = PolesZerosResponseStage(
-                1, motor_ms2v, 0, 'M/S**2', 'V', 'LAPLACE (RADIANS/SECOND)', 0,
-                [], [])
-            calibration.response_stages[1] = CoefficientsTypeResponseStage(
-                2, dac_gain, 0, 'V', 'COUNTS', 'DIGITAL',
-                numerator=[], denominator=[],
-                decimation_input_sample_rate=f_sample,
-                decimation_factor=1, decimation_offset=0,
-                decimation_delay=0, decimation_correction=0)
-            calibration.recalculate_overall_sensitivity()
-
-            self.logger.info('Writing: %s', inventory_xml)
-            inventory.write(inventory_xml, 'STATIONXML')
-        else:
-            self.logger.info('Reading: %s', inventory_xml)
-            inventory = read_inventory(inventory_xml)
-
-        self.stream.attach_response(inventory)
-
     def compute_peak_response(self, len_fft=LEN_FFT, len_overlap=LEN_OVERLAP,
                               min_rel_power=1e-4, window=WINDOW):
-        """
-        Compute relative transfer function estimate at spectral peak.
-        """
+        """Compute relative transfer function estimate at spectral peak."""
         self.stft = Stft()
         self.stft.compute(self.stream[0].data, self.stream[1].data,
                           self.stream[0].stats.sampling_rate,
@@ -311,9 +249,7 @@ class SynchronousCalibrationAnalyzer():
 
     def get_temperature(self, dt_utc, station_id=WEATHER_STATION_ID,
                         time_zone=WEATHER_STATION_TIME_ZONE):
-        """
-        Get temperature near station at given time.
-        """
+        """Get temperature near station at given time."""
         time_zone = pytz.timezone(time_zone)
         dt_local = time_zone.fromutc(dt_utc)
 
@@ -346,9 +282,7 @@ class SynchronousCalibrationAnalyzer():
 
     def summary(self, station_id=WEATHER_STATION_ID,
                 time_zone=WEATHER_STATION_TIME_ZONE):
-        """
-        Summarize result.
-        """
+        """Summarize result."""
         result = pd.Series(dtype=object)
         result['test name'] = self.test_name
         result['channel id'] = self.stream[1].id
@@ -371,9 +305,7 @@ class SynchronousCalibrationAnalyzer():
 
 
 def _argparser():
-    """
-    Command-line interface.
-    """
+    """Command-line interface."""
     # pylint: disable=no-member
     parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
                               description=__doc__,
@@ -424,9 +356,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
                   output_label=OUTPUT_LABEL, input_label=INPUT_LABEL,
                   summary_csv='',
                   plot=False, dpi=DPI):
-    """
-    Run analysis for all calibration files matching a glob pattern.
-    """
+    """Run analysis for all calibration files matching a glob pattern."""
     analyzer = SynchronousCalibrationAnalyzer(plot=plot, dpi=dpi)
 
     if not summary_csv:
@@ -494,9 +424,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
 
 
 def main(argv=None):
-    """
-    Analyze calibrations and return system exit code.
-    """
+    """Analyze calibrations and return system exit code."""
     if argv is None:
         argv = sys.argv
     parser = _argparser()

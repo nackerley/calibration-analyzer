@@ -1,14 +1,14 @@
-"""
-General-Purpose utilities.
-"""
+"""General-Purpose utilities."""
 # pylint: disable=consider-using-f-string
 import sys
 from math import floor, log10
 from operator import mul
 from functools import reduce
 import argparse
+from typing import Literal, Optional, Sequence, Union
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 
 # %% argument parsing
@@ -36,25 +36,26 @@ def string_list(argument):
 
 
 # %% formatting
-def round_sig(value, num_significant=3):
+def round_sig(
+    value: float,
+    num_significant: int = 3,
+) -> float:
     """
     Round to a given number of significant figures.
 
     Not the same as rounding to a number of digits.
     """
-    if value is None or value == 0 or np.isinf(value) or np.isnan(value):
+    if value == 0 or np.isinf(value) or np.isnan(value):
         return value
 
     order_of_magnitude = int(floor(log10(abs(value))))
     num_digits = num_significant - order_of_magnitude - 1
 
-    return np.round(value, num_digits)
+    return round(value, num_digits)
 
 
 def str_sig(value: float, sig_dig: int = 3) -> str:
-    """
-    Make string with given number of significant digits.
-    """
+    """Make string with given number of significant digits."""
     if np.isinf(value) or np.isnan(value):
         return str(value)
 
@@ -69,7 +70,14 @@ def str_sig(value: float, sig_dig: int = 3) -> str:
 
 
 # pylint: disable=too-many-arguments
-def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
+def pretty_units(
+    input_value: float,
+    input_unit: str,
+    units: Sequence[str],
+    factors: Sequence[float],
+    fmt: Union[str, int],
+    thresh: float = 0.95,
+) -> str:
     """
     Convert a value with specified units to string in related units.
 
@@ -99,7 +107,12 @@ def pretty_units(input_value, input_unit, units, factors, fmt, thresh=0.95):
     return '%g' % value + input_unit
 
 
-def parse_units(string, output_unit, units, factors):
+def parse_units(
+    string: str,
+    output_unit: str,
+    units: Sequence[str],
+    factors: Sequence[float]
+) -> float:
     """Convert a string including units to a numeric value in related units."""
     output_unit_index = next((i for i, unit in enumerate(units)
                               if output_unit == unit), None)
@@ -111,10 +124,10 @@ def parse_units(string, output_unit, units, factors):
     try:
         input_value = float(string.replace(input_unit, ''))
     except ValueError:
-        return None
+        return np.NaN
 
-    input_unit_index = next((i for i, unit in enumerate(units)
-                             if input_unit == unit), None)
+    input_unit_index = next(i for i, unit in enumerate(units)
+                            if input_unit == unit)
 
     multipliers = [reduce(mul, [factor for factor in factors[:n]], 1.)
                    for n in range(len(units))]
@@ -128,13 +141,21 @@ TIME_UNITS = ['y', 'w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns', 'ps']
 TIME_FACTORS = [52, 365.25/52, 24, 60, 60, 1e3, 1e3, 1e3]
 
 
-def pretty_duration(value, input_unit='s', fmt=3, thresh=0.95):
+def pretty_duration(
+    value: float,
+    input_unit: str = 's',
+    fmt: Union[str, int] = 3,
+    thresh: float = 0.95
+) -> str:
     """Convert a duration to a string which includes units."""
     return pretty_units(value, input_unit, TIME_UNITS, TIME_FACTORS, fmt,
                         thresh)
 
 
-def parse_duration(string, output_unit='s'):
+def parse_duration(
+    string: str,
+    output_unit: str = 's'
+) -> float:
     """Convert a string to a duration in specified units."""
     return parse_units(string, output_unit, TIME_UNITS, TIME_FACTORS)
 
@@ -146,7 +167,12 @@ BYTE_UNITS = ['TB', 'GB', 'MB', 'KB', 'B']
 BYTE_FACTORS = [1e3]*(len(BYTE_UNITS) - 1)
 
 
-def pretty_bytes(value, input_unit='B', fmt=3, style='binary'):
+def pretty_bytes(
+    value: float,
+    input_unit: str = 'B',
+    fmt: Union[str, int] = 3,
+    style: Literal['binary', 'decimal'] = 'binary',
+) -> str:
     """Convert a file size to a string which includes units."""
     if style == 'binary':
         return pretty_units(value, input_unit, BINARY_BYTE_UNITS,
@@ -155,26 +181,36 @@ def pretty_bytes(value, input_unit='B', fmt=3, style='binary'):
     return pretty_units(value, input_unit, BYTE_UNITS, BYTE_FACTORS, fmt)
 
 
-VOLTAGE_UNITS = ['MV', 'kV', 'V', 'mV', 'uV', 'nV']
-VOLTAGE_FACTORS = [1e3]*(len(VOLTAGE_UNITS) - 1)
-
-
-def parse_bytes(string, output_unit='B'):
+def parse_bytes(
+    string: str,
+    output_unit: str = 'B'
+) -> float:
     """Convert a string to a size in specified units."""
     result = parse_units(string, output_unit, BINARY_BYTE_UNITS,
                          BINARY_BYTE_FACTORS)
-    if result is None:
+    if np.isnan(result):
         result = parse_units(string, output_unit, BYTE_UNITS, BYTE_FACTORS)
 
     return result
 
 
-def pretty_voltage(value, input_unit='V', fmt=3):
+VOLTAGE_UNITS = ['MV', 'kV', 'V', 'mV', 'uV', 'nV']
+VOLTAGE_FACTORS = [1e3]*(len(VOLTAGE_UNITS) - 1)
+
+
+def pretty_voltage(
+    value: float,
+    input_unit: str = 'V',
+    fmt: Union[str, int] = 3,
+) -> str:
     """Convert a voltage to a string which includes units."""
     return pretty_units(value, input_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS, fmt)
 
 
-def parse_voltage(string, output_unit='V'):
+def parse_voltage(
+    string: str,
+    output_unit: str = 'V',
+) -> Optional[float]:
     """Convert a string to a voltage in specified units."""
     return parse_units(string, output_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS)
 
@@ -195,11 +231,16 @@ def to_string_no_index(df, **kwargs):
 
 
 # %% logarithmic binning
-def preferred_number(value, series=(1, 2, 5), method='nearest'):
+def preferred_number(
+    value: float,
+    series: Sequence[float] = (1, 2, 5),
+    method: str = 'nearest',
+) -> float:
     """Find nearest value from Renard or E-series."""
     # ensure preferred value series ends a factor of 10 higher than it starts
+    series = list(series)
     if series[-1] != 10*series[0]:
-        series = np.hstack((series, 10*series[0]))
+        series.append(10*series[0])
 
     mul_series = 10**(np.floor(np.log10(series[0])))
     log_series = np.log10(series) % 1.
@@ -277,7 +318,12 @@ E_SERIES = {
 }
 
 
-def stdval(value, num=96, bump=0, preferred=None):
+def stdval(
+    value: ArrayLike,
+    num: int = 96,
+    bump: float = 0,
+    preferred: Optional[ArrayLike] = None,
+) -> np.ndarray:
     """
     Compute nearest values in a standard-value series.
 
@@ -342,7 +388,7 @@ def stdval(value, num=96, bump=0, preferred=None):
         multiplier = 10**np.floor(np.log10(value) - digits + 1)
 
         # shift input to have the right number of digits
-        value = value/multiplier
+        value = np.array(value/multiplier)
 
         # find nearest standard value in a logarithmic sense
         pref_mat = np.tile(np.log10(preferred), (value.size, 1)).transpose()
@@ -397,7 +443,7 @@ def stdval(value, num=96, bump=0, preferred=None):
     return output
 
 
-def logspace(start, stop, num=12):
+def logspace(start: float, stop: float, num: int = 12) -> np.ndarray:
     """
     Compute logarithmically spaced vector of preferred numbers.
 

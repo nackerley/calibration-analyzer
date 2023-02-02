@@ -6,24 +6,26 @@ Short-term Fourier Transform.
 Bendat, J. S., & Piersol, A. G. (2010). Random Data: Analysis and measurement
 procedures (4th ed.). Wiley.
 """
-# pylint: disable=consider-using-f-string
-from __future__ import annotations
-
 import os
+from typing import Optional
+from logging import getLogger
 
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy import fftpack
 from scipy.signal._spectral_py import _spectral_helper
 
-from calan.core import get_logger
 from calan.utilities import preferred_number
 
 THIS_FILE_NAME = os.path.basename(__file__)
 LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
 
 
-def num_windows_welch(len_signal, len_fft, len_overlap=None):
+def num_windows_welch(
+    len_signal: int,
+    len_fft: int,
+    len_overlap: Optional[int] = None,
+) -> int:
     """Return number of windows resulting from Welch's method."""
     if len_overlap is None:
         len_overlap = int(len_fft/2)
@@ -31,8 +33,12 @@ def num_windows_welch(len_signal, len_fft, len_overlap=None):
     return int((len_signal - len_fft)/(len_fft - len_overlap)) + 1
 
 
-def len_fft_welch(len_signal, num_windows=None, fraction_overlap=None):
-    """Recommended FFT length to achieve number of windows using Welch's method."""
+def len_fft_welch(
+    len_signal: int,
+    num_windows: Optional[float] = None,
+    fraction_overlap: Optional[float] = None
+) -> int:
+    """Recommend FFT length to achieve number of windows by Welch's method."""
     if num_windows is None:
         num_windows = 30
     if fraction_overlap is None:
@@ -42,7 +48,12 @@ def len_fft_welch(len_signal, num_windows=None, fraction_overlap=None):
         len_signal / ((num_windows - 0.5) * (1 - fraction_overlap) + 1)))
 
 
-def window_times_welch(len_signal, len_fft, f_sample, len_overlap=None):
+def window_times_welch(
+    len_signal: int,
+    len_fft: int,
+    f_sample: float,
+    len_overlap: Optional[int] = None,
+) -> np.ndarray:
     """
     Array of times of centers of windows resulting from Welch's method.
 
@@ -55,7 +66,11 @@ def window_times_welch(len_signal, len_fft, f_sample, len_overlap=None):
                      len_fft - len_overlap)/f_sample
 
 
-def fft_frequencies(len_fft, f_sample, sides='onesided'):
+def fft_frequencies(
+    len_fft: int,
+    f_sample: float,
+    sides: str = 'onesided',
+) -> np.ndarray:
     """
     Array of frequencies expected from an FFT calculation.
 
@@ -82,24 +97,24 @@ def fft_frequencies(len_fft, f_sample, sides='onesided'):
 class Stft():
     """Short-term fourier auto- and cross-spectra between input and output."""
 
-    def __init__(self: Stft, log_level: str = 'INFO') -> None:
+    def __init__(self) -> None:
         """Construct STFT."""
         self.f = np.array([[np.NaN]])
         self.t = np.array([[np.NaN]])
         self.p_xx = np.array([[np.NaN]])
         self.p_yy = np.array([[np.NaN]])
         self.p_xy = np.array([[np.NaN]])
-        self.logger = get_logger(self.__class__.__name__, LOG_FILE_NAME,
-                                 log_level)
+        self.logger = getLogger(self.__class__.__name__)
 
-    def __str__(self: Stft) -> str:
+    def __str__(self) -> str:
         """Human-readable representation."""
         lines = [self.__class__.__name__ + ':']
         if np.isnan(self.p_xy).all():
             lines[0] = lines[0] + ' None'
         else:
             lines.append(
-                f'    {self.p_xx.shape[0]} input x {self.p_yy.shape[0]} outputs ')
+                f'    {self.p_xx.shape[0]} input'
+                f' x {self.p_yy.shape[0]} outputs')
             lines.append(
                 f'    t: {len(self.t)} from {self.t[0]} to {self.t[-1]} s')
             lines.append(
@@ -115,20 +130,20 @@ class Stft():
                 p_xy = np.mean(p_xy, axis=-1)
             else:
                 p_xy = np.reshape(p_xy, p_xy.shape[:-1])
-        return p_xy  # type: ignore
+        return np.array(p_xy)
 
-    def num_windows(self: Stft) -> int:
+    def num_windows(self) -> int:
         """Return number of windows used."""
         return self.p_xx.shape[2]
 
     def compute(
-        self: Stft,
+        self,
         x: ArrayLike,
         y: ArrayLike,
         f_sample: float,
         len_fft: int,
         len_overlap: int,
-        window: str = 'hann'
+        window: str = 'hann',
     ) -> None:
         """Detrend segments by removing constant value before windowing."""
         f_expected = fft_frequencies(len_fft, f_sample)
@@ -141,8 +156,8 @@ class Stft():
         num_samples = x.shape[1]
         if y.shape[1] != num_samples:
             raise ValueError(
-                'Signal length of output %d does not match input %d' %
-                (y.shape[1], num_samples))
+                f'Signal length of output {y.shape[1]} '
+                f'does not match input {num_samples}')
         num_windows = num_windows_welch(num_samples, len_fft, len_overlap)
         self.logger.info(
             '%d segments from %g to %g Hz',
@@ -163,7 +178,7 @@ class Stft():
         # pylint: enable=protected-access
 
     def trim(
-        self: Stft,
+        self,
         low_frequency_points: int = 1,
         high_frequency_fraction: float = 0.8,
     ) -> None:
@@ -181,7 +196,7 @@ class Stft():
         self.p_yy = self.p_yy[..., keep, :]
         self.p_xy = self.p_xy[..., keep, :]
 
-    def tf_estimate(self: Stft, alpha: int = 0) -> np.ndarray:
+    def tf_estimate(self, alpha: int = 0) -> np.ndarray:
         """
         Return transfer function estimate (from input, x, to output, y).
 
@@ -193,17 +208,16 @@ class Stft():
         return (self.mean(self.p_xy) /
                 self.mean(self.p_xx))*(1j*2*np.pi*self.f)**alpha
 
-    def coherence_squared(self: Stft) -> np.ndarray:
+    def coherence_squared(self) -> np.ndarray:
         """
         Return Welch's method squared coherence.
-
 
         Bendat & Piersol (2014) Equation 9.54, p. 299.
         """
         return np.abs(self.mean(self.p_xy))**2/(
             self.mean(self.p_xx)*self.mean(self.p_yy))
 
-    def variance(self: Stft) -> np.ndarray:
+    def variance(self) -> np.ndarray:
         """
         Return Welch's method variance.
 

@@ -22,8 +22,8 @@ $$f(x) = w \times (H - \hat H)$$
 And the associated Jacobian is:
 
 $$J(x) = w \times \left[
-    -\Omega_a \times \left( \Omega_b x_b \div (\Omega_m + \Omega_a x_a)^2 \right)
-    \Omega_b \div (\Omega_m + \Omega_a x_a ) \right]$$
+    -\Omega_a \times \left( \Omega_b x_b \div (\Omega_m + \Omega_a x_a)^2
+    \right) \Omega_b \div (\Omega_m + \Omega_a x_a ) \right]$$
 
 Where the weighting can consist of one or all of inverse 1) square root of
 variance, 2) response or 3) frequency (below all are shown):
@@ -72,7 +72,8 @@ def extract_coefficients(system: lti) -> Tuple[np.ndarray, int, int, int]:
     den = tf_.den
     num = tf_.num
     if den[0] == 0:
-        logger.warning('Trimming leading zeroes from denominator coefficients.')
+        logger.warning(
+            'Trimming leading zeroes from denominator coefficients.')
         den = np.trim_zeros(den, trim='f')
     if num[0] == 0:
         logger.warning('Trimming leading zeroes from numerator coefficients.')
@@ -86,7 +87,6 @@ def extract_coefficients(system: lti) -> Tuple[np.ndarray, int, int, int]:
         num = num / den[0]
         den = den / den[0]
 
-    # TODO: Determine whether initial denominator must be constrained to be stable.
     a_temp = apolystab(den)
     if any(a_temp != den):
         logger.warning('Stabilizing denominator.')
@@ -222,11 +222,11 @@ def fit_response(
       - var_meas:   estimated variance at frequencies
       - zpk_fixed:  fixed part of transfer function
       - gtol:       tolerance for termination by the norm of the gradient
-      - var_lims:   minimum variance for weighting, maximum variance for inclusion
+      - var_lims:   minimum variance (weighting), maximum variance (inclusion)
       - weighting:  multple options can be selected
         - 'variance'    1/sqrt(var) to account for measurement errors
-        - 'response'    1/abs(h_nom) to ensure residual matters at all frequencies
-        - 'frequency'   1/f to account for over-weighting of high frequencies by FFT
+        - 'response'    1/abs(h_nom) to ensure residual matters across band
+        - 'frequency'   1/f to balance over-weighting of high freqs. by FFT
 
     Outputs:
       - zpk_fit:   best_fit transfer function
@@ -280,12 +280,15 @@ def fit_response(
     weights = get_weights(weighting, f, var_meas, h_initial, var_lims)
 
     if debug:
-        _plot_possible_weights(weighting, f, var_meas, h_meas_unfixed, var_lims)
+        _plot_possible_weights(
+            weighting, f, var_meas, h_meas_unfixed, var_lims)
 
-    model_parameters = dict(omega=omega, h_meas=h_meas_unfixed, weights=weights, m=m, n=n, p=p)
+    model_parameters = dict(
+        omega=omega, h_meas=h_meas_unfixed, weights=weights, m=m, n=n, p=p)
     logger.info('Method: %s', method)
     if method == 'line_search':
-        x_fits, e_fits, message = least_squares_line_search(x_initial, **model_parameters)
+        x_fits, e_fits, message = least_squares_line_search(
+            x_initial, **model_parameters)
         logger.info('Termination: %s', message)
         logger.info('Cost reduced from %.2g to %.2g in %d iterations.',
                     e_fits[0], e_fits[-1], len(e_fits))
@@ -295,7 +298,8 @@ def fit_response(
         with redirect_stdout(captured_stdout):
             result = least_squares(
                 real_residuals, x_initial, jac=real_jacobian, method='lm',
-                ftol=ftol, gtol=gtol, x_scale='jac', verbose=1, kwargs=model_parameters)
+                ftol=ftol, gtol=gtol, x_scale='jac', verbose=1,
+                kwargs=model_parameters)
         for line in captured_stdout.getvalue().split('\n'):
             if line:
                 logger.info(line)
@@ -326,14 +330,16 @@ def least_squares_line_search(
     """
     logger = getLogger(__name__)
     x_initial = np.array(x_initial)
+    m = kwargs.get('m')
 
-    def _stabilize(x, outer, inner):
-        a_check = np.hstack((1, x[:kwargs.get('m')]))
+    def _stabilize(x: ArrayLike, iteration: Tuple[int, int]) -> np.ndarray:
+        x = np.array(x)
+        a_check = np.hstack((1, x[:m]))
         a_temp = apolystab(a_check)
         if any(a_temp != a_check):
-            x[:kwargs.get('m')] = a_temp[1:]
+            x[:m] = a_temp[1:]
             logger.debug(
-                'Stabilizing denominator at iteration %d.%d.', outer, inner)
+                'Stabilizing denominator at iteration %d.%d.', *iteration)
         return x
 
     f_initial = residuals(x_initial, **kwargs)
@@ -353,7 +359,8 @@ def least_squares_line_search(
         j_error_squared = np.real(j_error.conj().T @ j_error)
         j_error_f_error = np.real(j_error.conj().T @ f_error)
         try:
-            dx_gauss_newton = np.linalg.solve(j_error_squared, -j_error_f_error)
+            dx_gauss_newton = np.linalg.solve(
+                j_error_squared, -j_error_f_error)
         except np.linalg.LinAlgError as ex:
             message = str(ex)
             break
@@ -361,7 +368,7 @@ def least_squares_line_search(
         if (np.logical_not(np.isreal(dx_gauss_newton)).any() or
                 np.isinf(dx_gauss_newton).any() or
                 np.isnan(dx_gauss_newton).any()):
-            message = 'Gradient contains Inf or NaN or is completely imaginary.'
+            message = 'Gradient contains Inf or NaN or is imaginary.'
             break
 
         if all(np.abs(dx_gauss_newton) <= g_tol*np.abs(x_fits[outer])):
@@ -372,7 +379,7 @@ def least_squares_line_search(
         alpha = 1.0
         x_new = x_fits[outer] + alpha * dx_gauss_newton
 
-        x_new = _stabilize(x_new, outer, 0)
+        x_new = _stabilize(x_new, (outer, 0))
         f_new = residuals(x_new, **kwargs)
         e_new = 0.5 * np.linalg.norm(f_new)
 
@@ -382,7 +389,7 @@ def least_squares_line_search(
             alpha /= 2
             x_new = x_fits[outer] + alpha * dx_gauss_newton
 
-            x_new = _stabilize(x_new, outer, inner)
+            x_new = _stabilize(x_new, (outer, inner))
 
             # compute transfer function and fit error
             f_new = residuals(x_new, **kwargs)
@@ -522,6 +529,7 @@ def _plot_possible_weights(*args) -> None:
     ax.set_ylabel('Weight')
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.set_xlabel('Frequency [Hz]')
-    weighting_png = os.path.splitext(os.path.basename(__file__))[0] + '_weighting.png'
+    basename = os.path.splitext(os.path.basename(__file__))[0]
+    weighting_png = basename + '_weighting.png'
     getLogger(__name__).info('Writing: %s', weighting_png)
     fig.savefig(weighting_png, bbox_inches='tight')

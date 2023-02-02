@@ -1,6 +1,4 @@
-"""
-A collection of utilities useful for station quality analysis.
-"""
+"""A collection of utilities useful for station quality analysis."""
 # pylint: disable=too-many-lines
 from copy import deepcopy
 import os
@@ -14,7 +12,7 @@ from glob import glob
 from time import time
 from tempfile import gettempdir
 from operator import attrgetter
-from typing import Dict, Sequence, Type, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import requests
 import numpy as np
@@ -23,7 +21,7 @@ import pandas as pd
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 
-from obspy import read_inventory, UTCDateTime
+from obspy import read_inventory, UTCDateTime, Stream
 from obspy.clients import fdsn
 from obspy.core.inventory import (
     ResponseStage, InstrumentSensitivity, PolesZerosResponseStage,
@@ -134,8 +132,8 @@ STATIONXML_CONVERTER_FILE = 'stationxml-converter-1.0.9.jar'
 STATIONXML_CONVERTER = next(iter(glob(
     os.path.join(ROOT, '**', STATIONXML_CONVERTER_FILE))), None)
 if STATIONXML_CONVERTER is None:
-    print(f'WARNING: StationXML converter "{STATIONXML_CONVERTER_FILE}" not found. '
-          'Cannot convert dataless2inventory ')
+    print(f'WARNING: StationXML converter "{STATIONXML_CONVERTER_FILE}" '
+          'not found. Cannot convert dataless2inventory ')
 
 
 def dataless2inventory(inventory_dataless, inventory_source='GSC'):
@@ -172,7 +170,8 @@ def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
     if not os.path.isfile(inventory_xml):
         os.system(
             f'java -jar {STATIONXML_CONVERTER} --xml --prettyprint --source '
-            f'{inventory_source} --output {inventory_xml} {inventory_dataless}')
+            f'{inventory_source} --output {inventory_xml} '
+            f'{inventory_dataless}')
 
     return inventory_xml
 
@@ -488,32 +487,30 @@ def flip(ndarray, axis):
     return ndarray[tuple(indexer)]
 
 
-def unwrap_mid(phase_in, f_in, f_midband=1, axis=-1, discont=np.pi):
+def unwrap_mid(
+    phase_in: ArrayLike,
+    f_in: ArrayLike,
+    f_midband: float = 1,
+    axis: int = -1,
+    discont: float = np.pi,
+) -> np.ndarray:
     """
     Unwrap phase data in the range starting at midband.
 
     Unwrapping is done from -discont to discont starting at a specified
     midband frequency and working outwards.
 
-    Parameters
-    ----------
-    phase_in: :class:`~numpy.array` or list
-        Phase data.
-    f_in: :class:`~numpy.array` or list
-        Frequencies corresponding to phases.
-    f_midband: float, optional
-        Midband frequency at which to start unwrapping. Default is 1.
-    axis: int, optional
-        Axis along which to unwrap. Default is last axis.
-    discont: float, optional
-        Maximum value at which to unwrap discontinueties. Default is pi.
-
-    Returns
-    -------
-    phase_out: :class:`~numpy.array`
-        Unwrapped phase data.
+    Arguments:
+      - `phase_in`: Wrapped phase data.
+      - `f_in`: Frequencies corresponding to phases.
+      - `f_midband`: Midband frequency at which to start unwrapping.
+      - `axis`: Axis along which to unwrap.
+      - `discont`: Maximum value at which to unwrap discontinueties.
     """
-    assert f_in.ndim == 1
+    f_in = np.array(f_in)
+    phase_in = np.array(phase_in)
+    if f_in.ndim != 1:
+        raise ValueError('Only 1D arrays of frequencies supported')
 
     i_mid = np.argmin(np.abs(np.array(f_in)/f_midband - 1))
     phase_below = phase_in.take(np.arange(i_mid), axis)
@@ -533,7 +530,7 @@ def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
             for trace in stream]
 
 
-def factor_names(stream):
+def factor_names(stream: Stream) -> Tuple[str, List[str]]:
     """
     Return a tuple with the factored names for the traces in a stream.
 
@@ -611,8 +608,14 @@ def compute_decim_delay(b_stages, factors):
 
 
 # pylint: disable=too-many-arguments, too-many-locals
-def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
-                discard_initial=True):
+def multi_decim(
+    sig_in: ArrayLike,
+    b_stages: Sequence[ArrayLike],
+    factors: Sequence[int],
+    z_in: Union[float, Sequence[ArrayLike]] = 0,
+    sig_leftover: ArrayLike = (),
+    discard_initial: bool = True,
+) -> Tuple[np.ndarray, List[np.ndarray], np.ndarray]:
     """
     Apply cascaded FIR filter and decimation stages to a signal.
 
@@ -636,20 +639,27 @@ def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
     Use :func:`compute_decim_delay` to determine the number of extra samples
     to request in order to keep output samples aligned with input samples.
 
-    :param sig_in: input samples
-    :type sig_in: :class:`~numpy.array`
-    :param b_stages: decimation coefficients
-    :type b_stages: list of :class:`~numpy.array`
-    :list factors: integer decimation factors for each stage
-    :param z_in: filter delays
-    :type z_in: list of :class:`~numpy.array` or scalar numeric
-
-    :returns: output samples, filter delays and unused input samples
-    :rtype: (:class:`~numpy.array`,
-             list of :class:`~numpy.array`,
-             :class:`~numpy.array`)
+    Returns output samples, filter delays and unused input samples.
     """
-    assert len(b_stages) == len(factors)
+    if len(b_stages) != len(factors):
+        raise ValueError(
+            f'Number of coefficients lists {len(b_stages)} must equal '
+            f'the number of decimation factors {len(factors)}.')
+
+    if isinstance(z_in, (float, int)):
+        z_in = [z_in*sp.lfilter_zi(b_stage, 1) for b_stage in b_stages]
+
+    if len(z_in) != len(factors):
+        raise ValueError(
+            f'Number of initial stage delays {len(z_in)} must equal the '
+            f'number of decimation factors {len(factors)}.')
+
+    num_coeffs = [len(b_stage) for b_stage in b_stages]  # type: ignore
+    num_delays = [len(z_stage) for z_stage in z_in]  # type: ignore
+    if not all(np.array(num_delays) == np.array(num_coeffs) - 1):
+        raise ValueError(
+            f'Lengths of initial stage delays {num_delays} must be one less '
+            f'than those of stage coefficients {num_coeffs}')
 
     sig_in = np.hstack((sig_leftover, sig_in))
 
@@ -664,39 +674,37 @@ def multi_decim(sig_in, b_stages, factors, z_in=0, sig_leftover=(),
         len_input_required = int(len_output*total_decimation)
 
     if len_output < 1:  # not enough input samples; just pass signal through
-        return np.array([]), z_in, sig_in
+        return np.array([]), [np.array(z_stage) for z_stage in z_in], sig_in
 
     # initialize signals and pass unused signal through to output
-    sig_stages = [None]*(len(factors) + 1)
+    sig_stages: List[np.ndarray] = [np.array([])]*(len(factors) + 1)
     sig_stages[0] = sig_in[:len_input_required]
     sig_unused = sig_in[len_input_required:]
 
-    if isinstance(z_in, (int, float)):
-        z_in = [z_in*sp.lfilter_zi(b_stage, 1) for b_stage in b_stages]
-    else:
-        assert len(z_in) == len(factors)
-        assert all([len(z_stage) + 1 == len(b_stage)
-                    for z_stage, b_stage in zip(z_in, b_stages)])
-
     if discard_initial:
-        first_indices = [len(b_stage) - 1 for b_stage in b_stages]
+        first_indices = list(np.array(num_coeffs) - 1)
     else:
         first_indices = [0]*len(b_stages)
 
     # alternately filter and decimate according to stage specifications
-    z_out = [None]*len(factors)
+    z_out = [np.array([])]*len(factors)
     for i, _ in enumerate(factors):
         sig_stages[i], z_out[i] = sp.lfilter(
             b_stages[i], 1, sig_stages[i], zi=z_in[i])
         sig_stages[i + 1] = sig_stages[i][first_indices[i]::factors[i]]
 
-    assert len(sig_stages[-1]) == len_output
+    if len(sig_stages[-1]) < 1:
+        raise RuntimeError('Unexpected no samples after filtering.')
+
+    if len(sig_stages[-1]) != len_output:
+        raise RuntimeError(
+            f'Expected {len_output} samples, got {len(sig_stages[-1])}.')
 
     return sig_stages[-1], z_out, sig_unused
 
 
 def extract_decimation_coefficients(stages):
-    """Extract decimation factors and filter coefficients from a list of stages."""
+    """Extract decimation factors, filter coefficients from list of stages."""
     logger = get_logger(__name__)
     b_stages = []
     factors = []
@@ -712,7 +720,7 @@ def extract_decimation_coefficients(stages):
                 if len(stage.denominator) != 0 or \
                         stage.cf_transfer_function_type != 'DIGITAL':
                     raise RuntimeError(
-                        f'Analog decimation stages nonsensical:\n{str(stage)}.')
+                        f'Analog decimation is nonsensical:\n{str(stage)}.')
                 coeffs = stage.numerator
             elif isinstance(stage, FIRResponseStage):
                 coeffs = stage.coefficients
@@ -751,7 +759,11 @@ def truncnorm_shape(mean, std, clip_b, clip_a=None):
     return shape_a, shape_b
 
 
-def subplots_squeeze(fig, hspace=None, wspace=None):
+def subplots_squeeze(
+    fig,
+    hspace: Optional[float] = None,
+    wspace: Optional[float] = None,
+) -> None:
     """
     Squeeze space ticks and ticklabels from between axes.
 
@@ -772,7 +784,7 @@ def subplots_squeeze(fig, hspace=None, wspace=None):
 
     fig.subplots_adjust(hspace=hspace, wspace=wspace)
 
-    if hspace < 0.05 and num_rows > 1:
+    if hspace and hspace < 0.05 and num_rows > 1:
         for i, ax in enumerate(axes[:, 0]):
             if i > 0:
                 ax.yaxis.get_major_ticks()[-1].label.set_visible(False)
@@ -1192,7 +1204,9 @@ def stations2df(inventory):
 
 def read_sql(file_name, parse_dates=('start', 'end'), index=(), dtype=None):
     """
-    Read pipe-delimited SQL query result, ignoring non-pipe-delimited header.
+    Read pipe-delimited SQL query result.
+
+    A non-pipe-delimited header is ignored.
     """
     if dtype is None:
         dtype = {'count': int}
@@ -1203,8 +1217,10 @@ def read_sql(file_name, parse_dates=('start', 'end'), index=(), dtype=None):
     with open(file_name, encoding='UTF-8') as file:
         for i, line in enumerate(file):
             if '|' in line:
-                pipes = np.array([match.start() for match in re.finditer(r'\|', line)])
-                colspecs = list(zip([0] + list(pipes + 1), list(pipes) + [len(line)]))
+                pipes = np.array([match.start()
+                                  for match in re.finditer(r'\|', line)])
+                colspecs = list(zip([0] + list(pipes + 1),
+                                    list(pipes) + [len(line)]))
                 found_header = True
             else:
                 skiprows.append(i)
@@ -1230,7 +1246,8 @@ def read_sql(file_name, parse_dates=('start', 'end'), index=(), dtype=None):
 # %% logging
 FILE_NAME = os.path.basename(__file__)
 LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-LOG_SETTINGS = {
+LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
+        str, Union[str, bool, Sequence[str]]]]]] = {
     'version': 1,  # logging schema
     'handlers': {
         'console': {
@@ -1267,7 +1284,8 @@ LOG_SETTINGS = {
     }
 }
 
-SIMPLE_LOG_SETTINGS = {
+SIMPLE_LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
+        str, Union[str, bool, Sequence[str]]]]]] = {
     'version': 1,  # logging schema
     'handlers': {
         'console': {
@@ -1333,6 +1351,7 @@ class LoggerWriter:
     """
 
     def __init__(self, logger, level, name=None):
+        """Construct object."""
         self.logger = logger
         if isinstance(level, str):
             level = getattr(logging, level.upper())
@@ -1340,20 +1359,18 @@ class LoggerWriter:
         self.name = name
 
     def write(self, message):
-        """Simulate file.write()."""
+        """Simulate file object write method."""
         if message != '\n':
             if self.name:
                 message = self.name + ' - ' + message
             self.logger.log(self.level, message)
 
     def flush(self):
-        """Simulate file.flush()."""
+        """Simulate file object write method."""
 
 
 def get_channel(obj, event=None):
-    """
-    Return SEED string associated with ObsPy object.
-    """
+    """Return SEED string associated with ObsPy object."""
     waveform_id = get_waveform_id(obj, event)
     if not isinstance(waveform_id, WaveformStreamID):
         return ''
@@ -1362,9 +1379,7 @@ def get_channel(obj, event=None):
 
 
 def get_waveform_id(obj, event=None):
-    """
-    Return waveform_id associated with ObsPy object.
-    """
+    """Return waveform_id associated with ObsPy object."""
     if obj is None:
         return None
     if 'waveform_id' in obj and obj.waveform_id is not None:
