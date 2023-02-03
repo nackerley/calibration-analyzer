@@ -3,34 +3,31 @@
 from copy import deepcopy
 import os
 import re
-import queue
-import inspect
 import logging
-from logging import getLogger
+from datetime import datetime
+from logging import getLogger, Logger
 from logging.config import dictConfig
 from glob import glob
-from time import time
-from tempfile import gettempdir
 from operator import attrgetter
-from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import \
+    Any, Dict, Iterator, List, Optional, Sequence, Sized, Tuple, Type, Union
 
-import requests
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, DTypeLike
 import pandas as pd
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
+from matplotlib.pyplot import figure
 
 from obspy import read_inventory, UTCDateTime, Stream
-from obspy.clients import fdsn
 from obspy.core.inventory import (
+    Inventory, Network, Station, Channel, Response,
     ResponseStage, InstrumentSensitivity, PolesZerosResponseStage,
     CoefficientsTypeResponseStage, FIRResponseStage)
 from obspy.core.event import \
-    Pick, Arrival, Amplitude, StationMagnitude, WaveformStreamID
+    Pick, Arrival, Amplitude, StationMagnitude, Event, WaveformStreamID
 
 from calan.utilities import string_list
-from calan import chis_archive
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
@@ -74,51 +71,7 @@ CHANNEL_KEYS = ((
 ))
 
 
-def get_clients(servers=None, test_timeout=2):
-    """Return a list of FDSN clients given a list of URLs."""
-    if servers is None:
-        servers = [chis_archive.DEFAULT_ROOT] + list(DEFAULT_FDSN_SERVERS)
-    servers = string_list(servers)
-
-    clients = []
-    logger = get_logger(__name__)
-    if servers is not None:
-        for server in servers:
-            fdsn_server = (server.startswith('http') or
-                           server in fdsn.URL_MAPPINGS)
-
-            if fdsn_server:
-                if server.startswith('http'):
-                    test_server = server
-                else:
-                    test_server = fdsn.URL_MAPPINGS[server]
-
-                try:
-                    requests.get(test_server, timeout=test_timeout)
-                except (requests.Timeout, requests.ConnectionError,
-                        queue.Empty) as ex:
-                    logger.debug(repr(ex))
-                    continue
-                except requests.TooManyRedirects as ex:
-                    logger.debug(repr(ex))
-            else:
-                if not os.path.isdir(server):
-                    logger.warning(
-                        'CHIS archive %s not available. Ignoring.', server)
-                    continue
-
-            try:
-                if fdsn_server:
-                    clients.append(fdsn.Client(server))
-                else:
-                    clients.append(chis_archive.Client(server))
-            except fdsn.client.FDSNException as ex:
-                logger.warning(repr(ex))
-
-    return clients
-
-
-def fdsn_error_message(ex):
+def fdsn_error_message(ex: Exception) -> str:
     """Clean up certain obspy.clients.fdsn exception messages."""
     lines = ex.args[0].split('\n')
     if 'No data available' in lines[0]:
@@ -136,7 +89,10 @@ if STATIONXML_CONVERTER is None:
           'not found. Cannot convert dataless2inventory ')
 
 
-def dataless2inventory(inventory_dataless, inventory_source='GSC'):
+def dataless2inventory(
+    inventory_dataless: str,
+    inventory_source: str = 'GSC',
+) -> Inventory:
     """
     Convert a dataless SEED to an ObsPy Inventory.
 
@@ -151,7 +107,10 @@ def dataless2inventory(inventory_dataless, inventory_source='GSC'):
     return read_inventory(inventory_xml)
 
 
-def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
+def dataless2stationxml(
+    inventory_dataless: str,
+    inventory_source: str = 'GSC',
+) -> str:
     """
     Convert a dataless SEED to StationXML.
 
@@ -176,7 +135,7 @@ def dataless2stationxml(inventory_dataless, inventory_source='GSC'):
     return inventory_xml
 
 
-def inventory2dataless(inventory_xml):
+def inventory2dataless(inventory_xml: str) -> str:
     """Convert StationXML inventory to dataless SEED."""
     logger = get_logger(__name__)
     if not os.path.isfile(inventory_xml):
@@ -190,64 +149,6 @@ def inventory2dataless(inventory_xml):
             f'{inventory_dataless} {inventory_xml}')
 
     return inventory_dataless
-
-
-def _elapsed_since(tick):
-    return str(pd.to_timedelta(round(time() - tick), 's')).split()[-1]
-
-
-def get_chis_stations(level='response', minlatitude=35, maxlatitude=90,
-                      maxlongitude=-40, minlongitude=-170):
-    """
-    Return an inventory of all stations for which CHIS has waveform data.
-
-    If a cache is found, it is used, for speedup.
-
-    Example
-    -------
-    inventory = get_chis_stations()
-    INFO     Client: http://192.168.41.158:8080
-    INFO     Read GSC inventory via SeisComP3: 00:01:03
-    INFO     Cached /tmp/response_minlatitude35_maxlatitude90.xml: 00:00:09
-
-    inventory = get_chis_stations()
-    INFO     Cache: /tmp/response_minlatitude35_maxlatitude90.xml
-    INFO     Elapsed: 00:00:17
-    """
-    logger = get_logger(__name__)
-
-    args, _, _, defaults = inspect.getfullargspec(get_chis_stations)[:4]
-    inventory_file = os.path.join(
-        gettempdir(),
-        '_'.join(f'{arg}{default}'
-                 for arg, default in zip(args, defaults)) + '.xml')
-    inventory_file = inventory_file.replace('level', '')
-
-    if os.path.isfile(inventory_file):
-        logger.info('Cache: %s', inventory_file)
-        tick = time()
-        inventory = read_inventory(inventory_file)
-        logger.info('Elapsed: %s', _elapsed_since(tick))
-    else:
-        try:
-            chis_fdsn_client = fdsn.Client(DEFAULT_FDSN_SERVERS[0])
-        except fdsn.client.FDSNException:
-            chis_fdsn_client = fdsn.Client(DEFAULT_FDSN_SERVERS[2])
-
-        logger.info('Client: %s', chis_fdsn_client.base_url)
-
-        tick = time()
-        inventory = chis_fdsn_client.get_stations(
-            level=level, minlatitude=minlatitude, maxlatitude=maxlatitude,
-            maxlongitude=maxlongitude, minlongitude=minlongitude)
-        logger.info(
-            'Read %s inventory via %s: %s',
-            inventory.sender.upper(), inventory.source, _elapsed_since(tick))
-
-        tick = time()
-        inventory.write(inventory_file, format='StationXML')
-        logger.info(
-            'Cached %s: %s', inventory_file, _elapsed_since(tick))
 
 
 def sort_complex(array: np.ndarray) -> np.ndarray:
@@ -367,7 +268,7 @@ def lti_multiply(first: lti, second: lti, tolerance: float = 0) -> lti:
     return lti_convert(product, first_type)
 
 
-def stage2zpk(stage: PolesZerosResponseStage):
+def stage2zpk(stage: PolesZerosResponseStage) -> ZerosPolesGain:
     """
     Generate a LinearTimeInvariant model.
 
@@ -448,45 +349,6 @@ def lti_is_proper(system: lti) -> bool:
     return len(system.den) >= len(system.num)
 
 
-def flip(ndarray, axis):
-    """
-    Reverse order of elements in an array along the given axis.
-
-    The shape of the array is preserved, but the elements are reordered.
-
-    Borrowed from the future, numpy v1.12.dev0
-
-    Parameters
-    ----------
-    m: array_like
-        Input array.
-    axis: integer
-        Axis in array, which entries are reversed.
-
-    Returns
-    -------
-    out: array_like
-        A view of `m` with the entries of axis reversed.  Since a view is
-        returned, this operation is done in constant time.
-
-    Notes
-    -----
-    flip(m, 0) is equivalent to numpy.flipud(m).
-
-    flip(m, 1) is equivalent to numpy.fliplr(m).
-    """
-    if not hasattr(ndarray, 'ndim'):
-        ndarray = np.asarray(ndarray)
-    indexer = [slice(None)] * ndarray.ndim
-    try:
-        indexer[axis] = slice(None, None, -1)
-    except IndexError as ex:
-        raise ValueError(
-            f'axis={axis} is invalid for {ndarray.ndim}-dimensional input'
-        ) from ex
-    return ndarray[tuple(indexer)]
-
-
 def unwrap_mid(
     phase_in: ArrayLike,
     f_in: ArrayLike,
@@ -516,18 +378,12 @@ def unwrap_mid(
     phase_below = phase_in.take(np.arange(i_mid), axis)
     phase_above = phase_in.take(np.arange(i_mid, phase_in.shape[axis]), axis)
 
-    phase_below = flip(
-        np.unwrap(flip(phase_below, axis), discont=discont, axis=axis), axis)
+    phase_below = np.flip(
+        np.unwrap(np.flip(phase_below, axis), discont=discont, axis=axis),
+        axis)
     phase_above = np.unwrap(phase_above, discont=discont, axis=axis)
 
     return np.concatenate((phase_below, phase_above), axis)
-
-
-def long_names(stream, parts=tuple(NSLC), widths=(2, 5, 2, 3)):
-    """Construct a list of names for the traces in a stream."""
-    return ['.'.join([('%' + str(width) + 's') % trace.stats[part]
-                      for part, width in zip(parts, widths)])
-            for trace in stream]
 
 
 def factor_names(stream: Stream) -> Tuple[str, List[str]]:
@@ -539,17 +395,20 @@ def factor_names(stream: Stream) -> Tuple[str, List[str]]:
     """
     if len(stream) == 1:
         return stream[0].id[:-1], stream[0].id[-1]
-    full_names = long_names(stream)
-    sames = [letters[1:] == letters[:-1] for letters in zip(*full_names)]
+    ids = [trace.id for trace in stream]
+    sames = [letters[1:] == letters[:-1] for letters in zip(*ids)]
     short_names = [''.join(letter for letter, same in zip(name, sames)
-                           if not same) for name in full_names]
-    common_name = ''.join(letter for letter, same in zip(full_names[0], sames)
+                           if not same) for name in ids]
+    common_name = ''.join(letter for letter, same in zip(ids[0], sames)
                           if same)
     common_name = '.'.join(part.strip() for part in common_name.split('.'))
     return common_name, short_names
 
 
-def recompute_normalization_factors(response, rtol=0.0002):
+def recompute_normalization_factors(
+    response: Response,
+    rtol: float = 0.0002
+) -> None:
     """Compare stage normalization factors to computed values."""
     logger = getLogger(__name__)
     for stage in response.response_stages:
@@ -557,9 +416,7 @@ def recompute_normalization_factors(response, rtol=0.0002):
             normalization_factor = stage.normalization_factor
         except AttributeError:
             continue
-        stage_lti = stage2zpk(stage)
-        stage_gain = sp.freqresp(
-            stage_lti,
+        stage_gain = stage2zpk(stage).freqresp(
             2*np.pi*stage.normalization_frequency)[1][0]
         adjustment = np.abs(stage_gain)/abs(stage.stage_gain)
         if np.isnan(adjustment):
@@ -576,7 +433,10 @@ def recompute_normalization_factors(response, rtol=0.0002):
             stage.normalization_factor, 100*rtol)
 
 
-def compute_decim_delay(b_stages, factors):
+def compute_decim_delay(
+    b_stages: Sequence[Sized],
+    factors: Sequence[int],
+) -> int:
     """
     Determine total filter delay for multi-stage decimation.
 
@@ -587,22 +447,19 @@ def compute_decim_delay(b_stages, factors):
         tDelay = n_pad_upsample/2/f_upsample
     where the initial sample rate is f_upsample in Hz.
 
-        :param b_stages: decimation coefficients
-        :type b_stages: list of :class:`~numpy.array`
-        :list factors: integer decimation factors for each stage
-    :returns: integer number of samples needed to load filters
+    Parameters:
+        - b_stages: decimation filter coefficients
+        - factors: decimation factors for each stage
 
-    Example
-    -------
-        n_pad_upsample = compute_decim_delay(b_stages, factors)
+    Returns number of samples needed to load filters.
     """
     n_pad_upsample = 0
-    for i in reversed(range(len(factors))):
-        if len(b_stages[i]) % 2 == 0:
+    for i, b_stage in reversed(list(enumerate(b_stages))):
+        if len(b_stage) % 2 == 0:
             raise TypeError(
                 'Decimation filters must be odd-order: '
-                f'stage {i} has {len(b_stages[i])} coefficients.')
-        n_pad_upsample = n_pad_upsample*factors[i] + len(b_stages[i]) - 1
+                f'stage {i} has {len(b_stage)} coefficients.')
+        n_pad_upsample = n_pad_upsample*factors[i] + len(b_stage) - 1
 
     return n_pad_upsample
 
@@ -610,9 +467,9 @@ def compute_decim_delay(b_stages, factors):
 # pylint: disable=too-many-arguments, too-many-locals
 def multi_decim(
     sig_in: ArrayLike,
-    b_stages: Sequence[ArrayLike],
+    b_stages: Sequence[Sized],
     factors: Sequence[int],
-    z_in: Union[float, Sequence[ArrayLike]] = 0,
+    z_in: Union[float, Sequence[Sized]] = 0,
     sig_leftover: ArrayLike = (),
     discard_initial: bool = True,
 ) -> Tuple[np.ndarray, List[np.ndarray], np.ndarray]:
@@ -654,8 +511,8 @@ def multi_decim(
             f'Number of initial stage delays {len(z_in)} must equal the '
             f'number of decimation factors {len(factors)}.')
 
-    num_coeffs = [len(b_stage) for b_stage in b_stages]  # type: ignore
-    num_delays = [len(z_stage) for z_stage in z_in]  # type: ignore
+    num_coeffs = [len(b_stage) for b_stage in b_stages]
+    num_delays = [len(z_stage) for z_stage in z_in]
     if not all(np.array(num_delays) == np.array(num_coeffs) - 1):
         raise ValueError(
             f'Lengths of initial stage delays {num_delays} must be one less '
@@ -703,11 +560,13 @@ def multi_decim(
     return sig_stages[-1], z_out, sig_unused
 
 
-def extract_decimation_coefficients(stages):
+def extract_decimation_coefficients(
+    stages: Sequence[ResponseStage]
+) -> Tuple[List[np.ndarray], List[int]]:
     """Extract decimation factors, filter coefficients from list of stages."""
     logger = get_logger(__name__)
-    b_stages = []
-    factors = []
+    b_stages: List[np.ndarray] = []
+    factors: List[int] = []
     for stage in stages:
         if stage.decimation_factor is not None and stage.decimation_factor > 1:
             if not factors:
@@ -744,13 +603,15 @@ def extract_decimation_coefficients(stages):
     return b_stages, factors
 
 
-def truncnorm_shape(mean, std, clip_b, clip_a=None):
+def truncnorm_shape(
+    mean: float, std: float, clip_b: float, clip_a: Optional[float] = None,
+) -> Tuple[float, float]:
     """
     Convert mean, standard deviation and clip levels to shape parameters.
 
     See :class:`~scipy.stats.truncnorm'.
 
-    :returns: a, b
+    Returns shape parameters a, b.
     """
     if clip_a is None:
         clip_a = -clip_b
@@ -760,7 +621,7 @@ def truncnorm_shape(mean, std, clip_b, clip_a=None):
 
 
 def subplots_squeeze(
-    fig,
+    fig: figure,
     hspace: Optional[float] = None,
     wspace: Optional[float] = None,
 ) -> None:
@@ -792,12 +653,17 @@ def subplots_squeeze(
                 ax.yaxis.get_major_ticks()[0].label.set_visible(False)
 
 
-def _missing_samples(delta, sampling_rate):
+def _missing_samples(delta: float, sampling_rate: float) -> int:
     return np.rint(np.fabs(delta)*sampling_rate)
 
 
-def is_complete(stream, trace_ids=(), start=pd.Timestamp(0),
-                end=pd.Timestamp.now(), tolerance=0.5):
+def is_complete(
+    stream: Stream,
+    trace_ids: Optional[Sequence[str]] = None,
+    start: Union[datetime, str] = pd.Timestamp(0),
+    end: Union[datetime, str] = pd.Timestamp.now(),
+    tolerance: float = 0.5
+) -> bool:
     """Lightweight test whether stream is complete."""
     trace_ids = string_list(trace_ids)
     if trace_ids is None:
@@ -846,24 +712,26 @@ def is_complete(stream, trace_ids=(), start=pd.Timestamp(0),
     return True
 
 
-def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
-             end=pd.Timestamp.now(), tolerance=0.5):
+def gap_list(
+    stream: Stream,
+    trace_ids: Optional[Sequence[str]] = None,
+    start: Union[datetime, UTCDateTime] = pd.Timestamp(0),
+    end: Union[datetime, UTCDateTime] = pd.Timestamp.now(),
+    tolerance: float = 0.5,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Construct a dataframe of gaps, including start & end gaps.
 
     If an empty stream is provided the returned value are empty dataframes
     with the correct columns.
 
-    Returns
-    -------
-    2-tuple of pd.DataFrame:
-        gaps_df, overlap_df
+    Returns aps_df, overlap_df.
     """
     if trace_ids is None:
         trace_ids = ()
-    if not isinstance(start, pd.Timestamp):
+    if not isinstance(start, datetime):
         start = pd.to_datetime(start.datetime)
-    if not isinstance(end, pd.Timestamp):
+    if not isinstance(end, datetime):
         end = pd.to_datetime(end.datetime)
 
     if stream:
@@ -887,6 +755,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
     if not trace_ids:
         raise RuntimeError('Empty streams require trace_ids be specified.')
 
+    rows = []
     for trace_id in trace_ids:
         id_stream = stream.select(id=trace_id)
         if not id_stream:
@@ -903,7 +772,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
                 'samples': -1,
                 'sampling_rate': np.NaN,
             })
-            gaps_df = gaps_df.append(series, ignore_index=True)
+            rows.append(series)
 
     for trace_id in trace_ids:
         id_stream = stream.select(id=trace_id)
@@ -928,7 +797,7 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
                 'samples': _missing_samples(duration, sampling_rate),
                 'sampling_rate': sampling_rate,
             })
-            gaps_df = gaps_df.append(series, ignore_index=True)
+            rows.append(series)
 
     for trace_id in trace_ids:
         id_stream = stream.select(id=trace_id)
@@ -953,16 +822,22 @@ def gap_list(stream, trace_ids=(), start=pd.Timestamp(0),
                 'samples': _missing_samples(duration, sampling_rate),
                 'sampling_rate': sampling_rate,
             })
-            gaps_df = gaps_df.append(series, ignore_index=True)
+            rows.append(series)
 
-        gaps_df.sort_values(by=['starttime', 'endtime'],
-                            ascending=[True, False], inplace=True)
-        gaps_df.reset_index(inplace=True, drop=True)
+    gaps_df = pd.concat((gaps_df, pd.concat(rows, axis=1).T))
+    gaps_df.sort_values(by=['starttime', 'endtime'],
+                        ascending=[True, False], inplace=True)
+    gaps_df.reset_index(inplace=True, drop=True)
 
     return gaps_df[gaps_df.duration > 0], gaps_df[gaps_df.duration <= 0]
 
 
-def fraction_available(trace_ids, start, end, gaps_df):
+def fraction_available(
+    trace_ids: Sequence[str],
+    start: Union[datetime, str],
+    end: Union[datetime, str],
+    gaps_df: pd.DataFrame,
+) -> float:
     """Compute fraction of requested data which is available."""
     trace_ids = string_list(trace_ids)
 
@@ -975,8 +850,14 @@ def fraction_available(trace_ids, start, end, gaps_df):
     return 1 - gap_duration/expected_duration
 
 
-def log_availability(logger, gaps_df, trace_ids, start, end,
-                     column='duration'):
+def log_availability(
+    logger: Logger,
+    gaps_df: pd.DataFrame,
+    trace_ids: Sequence[str],
+    start: datetime,
+    end: datetime,
+    column: str = 'duration',
+) -> None:
     """Summarize availability to a log file, given a gap listing."""
     gaps_df = gaps_df.copy()
     num_gaps = gaps_df.shape[0]
@@ -1057,7 +938,9 @@ def log_availability(logger, gaps_df, trace_ids, start, end,
             f'({gap.note})')
 
 
-def inventory_items(inventory):
+def inventory_items(
+    inventory: Inventory,
+) -> Iterator[Tuple[Network, Station, Channel]]:
     """Iterate through network, station, channel of an inventory."""
     for network in inventory:
         for station in network:
@@ -1065,16 +948,18 @@ def inventory_items(inventory):
                 yield network, station, channel
 
 
-def inventory_stations(inventory):
+def inventory_stations(
+    inventory: Inventory,
+) -> Iterator[Tuple[Network, Station]]:
     """Iterate through network, station of an inventory."""
     for network in inventory:
         for station in network:
             yield network, station
 
 
-def inventory2df(inventory):
+def inventory2df(inventory: Inventory) -> pd.DataFrame:
     """Summarize obspy.Inventory in pandas.DataFrame."""
-    def get(key, item):
+    def _get(key: str, item: Any) -> Optional[Any]:
         try:
             return attrgetter(key)(item)
         except AttributeError:
@@ -1083,13 +968,13 @@ def inventory2df(inventory):
     df = pd.DataFrame()
     for key, column in NETWORK_KEYS:
         df[column] = [
-            get(key, network) for network, _, _ in inventory_items(inventory)]
+            _get(key, network) for network, _, _ in inventory_items(inventory)]
     for key, column in STATION_KEYS:
         df[column] = [
-            get(key, station) for _, station, _ in inventory_items(inventory)]
+            _get(key, station) for _, station, _ in inventory_items(inventory)]
     for key, column in CHANNEL_KEYS:
         df[column] = [
-            get(key, channel) for _, _, channel in inventory_items(inventory)]
+            _get(key, channel) for _, _, channel in inventory_items(inventory)]
 
     for column in df.columns.values:
         if column.endswith('date'):
@@ -1101,20 +986,12 @@ def inventory2df(inventory):
     return df
 
 
-def channels2df(inventory):
+def channels2df(inventory: Inventory) -> pd.DataFrame:
     """
     Create table of channels in inventory.
 
-    Parameters
-    ----------
-    inventory : obspy.Inventory
-        station inventory
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        station table with index 'network', 'station','location' 'channel'
-        and columns 'start' and 'end'.
+    Returns table with index 'network', 'station', 'location', 'channel'
+    and columns 'start', 'end'.
     """
     # TODO: consider carefully merging contiguous time ranges
     df = pd.DataFrame()
@@ -1156,20 +1033,12 @@ def channels2df(inventory):
     return df
 
 
-def stations2df(inventory):
+def stations2df(inventory: Inventory) -> pd.DataFrame:
     """
     Create table of stations in inventory.
 
-    Parameters
-    ----------
-    inventory : obspy.Inventory
-        station inventory
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        station table with index 'network', 'station','location' 'channel'
-        and columns 'start' and 'end'.
+    Returns table with index 'network', 'station', 'location', 'channel'
+    and columns 'start', 'end'.
     """
     # TODO: consider carefully merging contiguous time ranges
     df = pd.DataFrame()
@@ -1202,14 +1071,19 @@ def stations2df(inventory):
     return df
 
 
-def read_sql(file_name, parse_dates=('start', 'end'), index=(), dtype=None):
+def read_sql(
+    file_name: str,
+    parse_dates: Tuple[str, str] = ('start', 'end'),
+    index: Sequence[Any] = (),
+    dtypes: Optional[Dict[str, DTypeLike]] = None,
+) -> pd.DataFrame:
     """
     Read pipe-delimited SQL query result.
 
     A non-pipe-delimited header is ignored.
     """
-    if dtype is None:
-        dtype = {'count': int}
+    if dtypes is None:
+        dtypes = {'count': int}
 
     # determine structure of file
     skiprows = []
@@ -1231,9 +1105,9 @@ def read_sql(file_name, parse_dates=('start', 'end'), index=(), dtype=None):
 
     df = pd.read_fwf(file_name, sep='|', skiprows=skiprows,
                      colspecs=colspecs, parse_dates=list(parse_dates),
-                     dtype=dtype)
+                     dtype=dtypes)
 
-    for column, dtype in dtype.items():
+    for column, dtype in dtypes.items():
         if column in df and dtype == str:
             df[column] = df[column].fillna('')
 
@@ -1243,7 +1117,7 @@ def read_sql(file_name, parse_dates=('start', 'end'), index=(), dtype=None):
     return df
 
 
-# %% logging
+# logging
 FILE_NAME = os.path.basename(__file__)
 LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
@@ -1315,7 +1189,11 @@ SIMPLE_LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
 }
 
 
-def get_logger(name, log_file_name='', log_console_level='INFO'):
+def get_logger(
+    name: str,
+    log_file_name: str = '',
+    log_console_level: str = 'INFO',
+) -> Logger:
     """
     Return named logger which logs to console and file.
 
@@ -1328,9 +1206,9 @@ def get_logger(name, log_file_name='', log_console_level='INFO'):
     not_previously_configured = len(handlers) == 0
 
     if not_previously_configured:
-        LOG_SETTINGS['handlers']['console'].update(
+        LOG_SETTINGS['handlers']['console'].update(  # type: ignore
             {'level': log_console_level})
-        LOG_SETTINGS['handlers']['file'].update(
+        LOG_SETTINGS['handlers']['file'].update(  # type: ignore
             {'filename': log_file_name})
         dictConfig(LOG_SETTINGS)
 
@@ -1350,26 +1228,34 @@ class LoggerWriter:
     (within python) is logged at the specified level.
     """
 
-    def __init__(self, logger, level, name=None):
+    def __init__(
+        self,
+        logger: Logger,
+        level: Union[int, str],
+        name: Optional[str] = None,
+    ) -> None:
         """Construct object."""
         self.logger = logger
         if isinstance(level, str):
-            level = getattr(logging, level.upper())
+            level = int(getattr(logging, level.upper()))
         self.level = level
         self.name = name
 
-    def write(self, message):
+    def write(self, message: str) -> None:
         """Simulate file object write method."""
         if message != '\n':
             if self.name:
                 message = self.name + ' - ' + message
             self.logger.log(self.level, message)
 
-    def flush(self):
+    def flush(self) -> None:
         """Simulate file object write method."""
 
 
-def get_channel(obj, event=None):
+def get_channel(
+    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
+    event: Optional[Event] = None,
+) -> str:
     """Return SEED string associated with ObsPy object."""
     waveform_id = get_waveform_id(obj, event)
     if not isinstance(waveform_id, WaveformStreamID):
@@ -1378,7 +1264,10 @@ def get_channel(obj, event=None):
     return waveform_id.get_seed_string()
 
 
-def get_waveform_id(obj, event=None):
+def get_waveform_id(
+    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
+    event: Optional[Event] = None,
+) -> Optional[WaveformStreamID]:
     """Return waveform_id associated with ObsPy object."""
     if obj is None:
         return None
@@ -1393,17 +1282,15 @@ def get_waveform_id(obj, event=None):
     return pick.waveform_id
 
 
-def get_pick(obj, event=None):
+def get_pick(
+    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
+    event: Optional[Event] = None,
+) -> Optional[Pick]:
     """
     Look up Pick associated with object.
 
-    Arguments
-    ---------
-    obj: Pick, Arrival, Amplitude or StationMagnitude
-        object in question
-    event: Event
-        not required for Arrival or Amplitude if referential integrity is
-        intact.
+    Event is not required for Arrival or Amplitude if referential integrity is
+    intact.
     """
     if obj is None:
         return None
@@ -1433,16 +1320,15 @@ def get_pick(obj, event=None):
 
 
 # pylint: disable=too-many-return-statements
-def get_amplitude(obj, event=None):
+def get_amplitude(
+    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
+    event: Optional[Event] = None,
+) -> Optional[Amplitude]:
     """
     Look up Amplitude associated with object.
 
-    Arguments
-    ---------
-    obj: Pick, Arrival, Amplitude or StationMagnitude
-        object in question
-    event: Event
-        not required for StationMagnitude if referential integrity is intact.
+    Event is not required for Arrival or Amplitude if referential integrity is
+    intact.
     """
     if obj is None:
         return None
@@ -1453,6 +1339,8 @@ def get_amplitude(obj, event=None):
         return obj
 
     if isinstance(obj, Pick):
+        if event is None:
+            return None
         return next((item for item in event.amplitudes
                      if item.pick_id == obj.resource_id), None)
 
