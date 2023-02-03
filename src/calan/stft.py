@@ -98,7 +98,7 @@ class Stft():
     """Short-term fourier auto- and cross-spectra between input and output."""
 
     def __init__(self) -> None:
-        """Construct STFT."""
+        """Construct null object."""
         self.f = np.array([[np.NaN]])
         self.t = np.array([[np.NaN]])
         self.p_xx = np.array([[np.NaN]])
