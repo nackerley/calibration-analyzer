@@ -824,7 +824,8 @@ def gap_list(
             })
             rows.append(series)
 
-    gaps_df = pd.concat((gaps_df, pd.concat(rows, axis=1).T))
+    if rows:
+        gaps_df = pd.concat((gaps_df, pd.concat(rows, axis=1).T))
     gaps_df.sort_values(by=['starttime', 'endtime'],
                         ascending=[True, False], inplace=True)
     gaps_df.reset_index(inplace=True, drop=True)

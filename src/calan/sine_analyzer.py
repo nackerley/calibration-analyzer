@@ -90,7 +90,7 @@ class SynchronousCalibrationAnalyzer():
         # helpers
         if os.path.isfile(LOG_FILE_NAME):
             os.remove(LOG_FILE_NAME)
-        self.logger = start_logger(__name__, LOG_FILE_NAME, 'INFO')
+        self.logger = getLogger(self.__class__.__name__)
         self.plot = plot
         self.dpi = dpi
         self.client = get_clients()[0]
@@ -431,6 +431,8 @@ def main(argv=None):
         argv = sys.argv
     parser = _argparser()
     args = parser.parse_args(argv[1:])
+
+    start_logger(__name__, LOG_FILE_NAME, 'INFO')
 
     config = vars(args).copy()
 
