@@ -13,6 +13,7 @@ Currently only supports calibration of one channel at at time.
 Author: Nick Ackerley
 """
 # pylint: disable=consider-using-f-string
+from logging import getLogger
 import os
 import sys
 from io import StringIO
@@ -29,7 +30,8 @@ from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
 from obspy import read
 
-from calan.core import PACKAGE, VERSION, get_clients, get_logger
+from calan.core import PACKAGE, VERSION, start_logger
+from calan.chis_archive import get_clients
 from calan.utilities import MyArgumentParser, MyFormatter
 from calan.stft import Stft
 
@@ -88,7 +90,7 @@ class SynchronousCalibrationAnalyzer():
         # helpers
         if os.path.isfile(LOG_FILE_NAME):
             os.remove(LOG_FILE_NAME)
-        self.logger = get_logger(__name__, LOG_FILE_NAME)
+        self.logger = start_logger(__name__, LOG_FILE_NAME, 'INFO')
         self.plot = plot
         self.dpi = dpi
         self.client = get_clients()[0]
@@ -244,7 +246,7 @@ class SynchronousCalibrationAnalyzer():
                 'spectra_%g-%gHz_%s.png' % tuple(
                     list(self.f_lim) + [os.path.basename(self.test_name)]))
 
-            get_logger(__name__).info('Saving: %s', summary_png)
+            getLogger(__name__).info('Saving: %s', summary_png)
             fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
 
     def get_temperature(self, dt_utc, station_id=WEATHER_STATION_ID,

@@ -13,7 +13,7 @@ from numpy.typing import ArrayLike
 import pandas as pd
 
 
-# %% argument parsing
+#  argument parsing
 class MyFormatter(argparse.ArgumentDefaultsHelpFormatter,
                   argparse.RawDescriptionHelpFormatter):
     """Preserve linefeeds in docstring and include default values in help."""
@@ -39,7 +39,7 @@ def string_list(
     return list(argument)
 
 
-# %% formatting
+#  formatting
 def round_sig(
     value: float,
     num_significant: int = 3,
@@ -234,7 +234,7 @@ def to_string_no_index(df: pd.DataFrame, **kwargs: str) -> str:
     return string
 
 
-# %% logarithmic binning
+#  logarithmic binning
 def preferred_number(
     value: float,
     series: Sequence[float] = (1, 2, 5),

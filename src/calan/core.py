@@ -120,7 +120,7 @@ def dataless2stationxml(
     ----
     This should be deprecated; ObsPy does it natively.
     """
-    logger = get_logger(__name__)
+    logger = getLogger(__name__)
     if not os.path.isfile(inventory_dataless):
         logger.warning('Dataless SEED file "%s" not found', inventory_dataless)
 
@@ -137,7 +137,7 @@ def dataless2stationxml(
 
 def inventory2dataless(inventory_xml: str) -> str:
     """Convert StationXML inventory to dataless SEED."""
-    logger = get_logger(__name__)
+    logger = getLogger(__name__)
     if not os.path.isfile(inventory_xml):
         logger.warning('StationXML file "%s" not found', inventory_xml)
 
@@ -564,7 +564,7 @@ def extract_decimation_coefficients(
     stages: Sequence[ResponseStage]
 ) -> Tuple[List[np.ndarray], List[int]]:
     """Extract decimation factors, filter coefficients from list of stages."""
-    logger = get_logger(__name__)
+    logger = getLogger(__name__)
     b_stages: List[np.ndarray] = []
     factors: List[int] = []
     for stage in stages:
@@ -1189,33 +1189,30 @@ SIMPLE_LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
 }
 
 
-def get_logger(
+def start_logger(
     name: str,
-    log_file_name: str = '',
-    log_console_level: str = 'INFO',
+    log_file_name: str,
+    log_console_level: str,
 ) -> Logger:
     """
-    Return named logger which logs to console and file.
+    Return named logger which logs to console and given file.
 
     Configures root logger for log_file_name and log_console_level.
     Logging to file is always at DEBUG level.
     """
     assert log_console_level in LOG_LEVELS
 
-    handlers = logging.getLogger().handlers
-    not_previously_configured = len(handlers) == 0
-
-    if not_previously_configured:
-        LOG_SETTINGS['handlers']['console'].update(  # type: ignore
-            {'level': log_console_level})
-        LOG_SETTINGS['handlers']['file'].update(  # type: ignore
-            {'filename': log_file_name})
-        dictConfig(LOG_SETTINGS)
+    LOG_SETTINGS['handlers']['console'].update(  # type: ignore
+        {'level': log_console_level})
+    LOG_SETTINGS['handlers']['file'].update(  # type: ignore
+        {'filename': log_file_name})
+    dictConfig(LOG_SETTINGS)
 
     logger = logging.getLogger(name)
-    if not_previously_configured:
-        logger.info('Logfile: %s', os.path.abspath(log_file_name))
-        logger.info('Package: %s v%s', PACKAGE, VERSION)
+
+    logger.info('Logfile: %s', os.path.abspath(log_file_name))
+    logger.info('Package: %s v%s', PACKAGE, VERSION)
+
     return logger
 
 
