@@ -32,7 +32,7 @@ from calan.utilities import string_list
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 PACKAGE = os.path.basename(os.path.dirname(__file__))
-VERSION = '1.2.4'
+VERSION = '1.2.5'
 
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
@@ -1074,7 +1074,7 @@ def stations2df(inventory: Inventory) -> pd.DataFrame:
 
 def read_sql(
     file_name: str,
-    parse_dates: Tuple[str, str] = ('start', 'end'),
+    parse_dates: Sequence[str] = ('start', 'end'),
     index: Sequence[Any] = (),
     dtypes: Optional[Dict[str, DTypeLike]] = None,
 ) -> pd.DataFrame:
