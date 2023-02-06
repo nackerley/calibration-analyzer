@@ -56,7 +56,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 import pandas as pd
-import statsmodels.api as sm  # type: ignore
+import statsmodels.api as sm
 
 from obspy import read, read_inventory, Trace, Stream, UTCDateTime
 from obspy.core.inventory import Response, ResponseStage, InstrumentSensitivity
@@ -280,7 +280,7 @@ def feature_stats(values: ArrayLike, label: str) -> pd.DataFrame:
                 'damping': np.abs(np.cos(np.angle(value))),
             }
 
-    return pd.DataFrame(stats).unstack().to_frame().T  # type: ignore
+    return pd.Series(pd.DataFrame(stats).unstack()).to_frame().T
 
 
 def feature_str(values: ArrayLike, sig_dig: int = 3) -> str:
@@ -404,7 +404,8 @@ def calibration_analyzer(
         dfs.append(analyzer.summary())
 
         if ims_instrument_type:
-            analyzer.write_calibrate_result(ims_instrument_type, n=max(fit, 1))
+            analyzer.write_calibrate_result(
+                ims_instrument_type, n=max(fit, 1), mapping=orientation_map)
 
     if not dfs:
         logger.error('No valid calibration results.')
@@ -1292,12 +1293,16 @@ class CalibrationAnalyzer():
         self,
         ims_instrument_type: str,
         n: int = 1,
+        mapping: Tuple[str, str] = DEFAULT_ORIENTATION_MAP,
     ) -> None:
         """
         Write IMS2.0 CALIBRATE_RESULT message with CAL2 and PAZ2 or FAP2.
 
         The response written is that of the first n stages of the sensor
         response, cascaded.
+
+        IMS requires that streams be listed as originally recorded,
+        not mapped to the orientations used during calibration.
         """
         keep = ((self.stft.f >= self.info.spec_min_freq_hz) &
                 (self.stft.f <= self.info.spec_max_freq_hz))
@@ -1353,15 +1358,20 @@ class CalibrationAnalyzer():
                         tf_estimate[np.argmax(f >= 1/calper)])
                 calib = 1e9*calper/(2*np.pi*actual_sensor*nominal_datalogger)
 
+                output_channel = trace.stats.channel
+                for output, internal in zip(*mapping):
+                    if output_channel[-1] == internal:
+                        output_channel = output_channel[:-1] + output
+
                 file.write(RESPONSE_HEADER.format(
                     station=trace.stats.station,
-                    channel=trace.stats.channel,
+                    channel=output_channel,
                     calib=calib,
                     calper=calper,
                     in_spec=YES_NO[amp_in_spec and phase_in_spec]))
                 file.write(CAL_BLOCK.format(
                     station=trace.stats.station,
-                    channel=trace.stats.channel,
+                    channel=output_channel,
                     aux_id='',
                     inst_type=ims_instrument_type,
                     calib=calib,
@@ -1369,6 +1379,10 @@ class CalibrationAnalyzer():
                     sample_rate=self._sampling_rate(),
                     start=self.info.start.strftime(IMS_DATETIME_FMT),
                     end=self.info.end.strftime(IMS_DATETIME_FMT)))
+
+                description = f"Input units: {fit_units['input']}"
+                if output_channel != trace.stats.channel:
+                    description += f' ({trace.stats.channel})'
 
                 if zpk_fit:
                     file.write(PAZ_HEADER.format(
@@ -1379,7 +1393,7 @@ class CalibrationAnalyzer():
                         group_correction=0,
                         num_zeros=len(zpk_fit.zeros),
                         num_poles=len(zpk_fit.poles),
-                        description=f"Input units: {fit_units['input']}"))
+                        description=description))
                     for item in zpk_fit.poles:
                         file.write(PAZ_DATA.format(real=np.real(item),
                                                    imag=np.imag(item)))
@@ -1393,7 +1407,7 @@ class CalibrationAnalyzer():
                         decimation='',
                         group_correction=0,
                         count=len(f),
-                        description=f"Input units: {fit_units['input']}"))
+                        description=description))
                     for frequency, amplitude, phase in zip(
                             f, np.abs(tf_estimate),
                             np.angle(tf_estimate, deg=True)):
