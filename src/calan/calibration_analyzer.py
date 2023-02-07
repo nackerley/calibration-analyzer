@@ -56,7 +56,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 import pandas as pd
-import statsmodels.api as sm
+import statsmodels.api as sm  # type: ignore
 
 from obspy import read, read_inventory, Trace, Stream, UTCDateTime
 from obspy.core.inventory import Response, ResponseStage, InstrumentSensitivity
