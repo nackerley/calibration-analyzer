@@ -3,7 +3,7 @@
   <Source>Canadian Hazards Information Service</Source>
   <Module>ObsPy 1.3.1</Module>
   <ModuleURI>https://www.obspy.org</ModuleURI>
-  <Created>2023-01-31T15:39:04.920420Z</Created>
+  <Created>2023-01-31T18:45:26.349910Z</Created>
   <Network code="XX" startDate="1980-01-01T00:00:00.000000Z" restrictedStatus="open">
     <Description>CHIS Internal</Description>
     <Station code="YKNOM" restrictedStatus="open">
@@ -19,7 +19,7 @@
       <Channel code="SHZ" restrictedStatus="open" locationCode="">
         <Description>Dummy Channel</Description>
         <Comment subject="IDC nominal response">
-          <Value>{"NCALIB": 0.0035258, "NCALPER": 0.25}</Value>
+          <Value>{"NCALIB": 0.0035321, "NCALPER": 0.25}</Value>
           <Author>
             <Email>nicholas.ackerley@nrcan-rncan.gc.ca</Email>
           </Author>
@@ -45,8 +45,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.238015.17125"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>11193911872.0</Value>
-            <Frequency>10</Frequency>
+            <Value>11285747616.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -68,8 +68,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99815</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.99002</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -88,8 +88,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>401.02</Value>
-              <Frequency>10</Frequency>
+              <Value>404.31</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -104,16 +104,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">

@@ -3,7 +3,7 @@
   <Source>SeisComP</Source>
   <Module/>
   <ModuleURI/>
-  <Created>2023-01-31T15:37:54.847205Z</Created>
+  <Created>2023-01-31T18:45:22.180901Z</Created>
   <Network code="CN" startDate="1980-01-01T00:00:00.000000Z" restrictedStatus="open">
     <Description>Canadian National Seismograph Network</Description>
     <Station code="YKAB0" startDate="2013-06-26T00:00:00.000000Z" restrictedStatus="open">
@@ -37,8 +37,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.238015.17125"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10722049472.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10833627072.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -60,8 +60,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99774</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98747</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -80,8 +80,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>384.38</Value>
-              <Frequency>10</Frequency>
+              <Value>388.38</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -96,16 +96,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -2092,8 +2092,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.241976.17139"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10421401928.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10536523200.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -2115,8 +2115,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99763</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98673</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -2135,8 +2135,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>373.87</Value>
-              <Frequency>10</Frequency>
+              <Value>378.0</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -2151,16 +2151,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -4147,8 +4147,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.245818.17153"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10564118856.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10679518872.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -4170,8 +4170,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99765</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98687</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -4190,8 +4190,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>378.99</Value>
-              <Frequency>10</Frequency>
+              <Value>383.13</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -4206,16 +4206,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -6202,8 +6202,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.249632.17167"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10372621728.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10493596624.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -6225,8 +6225,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99751</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98601</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -6245,8 +6245,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>372.12</Value>
-              <Frequency>10</Frequency>
+              <Value>376.46</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -6261,16 +6261,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -8257,8 +8257,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.257714.17193"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10917701360.0</Value>
-            <Frequency>10</Frequency>
+            <Value>11015016520.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -8280,8 +8280,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99802</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98919</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -8300,8 +8300,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>391.54</Value>
-              <Frequency>10</Frequency>
+              <Value>395.03</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -8316,16 +8316,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -10312,8 +10312,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.261615.17207"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10863606400.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10967613720.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -10335,8 +10335,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99789</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98841</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -10355,8 +10355,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>389.6</Value>
-              <Frequency>10</Frequency>
+              <Value>393.33</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -10371,16 +10371,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -12367,8 +12367,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.2654.17221"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>11206021920.0</Value>
-            <Frequency>10</Frequency>
+            <Value>11311702280.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -12390,8 +12390,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99792</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.9886</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -12410,8 +12410,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>401.88</Value>
-              <Frequency>10</Frequency>
+              <Value>405.67</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -12426,16 +12426,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -14422,8 +14422,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.272953.17247"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10856442528.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10960863528.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -14445,8 +14445,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99789</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98838</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -14465,8 +14465,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>389.88</Value>
-              <Frequency>10</Frequency>
+              <Value>393.63</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -14481,16 +14481,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -16477,8 +16477,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.276696.17261"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10284952256.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10405301247.999998</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -16500,8 +16500,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.9975</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98596</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -16520,8 +16520,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>368.33</Value>
-              <Frequency>10</Frequency>
+              <Value>372.64</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -16536,16 +16536,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -18532,8 +18532,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.280812.17275"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10795778559.999998</Value>
-            <Frequency>10</Frequency>
+            <Value>10903488000.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -18555,8 +18555,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99782</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98797</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -18575,8 +18575,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>386.89</Value>
-              <Frequency>10</Frequency>
+              <Value>390.75</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -18591,16 +18591,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -20587,8 +20587,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.284733.17289"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>11221593600.0</Value>
-            <Frequency>10</Frequency>
+            <Value>11309491200.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -20610,8 +20610,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99821</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.99044</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -20630,8 +20630,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>402.15</Value>
-              <Frequency>10</Frequency>
+              <Value>405.3</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -20646,16 +20646,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -22642,8 +22642,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.289423.17303"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10795220480.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10904046080.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -22665,8 +22665,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.9978</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98785</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -22685,8 +22685,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>386.87</Value>
-              <Frequency>10</Frequency>
+              <Value>390.77</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -22701,16 +22701,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -24697,8 +24697,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.29436.17317"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>11204963391.999998</Value>
-            <Frequency>10</Frequency>
+            <Value>11292672384.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -24720,8 +24720,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99822</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.99045</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -24740,8 +24740,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>401.14</Value>
-              <Frequency>10</Frequency>
+              <Value>404.28</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -24756,16 +24756,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -26752,8 +26752,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.298525.17331"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10687658360.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10797800160.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -26775,8 +26775,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99776</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98758</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -26795,8 +26795,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>383.29</Value>
-              <Frequency>10</Frequency>
+              <Value>387.24</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -26811,16 +26811,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -28807,8 +28807,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.302167.17345"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10823078280.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10922418528.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -28830,8 +28830,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99796</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98887</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -28850,8 +28850,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>388.95</Value>
-              <Frequency>10</Frequency>
+              <Value>392.52</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -28866,16 +28866,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -30862,8 +30862,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.310446.17371"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>11008565568.0</Value>
-            <Frequency>10</Frequency>
+            <Value>11099284768.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -30885,8 +30885,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99814</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98998</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -30905,8 +30905,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>394.38</Value>
-              <Frequency>10</Frequency>
+              <Value>397.63</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -30921,16 +30921,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -32917,8 +32917,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.314314.17385"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10277971456.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10396645056.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -32940,8 +32940,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99753</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.98613</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -32960,8 +32960,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>368.08</Value>
-              <Frequency>10</Frequency>
+              <Value>372.33</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -32976,16 +32976,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">
@@ -34972,8 +34972,8 @@
         <DataLogger resourceId="smi:ca.seismo/sc3-e1/Datalogger/20200625142658.323536.17411"/>
         <Response>
           <InstrumentSensitivity>
-            <Value>10595165152.0</Value>
-            <Frequency>10</Frequency>
+            <Value>10704307328.0</Value>
+            <Frequency>4.0</Frequency>
             <InputUnits>
               <Name>m/s</Name>
               <Description>velocity</Description>
@@ -34995,8 +34995,8 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>0.99776</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">10.0</NormalizationFrequency>
+              <NormalizationFactor>0.9876</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">4.0</NormalizationFrequency>
               <Zero number="0">
                 <Real>0.0</Real>
                 <Imaginary>0.0</Imaginary>
@@ -35015,8 +35015,8 @@
               </Pole>
             </PolesZeros>
             <StageGain>
-              <Value>379.57</Value>
-              <Frequency>10</Frequency>
+              <Value>383.48</Value>
+              <Frequency>4.0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="2">
@@ -35031,16 +35031,16 @@
                 <Description>voltage</Description>
               </OutputUnits>
               <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
-              <NormalizationFactor>6283.2</NormalizationFactor>
-              <NormalizationFrequency unit="HERTZ">1.0</NormalizationFrequency>
+              <NormalizationFactor>420.97</NormalizationFactor>
+              <NormalizationFrequency unit="HERTZ">0.0</NormalizationFrequency>
               <Pole number="0">
-                <Real>-6283.2</Real>
+                <Real>-420.97</Real>
                 <Imaginary>0.0</Imaginary>
               </Pole>
             </PolesZeros>
             <StageGain>
               <Value>40.0</Value>
-              <Frequency>1</Frequency>
+              <Frequency>0</Frequency>
             </StageGain>
           </Stage>
           <Stage number="3" resourceId="NRL:Gain_SG4_FN0.05">

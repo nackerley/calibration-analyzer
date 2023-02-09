@@ -37,7 +37,6 @@ STATION_PREFIX = 'YKA'
 PRECISION = 5
 START = UTCDateTime('2015-11-23 16:28:19')
 END = UTCDateTime('2019-03-06 21:40:26')
-SENSOR_NORMALIZATION_FREQUENCY = 10
 NCALPER = 0.25
 
 NRL_URL = (
@@ -68,8 +67,8 @@ def stage_params(zeros, poles, gain, norm_freq, gain_freq):
     zpk_unity = ZerosPolesGain(zeros, poles, 1)
     norm_factor = 1/np.abs(zpk_unity.freqresp(2*np.pi*norm_freq)[1][0])
     zpk_gain = ZerosPolesGain(zeros, poles, norm_factor)
-    gain_at_norm_freq = gain/np.abs(zpk_gain.freqresp(2*np.pi*gain_freq)[1][0])
-    return norm_factor, gain_at_norm_freq
+    gain_at_gain_freq = gain/np.abs(zpk_gain.freqresp(2*np.pi*gain_freq)[1][0])
+    return norm_factor, gain_at_gain_freq
 
 
 if __name__ == '__main__':
@@ -135,18 +134,20 @@ if __name__ == '__main__':
 
         sensor_zeros = [0, 0]
         sensor_poles = [pole, pole.conj()]
+
+        # manufacturer specifies motor constant which defines sensitivity at
+        # high frequencies
         sensor_norm_factor, sensor_gain = stage_params(
-            sensor_zeros, sensor_poles, mfg.Sg,
-            SENSOR_NORMALIZATION_FREQUENCY, 10**(PRECISION + 1))
+            sensor_zeros, sensor_poles, mfg.Sg, 1/NCALPER, 10**(PRECISION + 1))
 
         sensor = PolesZerosResponseStage(
             stage_sequence_number=1,
             stage_gain=round_sig(sensor_gain, PRECISION),
-            stage_gain_frequency=SENSOR_NORMALIZATION_FREQUENCY,
+            stage_gain_frequency=1/NCALPER,
             input_units='m/s',
             output_units='V',
             pz_transfer_function_type='LAPLACE (RADIANS/SECOND)',
-            normalization_frequency=SENSOR_NORMALIZATION_FREQUENCY,
+            normalization_frequency=1/NCALPER,
             zeros=sensor_zeros,
             poles=sensor_poles,
             normalization_factor=round_sig(sensor_norm_factor, PRECISION),
@@ -156,23 +157,19 @@ if __name__ == '__main__':
             description=(f'S/N {mfg.sensor_id} with {mfg.Rd} ohm damping '
                          'resistor'))
 
-        preamp_zeros = []
-        preamp_poles = [-round_sig(2*np.pi*1e3, PRECISION)]
-        preamp_gain = mfg.Kp
-        preamp_norm_freq = 1
-        preamp_norm_factor = -preamp_poles[0]
+        preamp_poles = [-round_sig(2*np.pi*67, PRECISION)]
 
         preamp = PolesZerosResponseStage(
             stage_sequence_number=1,
-            stage_gain=round_sig(preamp_gain, PRECISION),
-            stage_gain_frequency=preamp_norm_freq,
+            stage_gain=round_sig(mfg.Kp, PRECISION),
+            stage_gain_frequency=0,
             input_units='V',
             output_units='V',
             pz_transfer_function_type='LAPLACE (RADIANS/SECOND)',
-            normalization_frequency=preamp_norm_freq,
-            zeros=preamp_zeros,
+            normalization_frequency=0,
+            zeros=[],
             poles=preamp_poles,
-            normalization_factor=preamp_norm_factor,
+            normalization_factor=-preamp_poles[0],
             name=f'Guralp|Preamp Model {mfg.preamp_model}',
             input_units_description='voltage',
             output_units_description='voltage',
