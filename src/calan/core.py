@@ -32,7 +32,7 @@ from calan.utilities import string_list
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 PACKAGE = os.path.basename(os.path.dirname(__file__))
-VERSION = '1.2.5'
+VERSION = '1.2.6'
 
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3

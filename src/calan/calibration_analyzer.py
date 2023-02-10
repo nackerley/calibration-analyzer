@@ -263,22 +263,26 @@ def feature_stats(values: ArrayLike, label: str) -> pd.DataFrame:
     stats = {}
     values = np.array(values).reshape(-1)
     for i, value in enumerate(values):
+
+        if i > 0 and (np.iscomplex(value) and
+                      np.isclose(value, np.conj(values[i - 1]))):
+            continue
+
         if np.isreal(value):
             key = label + '_' + str(i)
-            stats[key] = {
-                'real_rad': np.real(value),
-                'freq_hz': np.real(value)/(2*np.pi),
-            }
-        elif i > 0 and np.isclose(value, np.conj(values[i - 1])):
-            continue
         else:
             key = label + '_' + str(i) + str(i+1)
-            stats[key] = {
-                'real_rad': np.real(value),
+
+        stats[key] = {
+            'real_rad': np.real(value),
+            'freq_hz': np.abs(value)/(2*np.pi)
+        }
+
+        if np.iscomplex(value):
+            stats[key].update({
                 'imag_rad': np.imag(value),
-                'freq_hz': np.abs(value)/(2*np.pi),
                 'damping': np.abs(np.cos(np.angle(value))),
-            }
+            })
 
     return pd.Series(pd.DataFrame(stats).unstack()).to_frame().T
 
@@ -841,20 +845,20 @@ class CalibrationAnalyzer():
         self.info.start += discard_s[0]
         self.info.end -= discard_s[1]
 
+        self.logger.debug(str(self.stream))
         last_start = max([trace.stats.starttime for trace in self.stream])
         if self.info.start < last_start:
             self.logger.warning(
                 '%s data missing, delaying start to %s',
-                pd.to_timedelta(self.info.start - last_start, 's'), last_start)
+                pd.to_timedelta(last_start - self.info.start, 's'), last_start)
             self.info.start = last_start + discard_s[0]
 
         first_end = min([trace.stats.endtime for trace in self.stream])
         if first_end < self.info.end:
             self.logger.warning(
                 '%s data missing, advancing end to %s',
-                pd.to_timedelta(first_end - self.info.end, 's'), first_end)
+                pd.to_timedelta(self.info.end - first_end, 's'), first_end)
             self.info.end = first_end - discard_s[1]
-        self.logger.debug(str(self.stream))
 
         if self.stream.slice(self.info.start, self.info.end).get_gaps():
             with StringIO() as buffer, redirect_stdout(buffer):

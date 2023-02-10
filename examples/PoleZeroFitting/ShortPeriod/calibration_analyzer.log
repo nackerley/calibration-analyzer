@@ -1,5 +1,5 @@
 INFO     calibration_analyzer.py:__main__:main - Arguments: --response-pattern XX.YKAT1.xml --ims-instrument-type S-13 --plot basic --fit 2 --out-of-band 5 2 --calibration-response-file XX.YKAT1.xml
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.4
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Output.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Input.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
