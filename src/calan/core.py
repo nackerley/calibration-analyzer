@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from logging import getLogger, Logger
 from logging.config import dictConfig
-from glob import glob
+
 from operator import attrgetter
 from typing import \
     Any, Dict, Iterator, List, Optional, Sequence, Sized, Tuple, Type, Union
@@ -84,7 +84,8 @@ def fdsn_error_message(ex: Exception) -> str:
 
 
 STATIONXML_CONVERTER_FILE = 'stationxml-converter-1.0.9.jar'
-STATIONXML_CONVERTER = Path(__file__).parent.joinpath('jar', STATIONXML_CONVERTER_FILE)
+STATIONXML_CONVERTER = Path(__file__).parent.joinpath(
+    'jar', STATIONXML_CONVERTER_FILE)
 if not STATIONXML_CONVERTER.exists():
     print(f'WARNING: StationXML converter "{STATIONXML_CONVERTER_FILE}" '
           'not found. Cannot convert dataless2inventory ')
