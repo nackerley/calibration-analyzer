@@ -12,6 +12,8 @@ from operator import attrgetter
 from typing import \
     Any, Dict, Iterator, List, Optional, Sequence, Sized, Tuple, Type, Union
 
+from pathlib import Path
+
 import numpy as np
 from numpy.typing import ArrayLike, DTypeLike
 import pandas as pd
@@ -82,9 +84,8 @@ def fdsn_error_message(ex: Exception) -> str:
 
 
 STATIONXML_CONVERTER_FILE = 'stationxml-converter-1.0.9.jar'
-STATIONXML_CONVERTER = next(iter(glob(
-    os.path.join(ROOT, '**', STATIONXML_CONVERTER_FILE))), None)
-if STATIONXML_CONVERTER is None:
+STATIONXML_CONVERTER = Path(__file__).parent.joinpath('jar', STATIONXML_CONVERTER_FILE)
+if not STATIONXML_CONVERTER.exists():
     print(f'WARNING: StationXML converter "{STATIONXML_CONVERTER_FILE}" '
           'not found. Cannot convert dataless2inventory ')
 
