@@ -1,0 +1,210 @@
+#!/bin/bash
+
+PROGRAM_NAME=$(basename ${0})
+
+FULL_SCALE_COUNTS=32767
+FULL_SCALE_VOLTS=5
+
+DEFAULT_PRB_SEED=1
+DEFAULT_PRB_MASK=$(( 0xEDB88320 ))
+DEFAULT_UNIT_WIDTH_MS=1
+
+printUsage()
+{
+	echo "Usage:
+${PROGRAM_NAME} [OPTIONS]
+
+Generate calibration signal composed of a pseudo-random binary (PRB) sequence
+of output at specified amplitude.  The output will be at either the positive
+or negative level provided in either volts or counts.  A transition to the
+alternate level may occur after every unit-width milliseconds.
+
+OPTIONS
+        --voltage=<volts>       calibration output amplitude in volts
+                                defaults to full scale voltage (${FULL_SCALE_VOLTS})
+        --counts=<counts>       calibration output amplitude in counts
+                                defaults to full scale counts (${FULL_SCALE_COUNTS})
+        --duration=<seconds>    calibration signal duration in integer seconds
+                                continues indefinitely if not specified
+        --unit-width=<milliseconds>
+                                duration of each PRB pulse in integer ms
+                                default value ${DEFAULT_UNIT_WIDTH_MS} ms
+        --prb-mask=<mask>       mask of PRB polynomial
+                                default value ${DEFAULT_PRB_MASK}
+        --prb-seed=<seed>       seed for PRB output
+                                default value ${DEFAULT_PRB_SEED}
+        --output=<output-file>  output file
+                                stdout if not specified
+        --lzma                  compress output using lzma
+        --meta                  generate a metadata file for the PRB file
+                                (contains file name, and duration in millis)
+"
+}
+
+logError()
+{
+	echo "${PROGRAM_NAME}: ${*}" >&2
+}
+
+prbInitialize()
+{
+	PRB_MASK=${1}
+	PRB_STATE=${2}
+}
+
+prbCalculateValue()
+{
+	PRB_VALUE=$(( PRB_STATE & 1 ))
+	PRB_STATE=$(( (PRB_STATE >> 1) ^ (PRB_VALUE ? PRB_MASK : 0) ))
+}
+
+outputPrbSignal()
+{
+	local SAMPLE_RATE_IN_KILOHERTZ=30
+	local amplitudeInCounts=${1}
+	local unitWidthInMilliseconds=${2}
+	local numberOfUnits=${3}
+
+	local outputValues=( $(( -amplitudeInCounts )) ${amplitudeInCounts} )
+	local unitWidthInSamples=$(( SAMPLE_RATE_IN_KILOHERTZ * unitWidthInMilliseconds))
+
+	local unit
+	for (( unit = 0; unit != ${numberOfUnits}; unit++ )); do
+		prbCalculateValue
+		perl -e "print pack('s<', ${outputValues[${PRB_VALUE}]}) x ${unitWidthInSamples}"
+	done
+}
+
+getNumberOfUnits()
+{
+	local MILLISECONDS_PER_SECOND=1000
+	local unitWidthInMilliseconds="${1}"
+	local durationInSeconds="${2}"
+	if [ -z "${durationInSeconds}" ]; then
+		echo "-1"
+		return
+	fi
+	local numberOfUnits=$(( (MILLISECONDS_PER_SECOND * durationInSeconds) / unitWidthInMilliseconds ))
+	if [ $(( (numberOfUnits * unitWidthInMilliseconds) / MILLISECONDS_PER_SECOND )) -ne ${durationInSeconds} ]; then
+		logError "duration '${durationInSeconds}' ms must be a multiple of unit-width '${unitWidthInMilliseconds}' ms"
+		return 1
+	fi
+	echo ${numberOfUnits}
+}
+
+convertVoltageToCounts()
+{
+	local voltage=${1}
+
+	# basic number test to prohibit letters which confuse awk
+	if ! [[ "${voltage}" =~ ^[+-]?[0-9.]*$ ]]; then
+		logError "Invalid voltage '${voltage}'"
+		return 1
+	fi
+
+	echo ${voltage} | awk "
+	{
+		counts = int(-1 * \$1 / ${FULL_SCALE_VOLTS} * ${FULL_SCALE_COUNTS})
+		if ((counts < -${FULL_SCALE_COUNTS}) || (counts > ${FULL_SCALE_COUNTS}))
+			exit 1
+		print (counts)
+	}" 2>/dev/null
+}
+
+getPositiveIntegerValue()
+{
+	local argument=${1}
+	local value=${argument#*=}
+	if ! [ "${value}" -gt 0 ] 2>/dev/null; then
+		local option=${argument%%=*}
+		logError "Invalid positive integer value '${value}' for '${option#--}'"
+		return 1
+	fi
+	echo ${value}
+}
+
+doMain()
+{
+	local prbMask=${DEFAULT_PRB_MASK}
+	local prbSeed=${DEFAULT_PRB_SEED}
+	local counts=${FULL_SCALE_COUNTS}
+	local unitWidthInMilliseconds=${DEFAULT_UNIT_WIDTH_MS}
+	local durationInSeconds=
+	local compression=
+	local output=
+	local meta=false
+
+	while [ "${1}" != "${1#--}" ]; do
+		if [ "${1}" == "--help" ]; then
+			printUsage
+			return
+		elif [ "${1}" == "--meta" ]; then
+			meta=true
+		elif [ "${1}" == "--lzma" ]; then
+			compression="| lzma"
+		elif [[ "${1}" == --output=* ]]; then
+			output="> ${1#--output=}"
+		elif [[ "${1}" == --voltage=* ]]; then
+			counts=$(convertVoltageToCounts ${1#--voltage=}) \
+				|| return ${?}
+		elif [[ "${1}" == --counts=* ]]; then
+			counts=${1#--counts=}
+		elif [[ "${1}" == --prb-mask=* ]]; then
+			prbMask=$(getPositiveIntegerValue ${1}) \
+				|| return ${?}
+		elif [[ "${1}" == --prb-seed=* ]]; then
+			prbSeed=$(getPositiveIntegerValue ${1}) \
+				|| return ${?}
+		elif [[ "${1}" == --duration=* ]]; then
+			durationInSeconds=$(getPositiveIntegerValue ${1}) \
+				|| return ${?}
+		elif [[ "${1}" == --unit-width=* ]]; then
+			unitWidthInMilliseconds=$(getPositiveIntegerValue ${1}) \
+				|| return ${?}
+		else
+			logError "Invalid option: '${1}'"
+			printUsage >&2
+			return 1
+		fi
+		shift
+	done
+
+	local numberOfUnits=
+	numberOfUnits=$(getNumberOfUnits ${unitWidthInMilliseconds} ${durationInSeconds}) \
+		|| return ${?}
+
+	if [ ${#} -ne 0 ]; then
+		logError "Invalid argument: '${1}'"
+		printUsage >&2
+		return 1
+	fi
+
+	if ${meta} && test -z "${output}"; then
+		logError "--meta option requires --output be specified"
+		printUsage >&2
+		return 1
+	fi
+
+	prbInitialize "${prbMask}" "${prbSeed}" \
+		|| return ${?}
+
+	# ensure that lzma compression comes from the xz utils package
+	if [ -n "${compression}" ] && ! lzma -V | grep -q "XZ Utils" ; then
+		logError "lzma compression must be provided by the XZ Utils package"
+		return 1
+	fi
+
+	# eval is used so that when ${compression} and ${output} are expanded, piping and redirection
+	# occur here rather than passing the strings to the outputPrbSignal function.
+	eval outputPrbSignal ${counts} ${unitWidthInMilliseconds} ${numberOfUnits} ${compression} ${output} \
+		|| return ${?}
+
+	if ${meta}; then
+		local outputFileName=$(basename ${output#"> "})
+		local metaFileName="$(dirname ${output#"> "})/.meta_${outputFileName}"
+		local durationMillis=$(( ${durationInSeconds} * 1000 ))
+		printf "file=${outputFileName}\ndurationMillis=${durationMillis}\n" > "${metaFileName}"
+	fi
+}
+
+doMain "${@}"
