@@ -30,7 +30,8 @@ from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
 from obspy import read
 
-from calan.core import PACKAGE, VERSION, start_logger
+from calan import __version__, PACKAGE
+from calan.core import start_logger
 from calan.chis_archive import get_clients
 from calan.utilities import MyArgumentParser, MyFormatter
 from calan.stft import Stft
@@ -348,7 +349,7 @@ def _argparser():
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
         '-v', '--version', action='version',
-        version='%s %s' % (PACKAGE, VERSION))
+        version='%s %s' % (PACKAGE, __version__))
     return parser
 
 

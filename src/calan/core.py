@@ -29,12 +29,8 @@ from obspy.core.inventory import (
 from obspy.core.event import \
     Pick, Arrival, Amplitude, StationMagnitude, Event, WaveformStreamID
 
+from calan import __version__, PACKAGE
 from calan.utilities import string_list
-
-ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
-PACKAGE = os.path.basename(os.path.dirname(__file__))
-VERSION = '1.2.6'
 
 CHIS_FDSN_SERVERS = (
     'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
@@ -1214,7 +1210,7 @@ def start_logger(
     logger = logging.getLogger(name)
 
     logger.info('Logfile: %s', os.path.abspath(log_file_name))
-    logger.info('Package: %s v%s', PACKAGE, VERSION)
+    logger.info('Package: %s v%s', PACKAGE, __version__)
 
     return logger
 
