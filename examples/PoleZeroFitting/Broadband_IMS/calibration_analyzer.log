@@ -1,5 +1,5 @@
-INFO     calibration_analyzer.py:__main__:main - Arguments: --ims-instrument-type T120QA --plot basic --fit 1 --orientation-map ENZ UVW --calibration-signal-file prb_0.1V_10ms_3h.lzma --response-pattern CN.INK..BH_20220613.xml
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6+6.gff269af.dirty
+INFO     calibration_analyzer.py:__main__:main - Arguments: --ims-instrument-type T120QA --plot basic --fit 1 --calper 1 --orientation-map ENZ UVW --calibration-signal-file prb_0.1V_10ms_3h.lzma --response-pattern CN.INK..BH_20220613.xml
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6+13.g12bec5d.dirty
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - INK_3282_20220613_122004.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 02:52:19.975000 at 40 sps
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_stream - lead in, out [s]: 360, 360
@@ -74,6 +74,7 @@ INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_CN.
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 6553.4 counts/V
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 3999996.0 counts/V, 3999996.0 counts/V, 3999996.0 counts/V
 INFO     stft.py:Stft:compute - 14 segments from 0.0008 to 20 Hz
+INFO     calibration_analyzer.py:CalibrationAnalyzer:set_calper - Using provided calper: {calper} s 
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([   0.  +0.j,  -31.63+0.j, -350.  +0.j]),
 array([   -0.036614   -0.037059j,    -0.036614   +0.037059j,
@@ -89,12 +90,12 @@ DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinu
 array([-350.+0.j]),
 array([    0.   +0.j,  -364. -404.j,  -364. +404.j, -1260.   +0.j,
        -4900.-5200.j, -4900.+5200.j, -7100.-1700.j, -7100.+1700.j]),
-3.6400006008457894e+21,
+1.8197174129433145e+22,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 5.03 Hz
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 0.00829 Hz (ζ = 0.703), 5.18 Hz, 22.6 Hz
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 0.2 Hz]: 1198.8
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 1 Hz]: 1200
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fitting: U
 INFO     fit_response.py:calan.fit_response:fit_response - Fixing 1 zeros and 8 poles at nominal values.
 INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
@@ -110,12 +111,12 @@ array([   -0.036706   -0.036623j,    -0.036706   +0.036623j,
        -1260.         +0.j      , -4900.      -5200.j      ,
        -4900.      +5200.j      , -7100.      -1700.j      ,
        -7100.      +1700.j      ]),
-5.124342323387302e+24,
+5.124342323387297e+24,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 4.71 Hz
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.00825 Hz (ζ = 0.708), 4.84 Hz, 22.4 Hz
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 0.2 Hz]: 1198.3
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 1 Hz]: 1199.6
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fitting: V
 INFO     fit_response.py:calan.fit_response:fit_response - Fixing 1 zeros and 8 poles at nominal values.
 INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
@@ -131,12 +132,12 @@ array([   -0.036737   -0.036558j,    -0.036737   +0.036558j,
        -1260.         +0.j      , -4900.      -5200.j      ,
        -4900.      +5200.j      , -7100.      -1700.j      ,
        -7100.      +1700.j      ]),
-5.069993574480914e+24,
+5.06999357448091e+24,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 4.76 Hz
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.00825 Hz (ζ = 0.709), 4.89 Hz, 22.1 Hz
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 0.2 Hz]: 1198.5
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 1 Hz]: 1199.7
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fitting: W
 INFO     fit_response.py:calan.fit_response:fit_response - Fixing 1 zeros and 8 poles at nominal values.
 INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
@@ -152,12 +153,12 @@ array([   -0.036724   -0.036586j,    -0.036724   +0.036586j,
        -1260.         +0.j      , -4900.      -5200.j      ,
        -4900.      +5200.j      , -7100.      -1700.j      ,
        -7100.      +1700.j      ]),
-5.210970583582043e+24,
+5.210970583582051e+24,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 4.22 Hz
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.00825 Hz (ζ = 0.708), 4.31 Hz, 22.9 Hz
-INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 0.2 Hz]: 1198.5
+INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 1 Hz]: 1199.8
 INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Amplitude: U: PASS, V: PASS, W: PASS
 INFO     calibration_analyzer.py:CalibrationAnalyzer:test - Phase: U: PASS, V: PASS, W: PASS
 INFO     calibration_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -0.248% ±0.002% (95% conf.)

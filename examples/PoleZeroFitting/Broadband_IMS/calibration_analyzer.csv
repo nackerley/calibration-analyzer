@@ -10,6 +10,7 @@ info,spec_max_amp_pct,5.0,5.0,5.0,
 info,spec_max_phase_deg,5.0,5.0,5.0,
 info,gain_in_spec,True,True,True,
 info,phase_in_spec,True,True,True,
+info,calper,1.0,1.0,1.0,
 info,duration_s,9599.975,9599.975,9599.975,
 info,pre_s,370.0,370.0,370.0,
 info,post_s,370.0,370.0,370.0,
@@ -22,7 +23,7 @@ info,gain error uncertainty [%],0.002,0.002,0.002,
 info,confidence [%],0.95,0.95,0.95,
 info,output_units,V,V,V,V
 info,input_units,m/s,m/s,m/s,m/s
-info,calan,1.2.6+6.gff269af.dirty,1.2.6+6.gff269af.dirty,1.2.6+6.gff269af.dirty,1.2.6+6.gff269af.dirty
+info,calan,1.2.6+13.g12bec5d.dirty,1.2.6+13.g12bec5d.dirty,1.2.6+13.g12bec5d.dirty,1.2.6+13.g12bec5d.dirty
 pole_01,real_rad,-0.036706,-0.036737,-0.0367238,-0.036614
 pole_01,freq_hz,0.00825241,0.00824866,0.00825032,0.00829128
 pole_01,imag_rad,-0.0366229,-0.0365584,-0.0365865,-0.037059
@@ -63,5 +64,5 @@ zero_4,real_rad,-350.0,-350.0,-350.0,-350.0
 zero_4,freq_hz,55.7042,55.7042,55.7042,55.7042
 zero_5,real_rad,-3177.0,-3177.0,-3177.0,-3177.0
 zero_5,freq_hz,505.635,505.635,505.635,505.635
-f_norm,hz,0.2,0.2,0.2,0.2
-sensitivity,V/(m/s),1198.31,1198.51,1198.51,1198.85
+f_norm,hz,1.0,1.0,1.0,1.0
+sensitivity,V/(m/s),1199.56,1199.68,1199.75,1200.0
