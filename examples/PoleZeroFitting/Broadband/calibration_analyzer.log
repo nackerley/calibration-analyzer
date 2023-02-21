@@ -1,5 +1,5 @@
 INFO     calibration_analyzer.py:__main__:main - Arguments: --ims-instrument-type T120QA --plot all --fit  1 --orientation-map ENZ UVW --calibration-response-file Centaur_Trillium120Q_Calibration.xml
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.4
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6+9.gf002146.dirty
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - CN.TOTT2_20200330_170413.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 02:52:19.990000 at 100 sps
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_stream - lead in, out [s]: 360, 360

@@ -22,7 +22,7 @@ info,gain error uncertainty [%],0.0863,0.2123,
 info,confidence [%],0.95,0.95,
 info,output_units,V,V,V
 info,input_units,m/s,m/s,m/s
-info,calan,1.2.6,1.2.6,1.2.6
+info,calan,1.2.6+9.gf002146.dirty,1.2.6+9.gf002146.dirty,1.2.6+9.gf002146.dirty
 pole_01,real_rad,-4.13739,-4.58,-3.9172
 pole_01,freq_hz,0.990868,0.980207,1.00001
 pole_01,imag_rad,-4.65217,-4.11761,-4.9127
