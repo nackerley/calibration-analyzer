@@ -89,8 +89,6 @@ class SynchronousCalibrationAnalyzer():
     def __init__(self, plot=False, dpi=DPI):
         """Construct analyzer."""
         # helpers
-        if os.path.isfile(LOG_FILE_NAME):
-            os.remove(LOG_FILE_NAME)
         self.logger = getLogger(self.__class__.__name__)
         self.plot = plot
         self.dpi = dpi
@@ -433,6 +431,8 @@ def main(argv=None):
     parser = _argparser()
     args = parser.parse_args(argv[1:])
 
+    if os.path.isfile(LOG_FILE_NAME):
+        os.remove(LOG_FILE_NAME)
     start_logger(__name__, LOG_FILE_NAME, 'INFO')
 
     config = vars(args).copy()
