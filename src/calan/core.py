@@ -1121,45 +1121,7 @@ FILE_NAME = os.path.basename(__file__)
 LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
         str, Union[str, bool, Sequence[str]]]]]] = {
-    'version': 1,  # logging schema
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'level': 'INFO',
-            'formatter': 'simple',
-        },
-        'file': {
-            'class': 'logging.handlers.TimedRotatingFileHandler',
-            'when': 'midnight',
-            'utc': True,
-            'filename': '',
-            'level': 'DEBUG',
-            'formatter': 'detailed',
-        },
-    },
-    'formatters': {
-        'simple': {
-            'format':
-            '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - %(message)s'
-        },
-        'detailed': {
-            'format': '%(asctime)s - '
-                      '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - '
-                      '%(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S',
-        },
-    },
-    'loggers': {
-        '': {
-            'level': 'DEBUG',
-            'handlers': ['console', 'file']
-        },
-    }
-}
-
-SIMPLE_LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
-        str, Union[str, bool, Sequence[str]]]]]] = {
-    'version': 1,  # logging schema
+    'version': 1,  # schema
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
@@ -1170,17 +1132,21 @@ SIMPLE_LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
             'class': 'logging.FileHandler',
             'filename': '',
             'level': 'DEBUG',
-            'formatter': 'simple',
-            'mode': 'w',
+            'formatter': 'detailed',
         },
     },
     'formatters': {
         'simple': {
-            'format': '%(levelname)-8s %(message)s'
+            'format':
+            '%(levelname)-8s %(funcName)s - %(message)s'
+        },
+        'detailed': {
+            'format': '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - '
+                      '%(message)s',
         },
     },
     'loggers': {
-        '': {
+        'root': {
             'level': 'DEBUG',
             'handlers': ['console', 'file']
         },
@@ -1201,6 +1167,11 @@ def start_logger(
     """
     assert log_console_level in LOG_LEVELS
 
+    try:
+        os.remove(log_file_name)
+    except OSError:
+        pass
+
     LOG_SETTINGS['handlers']['console'].update(  # type: ignore
         {'level': log_console_level})
     LOG_SETTINGS['handlers']['file'].update(  # type: ignore
@@ -1209,7 +1180,6 @@ def start_logger(
 
     logger = logging.getLogger(name)
 
-    logger.info('Logfile: %s', os.path.abspath(log_file_name))
     logger.info('Package: %s v%s', PACKAGE, __version__)
 
     return logger

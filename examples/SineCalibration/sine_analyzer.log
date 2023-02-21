@@ -1,19 +1,18 @@
-2023-01-29 17:03:08 - INFO     core.py:__main__:get_logger - Logfile: ~/src/station-tools/examples/SineCalibration/sine_analyzer.log
-2023-01-29 17:03:08 - INFO     core.py:__main__:get_logger - Package: calan v1.2.2
-2023-01-29 17:03:09 - INFO     sine_analyzer.py:__main__:load_waveforms - Output: Indoor_1_Output.mseed
-2023-01-29 17:03:10 - INFO     sine_analyzer.py:__main__:load_waveforms - Input: Indoor_1_Input.mseed
-2023-01-29 17:03:10 - INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
-2023-01-29 17:03:19 - INFO     sine_analyzer.py:__main__:get_temperature - Temperature: 4.2°C
-2023-01-29 17:03:19 - INFO     sine_analyzer.py:__main__:load_waveforms - Output: Indoor_2_Output.mseed
-2023-01-29 17:03:19 - INFO     sine_analyzer.py:__main__:load_waveforms - Input: Indoor_2_Input.mseed
-2023-01-29 17:03:19 - INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
-2023-01-29 17:03:27 - INFO     sine_analyzer.py:__main__:get_temperature - Temperature: -0.6°C
-2023-01-29 17:03:27 - INFO     sine_analyzer.py:__main__:load_waveforms - Output: Outdoor_1_Output.mseed
-2023-01-29 17:03:27 - INFO     sine_analyzer.py:__main__:load_waveforms - Input: Outdoor_1_Input.mseed
-2023-01-29 17:03:27 - INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
-2023-01-29 17:03:36 - INFO     sine_analyzer.py:__main__:get_temperature - Temperature: 12.6°C
-2023-01-29 17:03:36 - INFO     sine_analyzer.py:__main__:load_waveforms - Output: Outdoor_2_Output.mseed
-2023-01-29 17:03:36 - INFO     sine_analyzer.py:__main__:load_waveforms - Input: Outdoor_2_Input.mseed
-2023-01-29 17:03:36 - INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
-2023-01-29 17:03:45 - INFO     sine_analyzer.py:__main__:get_temperature - Temperature: 9.6°C
-2023-01-29 17:03:45 - INFO     sine_analyzer.py:__main__:sine_analzyer - Summary: sine_analyzer.csv
+INFO     core.py:__main__:start_logger - Package: calan v1.2.6+16.gf77cfec.dirty
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Indoor_1_Output.mseed
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Indoor_1_Input.mseed
+INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: 4.2°C
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Indoor_2_Output.mseed
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Indoor_2_Input.mseed
+INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: -0.6°C
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Outdoor_1_Output.mseed
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Outdoor_1_Input.mseed
+INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: 12.6°C
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Outdoor_2_Output.mseed
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Outdoor_2_Input.mseed
+INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: 9.6°C
+INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:sine_analzyer - Summary: sine_analyzer.csv

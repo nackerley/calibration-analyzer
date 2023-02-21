@@ -1,5 +1,6 @@
+INFO     core.py:__main__:start_logger - Package: calan v1.2.6+16.gf77cfec.dirty
 INFO     calibration_analyzer.py:__main__:main - Arguments: --ims-instrument-type T120QA --plot basic --fit 1 --calper 1 --orientation-map ENZ UVW --calibration-signal-file prb_0.1V_10ms_3h.lzma --response-pattern CN.INK..BH_20220613.xml
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6+13.g12bec5d.dirty
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6+16.gf77cfec.dirty
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - INK_3282_20220613_122004.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 02:52:19.975000 at 40 sps
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_stream - lead in, out [s]: 360, 360

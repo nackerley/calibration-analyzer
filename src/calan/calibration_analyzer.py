@@ -64,6 +64,7 @@ from obspy.signal.invsim import simulate_seismometer
 
 from calan import __version__, PACKAGE
 from calan.core import (
+    start_logger,
     factor_names, subplots_squeeze, gain_db, phase_deg, unwrap_mid,
     extract_decimation_coefficients, multi_decim,
     lti_multiply, lti_divide, zpk_cascade, stage_units)
@@ -1984,41 +1985,6 @@ class CalibrationAnalyzer():
         self._save_image(fig, option_list)
 
 
-LOG_SETTINGS = {
-    'version': 1,  # schema
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'level': 'INFO',
-            'formatter': 'simple',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': LOG_FILE_NAME,
-            'level': 'DEBUG',
-            'formatter': 'detailed',
-        },
-    },
-    'formatters': {
-        'simple': {
-            'format':
-            '%(levelname)-8s %(funcName)s - %(message)s'
-        },
-        'detailed': {
-            'format': '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - '
-                      '%(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S',
-        },
-    },
-    'loggers': {
-        'root': {
-            'level': 'DEBUG',
-            'handlers': ['console', 'file']
-        },
-    }
-}
-
-
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """Run analysis and return system exit code."""
     if argv is None:
@@ -2026,10 +1992,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _argparser()
     args = parser.parse_args(argv[1:])
 
-    if os.path.isfile(LOG_FILE_NAME):
-        os.remove(LOG_FILE_NAME)
-    logging.config.dictConfig(LOG_SETTINGS)
-    logger = logging.getLogger(__name__)
+    logger = start_logger(__name__, LOG_FILE_NAME, 'INFO')
     logger.info('Arguments: %s', ' '.join(argv[1:]))
 
     config = vars(args).copy()
