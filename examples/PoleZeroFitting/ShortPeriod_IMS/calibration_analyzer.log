@@ -1,5 +1,7 @@
+INFO     core.py:__main__:start_logger - Logfile: ~/src/station-tools/examples/PoleZeroFitting/ShortPeriod_IMS/calibration_analyzer.log
+INFO     core.py:__main__:start_logger - Package: calan v1.2.6+16.gf77cfec.dirty
 INFO     calibration_analyzer.py:__main__:main - Arguments: --response-pattern XX.YKAT1.xml --ims-instrument-type S-13 --plot basic --fit 2 --out-of-band 5 2 --calibration-response-file XX.YKAT1.xml
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6+16.gf77cfec.dirty
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Output.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Input.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
@@ -68,6 +70,7 @@ INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
 INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     calibration_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
@@ -176,6 +179,7 @@ INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
 INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     calibration_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([0.+0.j]),
 array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),

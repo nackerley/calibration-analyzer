@@ -62,9 +62,10 @@ from obspy import read, read_inventory, Trace, Stream, UTCDateTime
 from obspy.core.inventory import Response, ResponseStage, InstrumentSensitivity
 from obspy.signal.invsim import simulate_seismometer
 
+from calan import __version__, PACKAGE
 from calan.core import (
-    PACKAGE, VERSION, factor_names, subplots_squeeze,
-    gain_db, phase_deg, unwrap_mid,
+    start_logger,
+    factor_names, subplots_squeeze, gain_db, phase_deg, unwrap_mid,
     extract_decimation_coefficients, multi_decim,
     lti_multiply, lti_divide, zpk_cascade, stage_units)
 from calan.utilities import (
@@ -238,6 +239,10 @@ def _argparser() -> MyArgumentParser:
         '--ims-instrument-type', default='',
         help='if provided, write IMS2.0 CALIBRATE_RESULT message with type')
     parser.add_argument(
+        '--calper', type=float,
+        help='calibration period in seconds. Overrides stage_gain_frequency '
+        'given in response file.')
+    parser.add_argument(
         '--fit', type=int, metavar=('N'), default=DEFAULT_FIT_STAGES,
         help='fit the first N stages of the sensor response poles and zeros')
     parser.add_argument(
@@ -254,7 +259,7 @@ def _argparser() -> MyArgumentParser:
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
         '-v', '--version', action='version',
-        version=f'{PACKAGE} {VERSION}')
+        version=f'{PACKAGE} {__version__}')
     return parser
 
 
@@ -329,12 +334,13 @@ def calibration_analyzer(
     orientation_map: Tuple[str, str] = DEFAULT_ORIENTATION_MAP,
     plot: str = '',
     fit: int = DEFAULT_FIT_STAGES,
+    calper: Optional[float] = None,
     out_of_band: Tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
     dpi: float = DEFAULT_DPI,
 ) -> str:
     """Do arbitrary-signal calibration analysis."""
     logger = logging.getLogger(__name__)
-    logger.info('%s %s', PACKAGE, VERSION)
+    logger.info('%s %s', PACKAGE, __version__)
 
     pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
                            if char.isalnum())
@@ -378,6 +384,8 @@ def calibration_analyzer(
 
         analyzer.compute(num_windows=num_windows, len_fft=len_fft or None,
                          window=window)
+        analyzer.set_calper(calper)
+
         if fit:
             analyzer.fit(out_of_band=out_of_band)
         analyzer.test(test_band_hz=test_band_hz,
@@ -497,6 +505,7 @@ class CalibrationInfo():
         self.spec_max_phase_deg: float = np.NaN
         self.gain_in_spec: Sequence[bool] = ()
         self.phase_in_spec: Sequence[bool] = ()
+        self.calper: float = np.NaN
 
     def __str__(self) -> str:
         """Human-readable representation."""
@@ -727,7 +736,7 @@ class CalibrationAnalyzer():
         response: Response,
         rtol: float = CHECK_INST_SENS_PERCENT/100
     ) -> None:
-        """Verify instrument sensitivity matches cascaded stages at calper."""
+        """Verify instrument sensitivity matches cascaded stage gains."""
         stages = response.response_stages
         inst_sens = response.instrument_sensitivity
         if not np.isclose(inst_sens.frequency, stages[0].stage_gain_frequency):
@@ -749,8 +758,8 @@ class CalibrationAnalyzer():
                 inst_sens.output_units)
 
         sensor_stages, datalogger_stages = self.split_stages(stages)
-        sensor_value = np.abs(zpk_cascade(sensor_stages).freqresp(
-            2*np.pi*stages[0].stage_gain_frequency)[1][0])
+        sensor_value = self.sensitivity(zpk_cascade(sensor_stages),
+                                        stages[0].stage_gain_frequency)
         datalogger_value = np.product(
             [stage.stage_gain for stage in datalogger_stages])
         stages_value = sensor_value*datalogger_value
@@ -923,13 +932,23 @@ class CalibrationAnalyzer():
 
     def sensitivity(
         self,
-        system: lti
-    ) -> Tuple[float, float]:
-        """Compute sensitivity at sensor stage gain frequency."""
-        sensor_stages = self.trace_stages(self.get_stream('output')[0])[0]
-        f_norm = sensor_stages[0].stage_gain_frequency
-        sensitivity = np.abs(system.freqresp(w=2*np.pi*f_norm)[1][0])
-        return f_norm, sensitivity
+        system: lti,
+        f: float,
+    ) -> float:
+        """Compute sensitivity at given frequency."""
+        return np.abs(system.freqresp(w=2*np.pi*f)[1][0])
+
+    def set_calper(self, calper: Optional[float] = None) -> None:
+        """Set calibration period/normalization frequency."""
+        if calper:
+            self.info.calper = calper
+            self.logger.info(
+                'Using provided calper: {calper} s ')
+        else:
+            sensor_stages = self.trace_stages(self.get_stream('output')[0])[0]
+            self.info.calper = 1/sensor_stages[0].stage_gain_frequency
+            self.logger.info(
+                'Obtained calper from first sensor stage: {calper} s')
 
     def load_calibration_response(
         self,
@@ -970,8 +989,7 @@ class CalibrationAnalyzer():
             norm_freq = sensor_stages[0].stage_gain_frequency
             cal_sensitivity = (
                 np.product([stage.stage_gain for stage in datalogger_stages]) *
-                np.abs(zpk_cascade(cal_stages)
-                       .freqresp(2*np.pi*norm_freq)[1][0]))
+                self.sensitivity(zpk_cascade(cal_stages), norm_freq))
             instrument_sensitivity = InstrumentSensitivity(
                 value=cal_sensitivity,
                 frequency=norm_freq,
@@ -1179,7 +1197,7 @@ class CalibrationAnalyzer():
         sensor_units = stage_units(sensor_stages)
         info['output_units'] = sensor_units['output']
         info['input_units'] = sensor_units['input']
-        info[PACKAGE] = VERSION
+        info[PACKAGE] = __version__
 
         if self.lti.fits:
             poles = pd.concat(
@@ -1196,11 +1214,13 @@ class CalibrationAnalyzer():
             ).applymap(lambda x: round_sig(x, 6))
             zeros.index = info.index
 
+            f_norm = 1/self.info.calper
             sensitivity = pd.DataFrame(
                 np.vstack(
-                    [self.sensitivity(lti_divide(lti_fit, self.lti.cal))
+                    [(f_norm, self.sensitivity(
+                        lti_divide(lti_fit, self.lti.cal), f_norm))
                      for lti_fit in self.lti.fits] +
-                    [self.sensitivity(self.lti.sensor)]),
+                    [(f_norm, self.sensitivity(self.lti.sensor, f_norm))]),
                 columns=pd.MultiIndex.from_tuples([
                     ('f_norm', 'hz'),
                     ('sensitivity', sensor_units['forward'])]),
@@ -1329,10 +1349,10 @@ class CalibrationAnalyzer():
         else:
             zpk_fits = [None]*len(tf_estimates)
 
-        calper = 1/sensor_stages[0].stage_gain_frequency
+        f_norm = 1/self.info.calper
         nominal_datalogger = (
             np.product([stage.stage_gain for stage in datalogger_stages]) *
-            np.abs(zpk_unfit.freqresp(2*np.pi/calper)[1][0]))
+            self.sensitivity(zpk_unfit, f_norm))
         fit_units = stage_units(sensor_stages[:n])
 
         output_txt = '_'.join([
@@ -1355,12 +1375,13 @@ class CalibrationAnalyzer():
                     self.info.gain_in_spec, self.info.phase_in_spec):
 
                 if zpk_fit:
-                    actual_sensor = np.abs(
-                        zpk_fit.freqresp(2*np.pi/calper)[1][0])
+                    actual_sensor = self.sensitivity(zpk_fit, f_norm)
                 else:
                     actual_sensor = np.abs(
-                        tf_estimate[np.argmax(f >= 1/calper)])
-                calib = 1e9*calper/(2*np.pi*actual_sensor*nominal_datalogger)
+                        tf_estimate[np.argmax(f >= f_norm)])
+
+                calib = 1e9*self.info.calper/(
+                    2*np.pi*actual_sensor*nominal_datalogger)
 
                 output_channel = trace.stats.channel
                 for output, internal in zip(*mapping):
@@ -1371,7 +1392,7 @@ class CalibrationAnalyzer():
                     station=trace.stats.station,
                     channel=output_channel,
                     calib=calib,
-                    calper=calper,
+                    calper=self.info.calper,
                     in_spec=YES_NO[amp_in_spec and phase_in_spec]))
                 file.write(CAL_BLOCK.format(
                     station=trace.stats.station,
@@ -1379,7 +1400,7 @@ class CalibrationAnalyzer():
                     aux_id='',
                     inst_type=ims_instrument_type,
                     calib=calib,
-                    calper=calper,
+                    calper=self.info.calper,
                     sample_rate=self._sampling_rate(),
                     start=self.info.start.strftime(IMS_DATETIME_FMT),
                     end=self.info.end.strftime(IMS_DATETIME_FMT)))
@@ -1429,7 +1450,7 @@ class CalibrationAnalyzer():
     ) -> np.ndarray:
         """Simulate nominal response of sensor to calibration signal."""
         zpk = getattr(self.lti, model)
-        sensitivity = self.sensitivity(zpk)[1]
+        sensitivity = self.sensitivity(zpk, 1)
         nominal_paz = {'zeros': zpk.zeros,
                        'poles': zpk.poles,
                        'gain': zpk.gain/sensitivity,
@@ -1460,7 +1481,8 @@ class CalibrationAnalyzer():
         variances = self.stft.variance()
         self.logger.debug(zpk_nom)
 
-        f_norm, sens_nom = self.sensitivity(self.lti.sensor)
+        f_norm = 1/self.info.calper
+        sens_nom = self.sensitivity(self.lti.sensor, f_norm)
         sensor_units = stage_units(
             self.trace_stages(self.get_stream('output')[0])[0])['forward']
 
@@ -1490,8 +1512,8 @@ class CalibrationAnalyzer():
 
             self.logger.debug(zpk_fit)
             zpk_unfixed = lti_divide(zpk_fit, zpk_fixed)
-            f_norm, sens_fit = self.sensitivity(
-                lti_divide(zpk_fit, self.lti.cal))
+            sens_fit = self.sensitivity(
+                lti_divide(zpk_fit, self.lti.cal), f_norm)
             self.logger.info(
                 'Fit zeros: %s', feature_str(zpk_unfixed.zeros))
             self.logger.info(
@@ -1963,41 +1985,6 @@ class CalibrationAnalyzer():
         self._save_image(fig, option_list)
 
 
-LOG_SETTINGS = {
-    'version': 1,  # schema
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'level': 'INFO',
-            'formatter': 'simple',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': LOG_FILE_NAME,
-            'level': 'DEBUG',
-            'formatter': 'detailed',
-        },
-    },
-    'formatters': {
-        'simple': {
-            'format':
-            '%(levelname)-8s %(funcName)s - %(message)s'
-        },
-        'detailed': {
-            'format': '%(levelname)-8s %(filename)s:%(name)s:%(funcName)s - '
-                      '%(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S',
-        },
-    },
-    'loggers': {
-        'root': {
-            'level': 'DEBUG',
-            'handlers': ['console', 'file']
-        },
-    }
-}
-
-
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """Run analysis and return system exit code."""
     if argv is None:
@@ -2005,10 +1992,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _argparser()
     args = parser.parse_args(argv[1:])
 
-    if os.path.isfile(LOG_FILE_NAME):
-        os.remove(LOG_FILE_NAME)
-    logging.config.dictConfig(LOG_SETTINGS)
-    logger = logging.getLogger(__name__)
+    logger = start_logger(__name__, LOG_FILE_NAME, 'INFO')
     logger.info('Arguments: %s', ' '.join(argv[1:]))
 
     config = vars(args).copy()

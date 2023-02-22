@@ -30,7 +30,8 @@ from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
 from obspy import read
 
-from calan.core import PACKAGE, VERSION, start_logger
+from calan import __version__, PACKAGE
+from calan.core import start_logger
 from calan.chis_archive import get_clients
 from calan.utilities import MyArgumentParser, MyFormatter
 from calan.stft import Stft
@@ -88,8 +89,6 @@ class SynchronousCalibrationAnalyzer():
     def __init__(self, plot=False, dpi=DPI):
         """Construct analyzer."""
         # helpers
-        if os.path.isfile(LOG_FILE_NAME):
-            os.remove(LOG_FILE_NAME)
         self.logger = getLogger(self.__class__.__name__)
         self.plot = plot
         self.dpi = dpi
@@ -348,7 +347,7 @@ def _argparser():
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
         '-v', '--version', action='version',
-        version='%s %s' % (PACKAGE, VERSION))
+        version='%s %s' % (PACKAGE, __version__))
     return parser
 
 
@@ -432,6 +431,8 @@ def main(argv=None):
     parser = _argparser()
     args = parser.parse_args(argv[1:])
 
+    if os.path.isfile(LOG_FILE_NAME):
+        os.remove(LOG_FILE_NAME)
     start_logger(__name__, LOG_FILE_NAME, 'INFO')
 
     config = vars(args).copy()
