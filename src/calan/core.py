@@ -1102,7 +1102,7 @@ def read_sql(
     if not found_header:
         raise RuntimeError('No header line found.')
 
-    df = pd.read_fwf(file_name, sep='|', skiprows=skiprows,
+    df = pd.read_fwf(file_name, sep='\s+\|\s+', skiprows=skiprows,
                      colspecs=colspecs, parse_dates=list(parse_dates),
                      dtype=dtypes)
 
