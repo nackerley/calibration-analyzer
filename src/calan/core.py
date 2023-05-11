@@ -1180,7 +1180,7 @@ def start_logger(
 
     logger = logging.getLogger(name)
 
-    logger.info('Package: %s v%s', PACKAGE, __version__)
+    logger.info('%s: %s v%s', log_file_name, PACKAGE, __version__)
 
     return logger
 
