@@ -6,9 +6,11 @@ Created on Sat Oct  8 04:49:16 2016
 import os
 import numpy as np
 
+from obspy import read_inventory
+
 from calan import DATA_PATH
 from calan.core import (
-    dataless2inventory, extract_decimation_coefficients, multi_decim)
+    extract_decimation_coefficients, multi_decim)
 from calan.calibration_toolbox import (
     generate_piecewise_constant, pad_for_decimation, get_times,
     sample_hold_digitize)
@@ -17,7 +19,7 @@ from calan.calibration_toolbox import (
 DURATIONS = [5, 5, 5]
 VOLTAGES = [0, 4, 0]
 
-inv = dataless2inventory(os.path.join(DATA_PATH, 'Centaur-T120Q.dataless'))
+inv = read_inventory(os.path.join(DATA_PATH, 'Centaur-T120Q.xml'))
 channel = inv.networks[0].stations[0].channels[0]
 stages = channel.response.response_stages
 
