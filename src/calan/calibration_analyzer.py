@@ -760,7 +760,7 @@ class CalibrationAnalyzer():
         sensor_stages, datalogger_stages = self.split_stages(stages)
         sensor_value = self.sensitivity(zpk_cascade(sensor_stages),
                                         stages[0].stage_gain_frequency)
-        datalogger_value = np.product(
+        datalogger_value = np.prod(
             [stage.stage_gain for stage in datalogger_stages])
         stages_value = sensor_value*datalogger_value
         if not np.isclose(inst_sens.value, stages_value, rtol=rtol):
@@ -988,7 +988,7 @@ class CalibrationAnalyzer():
                 self.get_stream('output')[0])
             norm_freq = sensor_stages[0].stage_gain_frequency
             cal_sensitivity = (
-                np.product([stage.stage_gain for stage in datalogger_stages]) *
+                np.prod([stage.stage_gain for stage in datalogger_stages]) *
                 self.sensitivity(zpk_cascade(cal_stages), norm_freq))
             instrument_sensitivity = InstrumentSensitivity(
                 value=cal_sensitivity,
@@ -1089,8 +1089,8 @@ class CalibrationAnalyzer():
         signal = np.row_stack([trace.data for trace in stream]).astype(float)
 
         sensitivities = [
-            np.product([stage.stage_gain
-                        for stage in self.trace_stages(trace)[1]])
+            np.prod([stage.stage_gain
+                     for stage in self.trace_stages(trace)[1]])
             for trace in stream]
         digitizer_units = [
             stage_units(self.trace_stages(trace)[1])['forward']
@@ -1351,7 +1351,7 @@ class CalibrationAnalyzer():
 
         f_norm = 1/self.info.calper
         nominal_datalogger = (
-            np.product([stage.stage_gain for stage in datalogger_stages]) *
+            np.prod([stage.stage_gain for stage in datalogger_stages]) *
             self.sensitivity(zpk_unfit, f_norm))
         fit_units = stage_units(sensor_stages[:n])
 
