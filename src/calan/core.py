@@ -1102,7 +1102,7 @@ def read_sql(
     if not found_header:
         raise RuntimeError('No header line found.')
 
-    df = pd.read_fwf(file_name, sep='|', skiprows=skiprows,
+    df = pd.read_fwf(file_name, sep=r'\s+\|\s+', skiprows=skiprows,
                      colspecs=colspecs, parse_dates=list(parse_dates),
                      dtype=dtypes)
 
@@ -1180,7 +1180,7 @@ def start_logger(
 
     logger = logging.getLogger(name)
 
-    logger.info('Package: %s v%s', PACKAGE, __version__)
+    logger.info('%s: %s v%s', log_file_name, PACKAGE, __version__)
 
     return logger
 
