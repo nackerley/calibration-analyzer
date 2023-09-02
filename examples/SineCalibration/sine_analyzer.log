@@ -1,4 +1,4 @@
-INFO     core.py:__main__:start_logger - Package: calan v1.2.6+16.gf77cfec.dirty
+INFO     core.py:__main__:start_logger - sine_analyzer.log: calan v1.3.1+43.g3624b3a.dirty
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Indoor_1_Output.mseed
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Indoor_1_Input.mseed
 INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz

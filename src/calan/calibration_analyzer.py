@@ -39,6 +39,7 @@ import sys
 import lzma
 import logging.config
 import warnings
+from pathlib import Path
 from io import StringIO
 from contextlib import redirect_stdout
 from glob import glob
@@ -107,8 +108,7 @@ DEFAULT_FIT_STAGES = 0
 DEFAULT_OUT_OF_BAND_RANGE = (2, 5)
 
 # constants
-THIS_FILE_NAME = os.path.basename(__file__)
-LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
+LOG_FILE_NAME = Path(__file__).stem + '.log'
 
 # Guralp digitizers produce separate miniseed for calibration input and output
 OUTPUT_FLAG = '_Output'
@@ -186,7 +186,7 @@ YES_NO = {True: 'YES', False: 'NO'}
 # definitions
 def _argparser() -> MyArgumentParser:
     """Command-line interface."""
-    parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
+    parser = MyArgumentParser(prog=Path(__file__).stem,
                               description=__doc__,
                               formatter_class=MyFormatter)
 
@@ -342,9 +342,9 @@ def calibration_analyzer(
     logger = logging.getLogger(__name__)
     logger.info('%s %s', PACKAGE, __version__)
 
-    pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
+    pattern_slug = ''.join(char for char in Path(pattern).suffix
                            if char.isalnum())
-    output_parts = [os.path.splitext(THIS_FILE_NAME)[0]]
+    output_parts = [Path(__file__).stem]
     if pattern_slug:
         output_parts += pattern_slug.split('_')
     summary_csv = '_'.join(output_parts) + '.csv'
@@ -354,7 +354,7 @@ def calibration_analyzer(
 
     analyzer = CalibrationAnalyzer(savefig=plot != '', dpi=dpi)
 
-    if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
+    if Path(summary_csv).exists() and Path(summary_csv).is_file() and \
             not os.access(summary_csv, os.W_OK):
         logger.error('Will not be able to write summary to %s.', summary_csv)
         return ''
@@ -604,7 +604,7 @@ class CalibrationAnalyzer():
         self.stream = read(waveform_file)
         if OUTPUT_FLAG in waveform_file:
             input_file = waveform_file.replace(OUTPUT_FLAG, INPUT_FLAG)
-            if os.path.isfile(input_file):
+            if Path(input_file).is_file():
                 self.logger.info(input_file)
                 self.stream += read(input_file)
             else:
@@ -706,6 +706,7 @@ class CalibrationAnalyzer():
 
         for trace in missing_traces:
             self.stream.remove(trace)
+        output_stream = self.get_stream('output')
         if not output_stream.traces:
             raise RuntimeError('No waveforms with station metadata')
         self.info.response_file = [
@@ -803,12 +804,11 @@ class CalibrationAnalyzer():
                 'Cannot determine whether decimation filters are minimum or '
                 'linear phase.')
 
-        cache_file = os.path.join(
-            gettempdir(),
+        cache_file = Path(gettempdir()).joinpath(
             f'{calibration_signal_file.replace(".lzma", "")}_'
             f'{self._sampling_rate():g}sps{phase_suffix}_'
             f'delay{self.info.delay_start}s.{self.CACHE_FORMAT.lower()}')
-        if os.path.isfile(cache_file):
+        if Path(cache_file).is_file():
             self.logger.info('Found cache: %s', cache_file)
             signal = read(cache_file)[0].data
         else:
@@ -835,7 +835,7 @@ class CalibrationAnalyzer():
         trace = Trace(data=np.ascontiguousarray(signal), header=stats)
         stream = Stream([trace])
 
-        if not os.path.isfile(cache_file):
+        if not Path(cache_file).is_file():
             self.logger.info('Caching: %s', cache_file)
             stream.write(cache_file, format=self.CACHE_FORMAT)
 

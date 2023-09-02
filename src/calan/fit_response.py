@@ -32,7 +32,7 @@ $$w = \frac{1}{\hat \sigma \times |\hat H| \times f} $$
 
 @nackerle
 """
-import os
+from pathlib import Path
 from math import log10
 from io import StringIO
 from contextlib import redirect_stdout
@@ -536,7 +536,6 @@ def _plot_possible_weights(
     ax.set_ylabel('Weight')
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.set_xlabel('Frequency [Hz]')
-    basename = os.path.splitext(os.path.basename(__file__))[0]
-    weighting_png = basename + '_weighting.png'
+    weighting_png = Path(__file__).stem + '_weighting.png'
     getLogger(__name__).info('Writing: %s', weighting_png)
     fig.savefig(weighting_png, bbox_inches='tight')

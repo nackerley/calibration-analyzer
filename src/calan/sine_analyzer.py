@@ -13,9 +13,10 @@ Currently only supports calibration of one channel at at time.
 Author: Nick Ackerley
 """
 # pylint: disable=consider-using-f-string
-from logging import getLogger
 import os
 import sys
+from pathlib import Path
+from logging import getLogger
 from io import StringIO
 from glob import glob
 from contextlib import redirect_stdout
@@ -59,8 +60,7 @@ WEATHER_QUERY = dict(format='csv', submit='Download+Data', timeframe=1)
 WEATHER_TIME = 'Date/Time (LST)'
 
 # bookkeeping
-THIS_FILE_NAME = os.path.basename(__file__)
-LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
+LOG_FILE_NAME = Path(__file__).stem + '.log'
 
 
 def first_zero_crossing(trace, tol=0.01, time_type='matplotlib'):
@@ -113,8 +113,7 @@ class SynchronousCalibrationAnalyzer():
                        output_label=OUTPUT_LABEL, input_label=INPUT_LABEL):
         """Load and preserve synchronous portions of input & output traces."""
         input_file = output_file.replace(output_label, input_label)
-        self.test_name = (os.path.splitext(output_file)[0]
-                          .replace(output_label, ''))
+        self.test_name = Path(output_file).stem.replace(output_label, '')
 
         self.logger.info('Output: %s', output_file)
         output_stream = read(output_file)
@@ -128,9 +127,8 @@ class SynchronousCalibrationAnalyzer():
         end = min(trace.stats.endtime for trace in self.stream) - trim_s
 
         if self.plot:
-            start_png = os.path.join(
-                os.path.dirname(self.test_name),
-                'start_%s.png' % os.path.basename(self.test_name))
+            start_png = Path(self.test_name).parent.joinpath(
+                'start_%s.png' % Path(self.test_name).name)
             self.logger.info('Check start: %s', start_png)
             fig = self.stream.plot(endtime=start + 1,
                                    handle=True, equal_scale=False)
@@ -142,9 +140,8 @@ class SynchronousCalibrationAnalyzer():
             fig.axes[0].legend(loc='upper right')
             fig.savefig(start_png, dpi=self.dpi)
 
-            end_png = os.path.join(
-                os.path.dirname(self.test_name),
-                'end_%s.png' % os.path.basename(self.test_name))
+            end_png = Path(self.test_name).parent.joinpath(
+                'end_%s.png' % Path(self.test_name).name)
             self.logger.info('Check end: %s', end_png)
             fig = self.stream.plot(starttime=end - 1,
                                    handle=True, equal_scale=False)
@@ -240,10 +237,9 @@ class SynchronousCalibrationAnalyzer():
             axes[0].legend()
             fig.subplots_adjust()
 
-            summary_png = os.path.join(
-                os.path.dirname(self.test_name),
+            summary_png = Path(self.test_name).parent.joinpath(
                 'spectra_%g-%gHz_%s.png' % tuple(
-                    list(self.f_lim) + [os.path.basename(self.test_name)]))
+                    list(self.f_lim) + [Path(self.test_name).name]))
 
             getLogger(__name__).info('Saving: %s', summary_png)
             fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
@@ -308,7 +304,7 @@ class SynchronousCalibrationAnalyzer():
 def _argparser():
     """Command-line interface."""
     # pylint: disable=no-member
-    parser = MyArgumentParser(prog=os.path.splitext(THIS_FILE_NAME)[0],
+    parser = MyArgumentParser(prog=Path(__file__).stem,
                               description=__doc__,
                               formatter_class=MyFormatter)
 
@@ -361,14 +357,14 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     analyzer = SynchronousCalibrationAnalyzer(plot=plot, dpi=dpi)
 
     if not summary_csv:
-        pattern_slug = ''.join(char for char in os.path.splitext(pattern)[0]
+        pattern_slug = ''.join(char for char in Path(pattern).stem
                                if char.isalnum())
-        output_parts = [os.path.splitext(THIS_FILE_NAME)[0]]
+        output_parts = [Path(__file__).stem]
         if pattern_slug:
             output_parts += pattern_slug.split('_')
         summary_csv = '_'.join(output_parts) + '.csv'
 
-    if os.path.exists(summary_csv) and os.path.isfile(summary_csv) and \
+    if Path(summary_csv).exists() and Path(summary_csv).is_file() and \
             not os.access(summary_csv, os.W_OK):
         analyzer.logger.error(
             'Will not be able to write summary to %s.', summary_csv)
@@ -431,8 +427,8 @@ def main(argv=None):
     parser = _argparser()
     args = parser.parse_args(argv[1:])
 
-    if os.path.isfile(LOG_FILE_NAME):
-        os.remove(LOG_FILE_NAME)
+    if Path(LOG_FILE_NAME).is_file():
+        Path(LOG_FILE_NAME).unlink()
     start_logger(__name__, LOG_FILE_NAME, 'INFO')
 
     config = vars(args).copy()

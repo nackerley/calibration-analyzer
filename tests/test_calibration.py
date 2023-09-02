@@ -3,7 +3,7 @@ Created on Sat Oct  8 04:49:16 2016
 
 @author: nackerle
 """
-import os
+from pathlib import Path
 import numpy as np
 
 from obspy import read_inventory
@@ -19,7 +19,7 @@ from calan.calibration_toolbox import (
 DURATIONS = [5, 5, 5]
 VOLTAGES = [0, 4, 0]
 
-inv = read_inventory(os.path.join(DATA_PATH, 'Centaur-T120Q.xml'))
+inv = read_inventory(Path(DATA_PATH).joinpath('Centaur-T120Q.xml'))
 channel = inv.networks[0].stations[0].channels[0]
 stages = channel.response.response_stages
 

@@ -4,6 +4,7 @@ Created on Thu Oct 31 17:08:44 2019
 @author: nackerle
 """
 import os
+from pathlib import Path
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -186,7 +187,7 @@ def test_fit_response() -> None:
     zpk_guess = lti_multiply(zpk_fixed, zpk_error)
     guess_data = zpk_guess.freqresp(2*np.pi*F_MEAS)[1]
 
-    os.chdir(os.path.dirname(__file__))
+    os.chdir(Path(__file__).parent)
     zpk_fit = fit_response(  # pylint: disable=unused-variable
         zpk_guess, F_MEAS, synthetic_data, var_meas, zpk_fixed, debug=DEBUG)
     zpk_fit_unfixed = lti_divide(zpk_fit, zpk_fixed)
@@ -231,5 +232,4 @@ def _plot_responses(f, nominal_data, synthetic_data, guess_data, fit_data,
     axes[2].legend()
     axes[2].set_ylabel('Variance')
     axes[2].set_xlabel('Frequency [Hz]')
-    fig.savefig(os.path.splitext(os.path.basename(__file__))[0] + '.png',
-                bbox_inches='tight')
+    fig.savefig(Path(__file__).stem + '.png', bbox_inches='tight')
