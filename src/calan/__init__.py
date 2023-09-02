@@ -1,7 +1,7 @@
 """Initialize package."""
-import os
+from pathlib import Path
 from ._version import get_versions
 
 __version__ = get_versions()['version']
-PACKAGE = os.path.basename(os.path.dirname(__file__))
-DATA_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
+PACKAGE = Path(__file__).parts[-1]
+DATA_PATH = Path(__file__).absolute().joinpath('data')
