@@ -1,0 +1,68 @@
+type,subtype,0,1,2,3
+info,level_0,2020-03-30 17:10:23,2020-03-30 17:10:23,2020-03-30 17:10:23,
+info,level_1,CN.TOTT2..HHU,CN.TOTT2..HHV,CN.TOTT2..HHW,CN.TOTT2..HHC
+info,waveform_file,CN.TOTT2_20200330_170413.mseed,CN.TOTT2_20200330_170413.mseed,CN.TOTT2_20200330_170413.mseed,prb_1V_10ms_3h.lzma
+info,response_file,CN.TOTT2.HHE.resp,CN.TOTT2.HHN.resp,CN.TOTT2.HHZ.resp,Centaur_Trillium120Q_Calibration.xml
+info,delay_start,0.0,0.0,0.0,
+info,spec_min_freq_hz,0.02,0.02,0.02,
+info,spec_max_freq_hz,16.0,16.0,16.0,
+info,spec_max_amp_pct,5.0,5.0,5.0,
+info,spec_max_phase_deg,5.0,5.0,5.0,
+info,gain_in_spec,True,True,True,
+info,phase_in_spec,True,True,True,
+info,calper,1.0,1.0,1.0,
+info,duration_s,9599.99,9599.99,9599.99,
+info,pre_s,370.0,370.0,370.0,
+info,post_s,370.0,370.0,370.0,
+info,sampling_rate_sps,100.0,100.0,100.0,
+info,windows,18.0,18.0,18.0,
+info,timing error estimate [s],-0.000137,-0.000137,-0.000137,
+info,timing error uncertainty [s],0.0,0.0,0.0,
+info,gain error estimate [%],-0.1181,-0.1181,-0.1181,
+info,gain error uncertainty [%],0.0015,0.0015,0.0015,
+info,confidence [%],0.95,0.95,0.95,
+info,output_units,V,V,V,V
+info,input_units,m/s,m/s,m/s,m/s
+info,calan,1.3.1+43.g3624b3a.dirty,1.3.1+43.g3624b3a.dirty,1.3.1+43.g3624b3a.dirty,1.3.1+43.g3624b3a.dirty
+pole_01,real_rad,-0.036965,-0.0369732,-0.0369708,-0.036614
+pole_01,freq_hz,0.00827328,0.0082689,0.00827072,0.00829128
+pole_01,imag_rad,-0.0365482,-0.0365008,-0.0365196,-0.037059
+pole_01,damping,0.711105,0.711638,0.711435,0.702823
+pole_2,real_rad,-30.5019,-29.2698,-25.8245,-32.55
+pole_2,freq_hz,4.85453,4.65843,4.1101,5.18049
+pole_2,imag_rad,,,,
+pole_2,damping,,,,
+pole_3,real_rad,-142.931,-143.645,-148.344,-142.0
+pole_3,freq_hz,22.7481,22.8619,23.6096,22.6
+pole_3,imag_rad,,,,
+pole_3,damping,,,,
+pole_45,real_rad,-364.0,-364.0,-364.0,-364.0
+pole_45,freq_hz,86.5475,86.5475,86.5475,86.5475
+pole_45,imag_rad,-404.0,-404.0,-404.0,-404.0
+pole_45,damping,0.669371,0.669371,0.669371,0.669371
+pole_6,real_rad,-1260.0,-1260.0,-1260.0,-1260.0
+pole_6,freq_hz,200.535,200.535,200.535,200.535
+pole_6,imag_rad,,,,
+pole_6,damping,,,,
+pole_78,real_rad,-4900.0,-4900.0,-4900.0,-4900.0
+pole_78,freq_hz,1137.15,1137.15,1137.15,1137.15
+pole_78,imag_rad,-5200.0,-5200.0,-5200.0,-5200.0
+pole_78,damping,0.685801,0.685801,0.685801,0.685801
+pole_910,real_rad,-7100.0,-7100.0,-7100.0,-7100.0
+pole_910,freq_hz,1161.94,1161.94,1161.94,1161.94
+pole_910,imag_rad,-1700.0,-1700.0,-1700.0,-1700.0
+pole_910,damping,0.972511,0.972511,0.972511,0.972511
+zero_0,real_rad,0.0,0.0,0.0,0.0
+zero_0,freq_hz,0.0,0.0,0.0,0.0
+zero_1,real_rad,0.0,0.0,0.0,0.0
+zero_1,freq_hz,0.0,0.0,0.0,0.0
+zero_2,real_rad,-29.6791,-28.4652,-25.1921,-31.63
+zero_2,freq_hz,4.72358,4.53037,4.00944,5.03407
+zero_3,real_rad,-160.0,-160.0,-160.0,-160.0
+zero_3,freq_hz,25.4648,25.4648,25.4648,25.4648
+zero_4,real_rad,-369.142,-375.458,-400.37,-350.0
+zero_4,freq_hz,58.7508,59.756,63.7209,55.7042
+zero_5,real_rad,-3177.0,-3177.0,-3177.0,-3177.0
+zero_5,freq_hz,505.635,505.635,505.635,505.635
+f_norm,hz,1.0,1.0,1.0,1.0
+sensitivity,V/(m/s),1202.33,1201.48,1201.68,1202.5

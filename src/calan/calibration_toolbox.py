@@ -1,6 +1,6 @@
 """A collection of functions useful for seismograph calibration."""
 # pylint: disable=consider-using-f-string
-import os
+from pathlib import Path
 from warnings import warn
 from struct import calcsize
 from logging import getLogger
@@ -58,7 +58,7 @@ def parse_signal_file_name(
         lead_in, lead_out, sample_rate
     """
     file_name = file_name.replace('.wav', '').replace('.gz', '')
-    parts = os.path.split(file_name)[1].split('_')
+    parts = Path(file_name).parts[1].split('_')
 
     if not any(char.isdigit() for char in parts[0]):
         style = parts.pop(0)
@@ -157,7 +157,7 @@ def plot_calibration(
     ax.set_ylabel('Signal [%s]' % units)
 
     if file_name is not None:
-        file_name = os.path.splitext(file_name)[0] + '.png'
+        file_name = Path(file_name).stem + '.png'
         plt.gcf().savefig(file_name, dpi=300, bbox_inches='tight')
 
 

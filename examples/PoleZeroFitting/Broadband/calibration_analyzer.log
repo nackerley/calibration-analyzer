@@ -1,6 +1,6 @@
-INFO     core.py:__main__:start_logger - Package: calan v1.2.6+16.gf77cfec.dirty
+INFO     core.py:__main__:start_logger - calibration_analyzer.log: calan v1.3.1+43.g3624b3a.dirty
 INFO     calibration_analyzer.py:__main__:main - Arguments: --ims-instrument-type T120QA --plot all --fit  1 --orientation-map ENZ UVW --calibration-response-file Centaur_Trillium120Q_Calibration.xml
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.2.6+16.gf77cfec.dirty
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.3.1+43.g3624b3a.dirty
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - CN.TOTT2_20200330_170413.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 02:52:19.990000 at 100 sps
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_stream - lead in, out [s]: 360, 360
@@ -28,7 +28,9 @@ INFO     core.py:calan.core:extract_decimation_coefficients - Filter with 165 co
 INFO     core.py:calan.core:extract_decimation_coefficients - Filter with 187 coefficients and decimate by 10 to 200 sps
 INFO     core.py:calan.core:extract_decimation_coefficients - Filter with 223 coefficients and decimate by 2 to 100 sps
 INFO     core.py:calan.core:extract_decimation_coefficients - Filtering and decimation by 300 consumes 36254 samples
-INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Found cache: /tmp/prb_1V_10ms_3h_100sps_linear_delay0s.mseed
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Reading: prb_1V_10ms_3h.lzma
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Decimating by 300 ...
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Caching: /tmp/prb_1V_10ms_3h_100sps_linear_delay0s.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Centaur_Trillium120Q_Calibration.xml
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
 	From M/S**2 (Acceleration) to COUNTS (Digital Counts)
@@ -181,4 +183,4 @@ DEBUG    calibration_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensiti
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - simulated_CN.TOTT2..HH_20200330.1704.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - spectrogram_CN.TOTT2..HH_20200330.1704.png
 INFO     calibration_analyzer.py:CalibrationAnalyzer:write_calibrate_result - calibrate_result_TOTT2_20200330.1710.txt
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - Summary: calibration_analyzer.csv
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - Summary: calibration_analyzer_mseed.csv

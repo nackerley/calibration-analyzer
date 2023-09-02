@@ -6,7 +6,7 @@ Short-term Fourier Transform.
 Bendat, J. S., & Piersol, A. G. (2010). Random Data: Analysis and measurement
 procedures (4th ed.). Wiley.
 """
-import os
+from pathlib import Path
 from typing import Optional
 from logging import getLogger
 
@@ -17,8 +17,7 @@ from scipy.signal._spectral_py import _spectral_helper
 
 from calan.utilities import preferred_number
 
-THIS_FILE_NAME = os.path.basename(__file__)
-LOG_FILE_NAME = os.path.splitext(THIS_FILE_NAME)[0] + '.log'
+LOG_FILE_NAME = Path(__file__).stem + '.log'
 
 
 def num_windows_welch(

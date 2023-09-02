@@ -119,12 +119,12 @@ def dataless2stationxml(
     This should be deprecated; ObsPy does it natively.
     """
     logger = getLogger(__name__)
-    if not os.path.isfile(inventory_dataless):
+    if not Path(inventory_dataless).is_file():
         logger.warning('Dataless SEED file "%s" not found', inventory_dataless)
 
     inventory_xml = inventory_dataless.replace('.dataless', '.xml')
 
-    if not os.path.isfile(inventory_xml):
+    if not Path(inventory_xml).is_file():
         os.system(
             f'java -jar {STATIONXML_CONVERTER} --xml --prettyprint --source '
             f'{inventory_source} --output {inventory_xml} '
@@ -136,12 +136,12 @@ def dataless2stationxml(
 def inventory2dataless(inventory_xml: str) -> str:
     """Convert StationXML inventory to dataless SEED."""
     logger = getLogger(__name__)
-    if not os.path.isfile(inventory_xml):
+    if not Path(inventory_xml).is_file():
         logger.warning('StationXML file "%s" not found', inventory_xml)
 
     inventory_dataless = inventory_xml.replace('.xml', '.dataless')
 
-    if not os.path.isfile(inventory_dataless):
+    if not Path(inventory_dataless).is_file():
         os.system(
             f'java -jar {STATIONXML_CONVERTER} --seed --output '
             f'{inventory_dataless} {inventory_xml}')
@@ -1117,7 +1117,6 @@ def read_sql(
 
 
 # logging
-FILE_NAME = os.path.basename(__file__)
 LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
         str, Union[str, bool, Sequence[str]]]]]] = {
@@ -1168,7 +1167,7 @@ def start_logger(
     assert log_console_level in LOG_LEVELS
 
     try:
-        os.remove(log_file_name)
+        Path(log_file_name).unlink()
     except OSError:
         pass
 
