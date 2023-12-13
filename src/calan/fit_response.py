@@ -462,9 +462,10 @@ def zpk_out_of_band(
         zeros = sort_complex(system.zeros)
 
         if (np.abs(poles) < w_min).any():
-            p_fixed, z_fixed = zip(*[
-                (pole, zero) for pole, zero in zip(poles, zeros)
-                if np.abs(pole) < w_min])
+            p_fixed = [pole for pole, _ in zip(poles, zeros)
+                       if np.abs(pole) < w_min]
+            z_fixed = [zero for pole, zero in zip(poles, zeros)
+                       if np.abs(pole) < w_min]
         else:
             p_fixed, z_fixed = [], []
         p_fixed += [pole for pole in poles if np.abs(pole) > w_max]
