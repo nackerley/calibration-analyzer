@@ -19,7 +19,7 @@ from numpy.typing import ArrayLike, DTypeLike
 import pandas as pd
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
-from matplotlib.pyplot import figure
+from matplotlib.figure import Figure
 
 from obspy import read_inventory, UTCDateTime, Stream
 from obspy.core.inventory import (
@@ -619,7 +619,7 @@ def truncnorm_shape(
 
 
 def subplots_squeeze(
-    fig: figure,
+    fig: Figure,
     hspace: Optional[float] = None,
     wspace: Optional[float] = None,
 ) -> None:
