@@ -20,6 +20,7 @@ import pandas as pd
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 from matplotlib.figure import Figure
+from matplotlib.gridspec import SubplotSpec
 
 from obspy import read_inventory, UTCDateTime, Stream
 from obspy.core.inventory import (
@@ -626,17 +627,22 @@ def subplots_squeeze(
     For now this just supports the case of multiple axes stacked vertically,
     removing space between them and removing tick labels which would overlap.
     """
-    try:
-        axes_indices = [[ax.get_subplotspec().colspan.start,
-                         ax.get_subplotspec().rowspan.start]
-                        for ax in fig.axes]
-    except AttributeError:
-        axes_indices = [[ax.get_subplotspec().get_rows_columns()[4],
-                         ax.get_subplotspec().get_rows_columns()[2]]
-                        for ax in fig.axes]
+    def _get_row_col_start(
+        subplotspec: Optional[SubplotSpec]
+    ) -> Tuple[int, int]:
+        if subplotspec is None:
+            return (0, 0)
+
+        return (subplotspec.colspan.start, subplotspec.rowspan.start)
+
+    axes_indices = [
+        _get_row_col_start(ax.get_subplotspec()) for ax in fig.axes]
 
     num_cols, num_rows = np.max(axes_indices, axis=0) + 1
-    axes = np.reshape(fig.axes, (num_rows, num_cols))
+    if num_cols == 0 or num_rows == 0:
+        raise RuntimeError('This only works with subplots.')
+
+    axes = np.reshape(np.array(fig.axes), (num_rows, num_cols))
 
     fig.subplots_adjust(hspace=hspace, wspace=wspace)
 
