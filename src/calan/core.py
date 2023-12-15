@@ -32,11 +32,8 @@ from obspy.core.event import \
 from calan import __version__, PACKAGE
 from calan.utilities import string_list
 
-CHIS_FDSN_SERVERS = (
-    'http://fdsn.seismo.nrcan.gc.ca',  # production, SeisComP3
-    'http://sc3-stage.seismo.nrcan.gc.ca',  # staging, seisComP3
-)
-DEFAULT_FDSN_SERVERS = tuple(list(CHIS_FDSN_SERVERS) + ['IRIS'])
+CHIS_PUBLIC_FDSNWS = 'https://www.earthquakescanada.nrcan.gc.ca/'
+CHIS_PUBLIC_FDSNWS = 'http://sc3-stage.seismo.nrcan.gc.ca'
 
 NSLC = ['network', 'station', 'location', 'channel']
 NSLCSE = NSLC + ['start', 'end']
