@@ -53,6 +53,7 @@ from scipy import special
 from scipy.signal import lti, BadCoefficients, ZerosPolesGain
 from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -1615,7 +1616,7 @@ class CalibrationAnalyzer():
 
     def _save_image(
         self,
-        fig: plt.figure,
+        fig: Figure,
         option_list: Optional[Union[str, Sequence[str]]] = None,
     ) -> None:
         """Save a figure with an automatically descriptive file name."""
