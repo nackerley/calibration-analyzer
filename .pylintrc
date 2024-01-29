@@ -1,3 +1,8 @@
+[MAIN]
+
+# Files or directories to be skipped. They should be base names, not paths.
+ignore=_version.py
+
 [BASIC]
 
 # Good variable names which should always be accepted, separated by a comma.
@@ -25,3 +30,4 @@ good-names=i,
 # and thus existing member attributes cannot be deduced by static analysis). It
 # supports qualified module names, as well as Unix pattern matching.
 ignored-modules=scipy.special,scipy.signal
+
