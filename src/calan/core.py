@@ -34,7 +34,7 @@ from calan import __version__, PACKAGE
 from calan.utilities import string_list
 
 CHIS_PUBLIC_FDSNWS = 'https://www.earthquakescanada.nrcan.gc.ca/'
-CHIS_PUBLIC_FDSNWS = 'http://sc3-stage.seismo.nrcan.gc.ca'
+
 
 NSLC = ['network', 'station', 'location', 'channel']
 NSLCSE = NSLC + ['start', 'end']
