@@ -1089,7 +1089,7 @@ def read_sql(
     # determine structure of file
     skiprows = []
     found_header = False
-    with open(file_name, encoding='UTF-8') as file:
+    with open(Path(file_name).expanduser(), encoding='UTF-8') as file:
         for i, line in enumerate(file):
             if '|' in line:
                 pipes = np.array([match.start()
@@ -1105,8 +1105,9 @@ def read_sql(
         raise RuntimeError('No header line found.')
 
     df = pd.read_fwf(file_name, sep=r'\s+\|\s+', skiprows=skiprows,
-                     colspecs=colspecs, parse_dates=list(parse_dates),
-                     dtype=dtypes)
+                     colspecs=colspecs, dtype=dtypes)
+    for col in parse_dates:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
 
     for column, dtype in dtypes.items():
         if column in df and dtype == str:
