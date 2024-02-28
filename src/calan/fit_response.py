@@ -472,7 +472,7 @@ def zpk_out_of_band(
         z_fixed += [zero for zero in zeros if np.abs(zero) > w_max]
 
         phase_norm = phase_deg(system.freqresp(2*np.pi*norm_freq_hz)[1])
-        integrations_required = -int(np.round(phase_norm/90))
+        integrations_required = -int(np.round(phase_norm[0]/90))
         if integrations_required > 0:
             p_fixed = [0]*integrations_required + p_fixed
         else:
