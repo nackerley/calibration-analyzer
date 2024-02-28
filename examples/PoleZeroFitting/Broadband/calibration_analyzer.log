@@ -1,6 +1,6 @@
-INFO     core.py:__main__:start_logger - calibration_analyzer.log: calan v1.3.1+43.g3624b3a.dirty
+INFO     core.py:__main__:start_logger - calibration_analyzer.log: calan v1.5.4+7.gf668610.dirty
 INFO     calibration_analyzer.py:__main__:main - Arguments: --ims-instrument-type T120QA --plot all --fit  1 --orientation-map ENZ UVW --calibration-response-file Centaur_Trillium120Q_Calibration.xml
-INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.3.1+43.g3624b3a.dirty
+INFO     calibration_analyzer.py:__main__:calibration_analyzer - calan 1.5.4+7.gf668610.dirty
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - CN.TOTT2_20200330_170413.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 02:52:19.990000 at 100 sps
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_stream - lead in, out [s]: 360, 360
@@ -28,9 +28,7 @@ INFO     core.py:calan.core:extract_decimation_coefficients - Filter with 165 co
 INFO     core.py:calan.core:extract_decimation_coefficients - Filter with 187 coefficients and decimate by 10 to 200 sps
 INFO     core.py:calan.core:extract_decimation_coefficients - Filter with 223 coefficients and decimate by 2 to 100 sps
 INFO     core.py:calan.core:extract_decimation_coefficients - Filtering and decimation by 300 consumes 36254 samples
-INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Reading: prb_1V_10ms_3h.lzma
-INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Decimating by 300 ...
-INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Caching: /tmp/prb_1V_10ms_3h_100sps_linear_delay0s.mseed
+INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Found cache: /tmp/prb_1V_10ms_3h_100sps_linear_delay0s.mseed
 INFO     calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Centaur_Trillium120Q_Calibration.xml
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
 	From M/S**2 (Acceleration) to COUNTS (Digital Counts)
@@ -52,7 +50,7 @@ array([   -0.036614   -0.037059j,    -0.036614   +0.037059j,
        -1260.         +0.j      , -4900.      -5200.j      ,
        -4900.      +5200.j      , -7100.      -1700.j      ,
        -7100.      +1700.j      ]),
-1.0003250319834989e+21,
+1.000325031983499e+21,
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from M/S**2 to M/S
@@ -70,7 +68,7 @@ array([   -0.036614   -0.037059j,    -0.036614   +0.037059j,
        -1260.         +0.j      , -4900.      -5200.j      ,
        -4900.      +5200.j      , -7100.      -1700.j      ,
        -7100.      +1700.j      ]),
-5.163006568043425e+24,
+5.163006568043426e+24,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:_save_image - check_start_CN.TOTT2..HH_20200330.1704.png
@@ -87,14 +85,14 @@ array([   -0.036614   -0.037059j,    -0.036614   +0.037059j,
        -1260.         +0.j      , -4900.      -5200.j      ,
        -4900.      +5200.j      , -7100.      -1700.j      ,
        -7100.      +1700.j      ]),
-5.163006568043425e+24,
+5.163006568043426e+24,
 dt: None
 )
 DEBUG    calibration_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
 array([], dtype=float64),
 array([    0.   +0.j,  -364. -404.j,  -364. +404.j, -1260.   +0.j,
        -4900.-5200.j, -4900.+5200.j, -7100.-1700.j, -7100.+1700.j]),
-6.370037142114433e+24,
+6.370037142114436e+24,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 5.03 Hz, 55.7 Hz
@@ -136,7 +134,7 @@ array([   -0.036973   -0.036501j,    -0.036973   +0.036501j,
        -1260.         +0.j      , -4900.      -5200.j      ,
        -4900.      +5200.j      , -7100.      -1700.j      ,
        -7100.      +1700.j      ]),
-4.859725469887223e+24,
+4.859725469887227e+24,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 4.53 Hz, 59.8 Hz
@@ -157,7 +155,7 @@ array([   -0.036971   -0.03652j,    -0.036971   +0.03652j,
        -1260.         +0.j     , -4900.      -5200.j     ,
        -4900.      +5200.j     , -7100.      -1700.j     ,
        -7100.      +1700.j     ]),
-4.691730693052332e+24,
+4.691730693052333e+24,
 dt: None
 )
 INFO     calibration_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 4.01 Hz, 63.7 Hz

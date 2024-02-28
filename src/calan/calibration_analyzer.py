@@ -1205,14 +1205,14 @@ class CalibrationAnalyzer():
                 [feature_stats(lti_divide(lti_fit, self.lti.cal).poles, 'pole')
                     for lti_fit in self.lti.fits] +
                 [feature_stats(self.lti.sensor.poles, 'pole')]
-            ).applymap(lambda x: round_sig(x, 6))
+            ).astype(float).map(lambda x: round_sig(x, 6))
             poles.index = info.index
 
             zeros = pd.concat(
                 [feature_stats(lti_divide(lti_fit, self.lti.cal).zeros, 'zero')
                     for lti_fit in self.lti.fits] +
                 [feature_stats(self.lti.sensor.zeros, 'zero')]
-            ).applymap(lambda x: round_sig(x, 6))
+            ).astype(float).map(lambda x: round_sig(x, 6))
             zeros.index = info.index
 
             f_norm = 1/self.info.calper
@@ -1225,7 +1225,7 @@ class CalibrationAnalyzer():
                 columns=pd.MultiIndex.from_tuples([
                     ('f_norm', 'hz'),
                     ('sensitivity', sensor_units['forward'])]),
-                index=info.index).applymap(lambda x: round_sig(x, 6))
+                index=info.index).map(lambda x: round_sig(x, 6))
 
             info.columns = pd.MultiIndex.from_product((['info'], info.columns))
 

@@ -23,7 +23,7 @@ info,gain error uncertainty [%],0.0015,0.0015,0.0015,
 info,confidence [%],0.95,0.95,0.95,
 info,output_units,V,V,V,V
 info,input_units,m/s,m/s,m/s,m/s
-info,calan,1.3.1+43.g3624b3a.dirty,1.3.1+43.g3624b3a.dirty,1.3.1+43.g3624b3a.dirty,1.3.1+43.g3624b3a.dirty
+info,calan,1.5.4+7.gf668610.dirty,1.5.4+7.gf668610.dirty,1.5.4+7.gf668610.dirty,1.5.4+7.gf668610.dirty
 pole_01,real_rad,-0.036965,-0.0369732,-0.0369708,-0.036614
 pole_01,freq_hz,0.00827328,0.0082689,0.00827072,0.00829128
 pole_01,imag_rad,-0.0365482,-0.0365008,-0.0365196,-0.037059
