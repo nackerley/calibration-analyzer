@@ -756,24 +756,23 @@ def gap_list(
     if not trace_ids:
         raise RuntimeError('Empty streams require trace_ids be specified.')
 
-    rows = []
+    missing_data = []
     for trace_id in trace_ids:
         id_stream = stream.select(id=trace_id)
         if not id_stream:
             duration = (end - start).total_seconds()
-            series = pd.Series({
-                'id': trace_id,
-                'network': trace_id.split('.')[0],
-                'station': trace_id.split('.')[1],
-                'location': trace_id.split('.')[2],
-                'channel': trace_id.split('.')[3],
-                'starttime': start,
-                'endtime': end,
-                'duration': duration,
-                'samples': -1,
-                'sampling_rate': np.NaN,
-            })
-            rows.append(series)
+            missing_data.append((
+                trace_id,
+                trace_id.split('.')[0],
+                trace_id.split('.')[1],
+                trace_id.split('.')[2],
+                trace_id.split('.')[3],
+                start,
+                end,
+                duration,
+                -1,
+                np.NaN
+            ))
 
     for trace_id in trace_ids:
         id_stream = stream.select(id=trace_id)
@@ -786,19 +785,18 @@ def gap_list(
         trace_start = pd.to_datetime(trace.stats.starttime.datetime)
         if trace_start > start + tol:
             duration = (trace_start - start).total_seconds()
-            series = pd.Series({
-                'id': trace_id,
-                'network': trace.stats.network,
-                'station': trace.stats.station,
-                'location': trace.stats.location,
-                'channel': trace.stats.channel,
-                'starttime': start,
-                'endtime': trace_start,
-                'duration': duration,
-                'samples': _missing_samples(duration, sampling_rate),
-                'sampling_rate': sampling_rate,
-            })
-            rows.append(series)
+            missing_data.append((
+                trace_id,
+                trace.stats.network,
+                trace.stats.station,
+                trace.stats.location,
+                trace.stats.channel,
+                start,
+                trace_start,
+                duration,
+                _missing_samples(duration, sampling_rate),
+                sampling_rate,
+            ))
 
     for trace_id in trace_ids:
         id_stream = stream.select(id=trace_id)
@@ -811,22 +809,23 @@ def gap_list(
         trace_end = pd.to_datetime(trace.stats.endtime.datetime)
         if trace_end < end - tol:
             duration = (end - trace_end).total_seconds()
-            series = pd.Series({
-                'id': trace_id,
-                'network': trace.stats.network,
-                'station': trace.stats.station,
-                'location': trace.stats.location,
-                'channel': trace.stats.channel,
-                'starttime': trace_end,
-                'endtime': end,
-                'duration': duration,
-                'samples': _missing_samples(duration, sampling_rate),
-                'sampling_rate': sampling_rate,
-            })
-            rows.append(series)
+            missing_data.append((
+                trace_id,
+                trace.stats.network,
+                trace.stats.station,
+                trace.stats.location,
+                trace.stats.channel,
+                trace_end,
+                end,
+                duration,
+                _missing_samples(duration, sampling_rate),
+                sampling_rate,
+            ))
 
-    if rows:
-        gaps_df = pd.concat((gaps_df, pd.concat(rows, axis=1).T))
+    if missing_data:
+        gaps_df = pd.concat((
+            gaps_df,
+            pd.DataFrame(missing_data, columns=gaps_df.columns)))
     gaps_df.sort_values(by=['starttime', 'endtime'],
                         ascending=[True, False], inplace=True)
     gaps_df.reset_index(inplace=True, drop=True)
@@ -1090,7 +1089,7 @@ def read_sql(
     # determine structure of file
     skiprows = []
     found_header = False
-    with open(file_name, encoding='UTF-8') as file:
+    with open(Path(file_name).expanduser(), encoding='UTF-8') as file:
         for i, line in enumerate(file):
             if '|' in line:
                 pipes = np.array([match.start()
@@ -1106,8 +1105,9 @@ def read_sql(
         raise RuntimeError('No header line found.')
 
     df = pd.read_fwf(file_name, sep=r'\s+\|\s+', skiprows=skiprows,
-                     colspecs=colspecs, parse_dates=list(parse_dates),
-                     dtype=dtypes)
+                     colspecs=colspecs, dtype=dtypes)
+    for col in parse_dates:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
 
     for column, dtype in dtypes.items():
         if column in df and dtype == str:
