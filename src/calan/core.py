@@ -223,8 +223,8 @@ def lti_minreal(
     cancels = np.full_like(condition, False)
     while (condition <= tolerance).any():
         indices = np.unravel_index(np.nanargmin(condition), condition.shape)
-        condition[indices[0], :] = np.Inf
-        condition[:, indices[1]] = np.Inf
+        condition[indices[0], :] = np.inf
+        condition[:, indices[1]] = np.inf
         cancels[indices[0], indices[1]] = True
         condition = np.ma.array(condition, mask=cancels)
 
@@ -771,7 +771,7 @@ def gap_list(
                 end,
                 duration,
                 -1,
-                np.NaN
+                np.nan
             ))
 
     for trace_id in trace_ids:
@@ -846,7 +846,7 @@ def fraction_available(
                                          UTCDateTime(start)))
     gap_duration = gaps_df.loc[gaps_df.id.isin(trace_ids)].duration.sum()
     if not expected_duration:
-        return np.NaN
+        return np.nan
 
     return 1 - gap_duration/expected_duration
 

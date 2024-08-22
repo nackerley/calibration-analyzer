@@ -506,7 +506,7 @@ def get_weights(
     weights = np.ones_like(f_meas)
     if 'variance' in weighting:
         var_meas[var_meas < var_lims[0]] = var_lims[0]
-        var_meas[var_meas > var_lims[1]] = np.Inf
+        var_meas[var_meas > var_lims[1]] = np.inf
         weights /= np.sqrt(var_meas)
     if 'response' in weighting:
         weights /= np.abs(h_initial)

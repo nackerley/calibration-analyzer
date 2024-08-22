@@ -128,7 +128,7 @@ def parse_units(
     try:
         input_value = float(string.replace(input_unit, ''))
     except ValueError:
-        return np.NaN
+        return np.nan
 
     input_unit_index = next(i for i, unit in enumerate(units)
                             if input_unit == unit)
