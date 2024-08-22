@@ -1087,7 +1087,7 @@ class CalibrationAnalyzer():
 
         if trim:
             stream = stream.slice(self.info.start, self.info.end)
-        signal = np.row_stack([trace.data for trace in stream]).astype(float)
+        signal = np.vstack([trace.data for trace in stream]).astype(float)
 
         sensitivities = [
             np.prod([stage.stage_gain
