@@ -500,13 +500,13 @@ class CalibrationInfo():
         self.delay_start: float = 0
         self.start: UTCDateTime = UTCDateTime(0)
         self.end: UTCDateTime = UTCDateTime(0)
-        self.spec_min_freq_hz: float = np.NaN
-        self.spec_max_freq_hz: float = np.NaN
-        self.spec_max_amp_pct: float = np.NaN
-        self.spec_max_phase_deg: float = np.NaN
+        self.spec_min_freq_hz: float = np.nan
+        self.spec_max_freq_hz: float = np.nan
+        self.spec_max_amp_pct: float = np.nan
+        self.spec_max_phase_deg: float = np.nan
         self.gain_in_spec: Sequence[bool] = ()
         self.phase_in_spec: Sequence[bool] = ()
-        self.calper: float = np.NaN
+        self.calper: float = np.nan
 
     def __str__(self) -> str:
         """Human-readable representation."""
@@ -1247,7 +1247,7 @@ class CalibrationAnalyzer():
                 columns=f, index=info.index)
             variance = pd.DataFrame(
                 np.vstack((10*np.log10(self.stft.variance()),
-                           np.full_like(f.values, np.NaN))).round(3),
+                           np.full_like(f.values, np.nan))).round(3),
                 columns=f, index=info.index)
 
             df = pd.concat(
@@ -1814,7 +1814,7 @@ class CalibrationAnalyzer():
         remove: Literal['', 'system', 'cal'] = 'system',
         errors: Literal['', 'estimate', 'correct'] = '',
         scale: str = 'log',
-        variance_threshhold: float = np.NaN,
+        variance_threshhold: float = np.nan,
     ) -> None:
         """
         Plot calibration transfer function on log or linear scale.

@@ -98,11 +98,11 @@ class Stft():
 
     def __init__(self) -> None:
         """Construct null object."""
-        self.f = np.array([[np.NaN]])
-        self.t = np.array([[np.NaN]])
-        self.p_xx = np.array([[np.NaN]])
-        self.p_yy = np.array([[np.NaN]])
-        self.p_xy = np.array([[np.NaN]])
+        self.f = np.array([[np.nan]])
+        self.t = np.array([[np.nan]])
+        self.p_xx = np.array([[np.nan]])
+        self.p_yy = np.array([[np.nan]])
+        self.p_xy = np.array([[np.nan]])
         self.logger = getLogger(self.__class__.__name__)
 
     def __str__(self) -> str:

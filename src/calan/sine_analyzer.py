@@ -272,7 +272,7 @@ class SynchronousCalibrationAnalyzer():
             result = df.at[index, 'Temp (°C)']
         except HTTPError as ex:
             self.logger.error(repr(ex))
-            result = np.NaN
+            result = np.nan
 
         self.logger.info('Temperature: %g°C', result)
         return result
