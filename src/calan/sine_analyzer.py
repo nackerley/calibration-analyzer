@@ -30,10 +30,10 @@ import pytz
 from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
 from obspy import read
+from obspy.clients.fdsn import Client
 
-from calan import __version__, PACKAGE
-from calan.core import start_logger
-from calan.chis_archive import get_clients
+from calan import PACKAGE_VERSION
+from calan.core import start_logger, CHIS_PUBLIC_FDSNWS
 from calan.utilities import MyArgumentParser, MyFormatter
 from calan.stft import Stft
 
@@ -92,7 +92,7 @@ class SynchronousCalibrationAnalyzer():
         self.logger = getLogger(self.__class__.__name__)
         self.plot = plot
         self.dpi = dpi
-        self.client = get_clients()[0]
+        self.client = Client(CHIS_PUBLIC_FDSNWS)
 
         # inputs
         self.output_file = None
@@ -343,7 +343,7 @@ def _argparser():
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
         '-v', '--version', action='version',
-        version='%s %s' % (PACKAGE, __version__))
+        version=PACKAGE_VERSION)
     return parser
 
 

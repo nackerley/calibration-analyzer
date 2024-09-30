@@ -30,7 +30,7 @@ from obspy.core.inventory import (
 from obspy.core.event import \
     Pick, Arrival, Amplitude, StationMagnitude, Event, WaveformStreamID
 
-from calan import __version__, PACKAGE
+from calan import PACKAGE_VERSION
 from calan.utilities import string_list
 
 CHIS_PUBLIC_FDSNWS = 'https://www.earthquakescanada.nrcan.gc.ca/'
@@ -1182,7 +1182,7 @@ def start_logger(
 
     logger = logging.getLogger(name)
 
-    logger.info('%s: %s v%s', log_file_name, PACKAGE, __version__)
+    logger.info('%s:%S', log_file_name, PACKAGE_VERSION)
 
     return logger
 

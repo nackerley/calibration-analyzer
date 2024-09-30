@@ -1,0 +1,2 @@
+[flake8]
+exclude = deprecated_tools,examples,dumpsta.py,venv

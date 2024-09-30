@@ -58,13 +58,13 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 import pandas as pd
-import statsmodels.api as sm  # type: ignore
+import statsmodels.api as sm
 
 from obspy import read, read_inventory, Trace, Stream, UTCDateTime
 from obspy.core.inventory import Response, ResponseStage, InstrumentSensitivity
 from obspy.signal.invsim import simulate_seismometer
 
-from calan import __version__, PACKAGE
+from calan import PACKAGE_VERSION
 from calan.core import (
     start_logger,
     factor_names, subplots_squeeze, gain_db, phase_deg, unwrap_mid,
@@ -260,7 +260,7 @@ def _argparser() -> MyArgumentParser:
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
         '-v', '--version', action='version',
-        version=f'{PACKAGE} {__version__}')
+        version=PACKAGE_VERSION)
     return parser
 
 
@@ -341,7 +341,7 @@ def calibration_analyzer(
 ) -> str:
     """Do arbitrary-signal calibration analysis."""
     logger = logging.getLogger(__name__)
-    logger.info('%s %s', PACKAGE, __version__)
+    logger.info(PACKAGE_VERSION)
 
     pattern_slug = ''.join(char for char in Path(pattern).suffix
                            if char.isalnum())
@@ -1198,7 +1198,7 @@ class CalibrationAnalyzer():
         sensor_units = stage_units(sensor_stages)
         info['output_units'] = sensor_units['output']
         info['input_units'] = sensor_units['input']
-        info[PACKAGE] = __version__
+        info['package_version'] = PACKAGE_VERSION
 
         if self.lti.fits:
             poles = pd.concat(
