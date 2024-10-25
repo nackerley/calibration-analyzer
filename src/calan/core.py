@@ -1,9 +1,10 @@
 """A collection of utilities useful for station quality analysis."""
 # pylint: disable=too-many-lines
-from copy import deepcopy
 import os
 import re
+import sys
 import logging
+from copy import deepcopy
 from datetime import datetime
 from logging import getLogger, Logger
 from logging.config import dictConfig
@@ -1007,10 +1008,10 @@ def channels2df(inventory: Inventory) -> pd.DataFrame:
 
     df['start'] = pd.to_datetime([
         channel.start_date.datetime if channel.start_date else pd.NaT
-        for _, _, channel in inventory_items(inventory)])
+        for _, _, channel in inventory_items(inventory)])  # type: ignore
     df['end'] = pd.to_datetime([
         channel.end_date.datetime if channel.end_date else pd.NaT
-        for _, _, channel in inventory_items(inventory)])
+        for _, _, channel in inventory_items(inventory)])  # type: ignore
 
     df['latitude'] = [station.latitude
                       for _, station, _ in inventory_items(inventory)]
@@ -1050,11 +1051,11 @@ def stations2df(inventory: Inventory) -> pd.DataFrame:
 
     df['start'] = pd.to_datetime([
         station.start_date.datetime if station.start_date else pd.NaT
-        for _, station in inventory_stations(inventory)])
+        for _, station in inventory_stations(inventory)])  # type: ignore
     df['start'] = df['start'].dt.date
     df['end'] = pd.to_datetime([
         station.end_date.datetime if station.end_date else pd.NaT
-        for _, station in inventory_stations(inventory)])
+        for _, station in inventory_stations(inventory)])  # type: ignore
     df['end'] = df['end'].dt.date
 
     df['latitude'] = [station.latitude
@@ -1104,8 +1105,9 @@ def read_sql(
     if not found_header:
         raise RuntimeError('No header line found.')
 
-    df = pd.read_fwf(file_name, sep=r'\s+\|\s+', skiprows=skiprows,
-                     colspecs=colspecs, dtype=dtypes)
+    df = pd.read_fwf(
+        file_name, sep=r'\s+\|\s+', skiprows=skiprows, dtype=dtypes,
+        colspecs=colspecs)  # pylint: disable=possibly-used-before-assignment
     for col in parse_dates:
         df[col] = pd.to_datetime(df[col], errors='coerce')
 
@@ -1182,7 +1184,7 @@ def start_logger(
 
     logger = logging.getLogger(name)
 
-    logger.info('%s:%S', log_file_name, PACKAGE_VERSION)
+    logger.info('%s: %s', log_file_name, PACKAGE_VERSION)
 
     return logger
 
@@ -1331,3 +1333,46 @@ def get_amplitude(
         return get_amplitude(get_pick(obj, event), event)
 
     return None
+
+
+class Tee(object):
+    """
+    Temporarily fork output to stdout and other files.
+
+    Based on: http://stackoverflow.com/questions/11325019/
+    """
+
+    def __init__(self, *files):
+        """Construct forker."""
+        self.files = files
+
+    def __del__(self):
+        """Close upon deletion."""
+        self.close()
+
+    def open(self):
+        """Redirect stdout."""
+        if not hasattr(sys, '_stdout'):
+            # Only do this once just in case stdout was already initialized
+            # @note Will fail if stdout for some reason changes
+            sys._stdout = sys.stdout  # pylint: disable=protected-access
+        sys.stdout = self
+        return self
+
+    def close(self):
+        """Restore normal operation."""
+        stdout = sys._stdout  # pylint: disable=protected-access
+        for file in self.files:
+            if file != stdout:
+                file.close()
+        sys.stdout = stdout
+
+    def write(self, obj):
+        """Write to teed files."""
+        for file in self.files:
+            file.write(obj)
+
+    def flush(self):
+        """Flush teed files."""
+        for file in self.files:
+            file.flush()
