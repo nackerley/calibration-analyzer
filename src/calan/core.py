@@ -9,7 +9,6 @@ from datetime import datetime
 from logging import getLogger, Logger
 from logging.config import dictConfig
 
-from operator import attrgetter
 from typing import \
     Any, Dict, Iterator, List, Optional, Sequence, Sized, Tuple, Type, Union
 
@@ -41,31 +40,6 @@ NSLC = ['network', 'station', 'location', 'channel']
 NSLCSE = NSLC + ['start', 'end']
 GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
 
-NETWORK_KEYS = ((
-    ('code', 'network'),
-    ('description', 'network_description'),
-))
-STATION_KEYS = ((
-    ('code', 'station'),
-    ('site.name', 'site_name'),
-    ('creation_date.datetime', 'creation_date'),
-))
-CHANNEL_KEYS = ((
-    ('location_code', 'location'),
-    ('code', 'channel'),
-    ('latitude', 'latitude'),
-    ('longitude', 'longitude'),
-    ('elevation', 'elevation'),
-    ('depth', 'depth'),
-    ('azimuth', 'azimuth'),
-    ('dip', 'dip'),
-    ('sensor.description', 'sensor'),
-    ('data_logger.description', 'data_logger'),
-    ('sample_rate', 'sample_rate'),
-    ('restricted_status', 'restricted_status'),
-    ('start_date.datetime', 'start_date'),
-    ('end_date.datetime', 'end_date',),
-))
 
 
 def fdsn_error_message(ex: Exception) -> str:
@@ -929,35 +903,6 @@ def inventory_stations(
     for network in inventory:
         for station in network:
             yield network, station
-
-
-def inventory2df(inventory: Inventory) -> pd.DataFrame:
-    """Summarize obspy.Inventory in pandas.DataFrame."""
-    def _get(key: str, item: Any) -> Optional[Any]:
-        try:
-            return attrgetter(key)(item)
-        except AttributeError:
-            return None
-
-    df = pd.DataFrame()
-    for key, column in NETWORK_KEYS:
-        df[column] = [
-            _get(key, network) for network, _, _ in inventory_items(inventory)]
-    for key, column in STATION_KEYS:
-        df[column] = [
-            _get(key, station) for _, station, _ in inventory_items(inventory)]
-    for key, column in CHANNEL_KEYS:
-        df[column] = [
-            _get(key, channel) for _, _, channel in inventory_items(inventory)]
-
-    for column in df.columns.values:
-        if column.endswith('date'):
-            df[column] = pd.to_datetime(df[column])
-
-    df.dropna(axis='columns', how='all', inplace=True)
-    df.set_index(NSLC, inplace=True)
-
-    return df
 
 
 def read_sql(
