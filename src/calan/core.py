@@ -9,7 +9,6 @@ from datetime import datetime
 from logging import getLogger, Logger
 from logging.config import dictConfig
 
-from operator import attrgetter
 from typing import \
     Any, Dict, Iterator, List, Optional, Sequence, Sized, Tuple, Type, Union
 
@@ -25,7 +24,7 @@ from matplotlib.gridspec import SubplotSpec
 
 from obspy import read_inventory, UTCDateTime, Stream
 from obspy.core.inventory import (
-    Inventory, Network, Station, Channel, Response,
+    Inventory, Network, Station, Channel,
     ResponseStage, InstrumentSensitivity, PolesZerosResponseStage,
     CoefficientsTypeResponseStage, FIRResponseStage)
 from obspy.core.event import \
@@ -40,32 +39,6 @@ CHIS_PUBLIC_FDSNWS = 'https://www.earthquakescanada.nrcan.gc.ca/'
 NSLC = ['network', 'station', 'location', 'channel']
 NSLCSE = NSLC + ['start', 'end']
 GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
-
-NETWORK_KEYS = ((
-    ('code', 'network'),
-    ('description', 'network_description'),
-))
-STATION_KEYS = ((
-    ('code', 'station'),
-    ('site.name', 'site_name'),
-    ('creation_date.datetime', 'creation_date'),
-))
-CHANNEL_KEYS = ((
-    ('location_code', 'location'),
-    ('code', 'channel'),
-    ('latitude', 'latitude'),
-    ('longitude', 'longitude'),
-    ('elevation', 'elevation'),
-    ('depth', 'depth'),
-    ('azimuth', 'azimuth'),
-    ('dip', 'dip'),
-    ('sensor.description', 'sensor'),
-    ('data_logger.description', 'data_logger'),
-    ('sample_rate', 'sample_rate'),
-    ('restricted_status', 'restricted_status'),
-    ('start_date.datetime', 'start_date'),
-    ('end_date.datetime', 'end_date',),
-))
 
 
 def fdsn_error_message(ex: Exception) -> str:
@@ -340,7 +313,7 @@ def lti_convert(system: lti, to_type: Type) -> lti:
 
 def lti_is_proper(system: lti) -> bool:
     """Indicate whether transfer function is proper."""
-    if ~isinstance(system, TransferFunction):
+    if not isinstance(system, TransferFunction):
         system = system.to_tf()
 
     return len(system.den) >= len(system.num)
@@ -400,34 +373,6 @@ def factor_names(stream: Stream) -> Tuple[str, List[str]]:
                           if same)
     common_name = '.'.join(part.strip() for part in common_name.split('.'))
     return common_name, short_names
-
-
-def recompute_normalization_factors(
-    response: Response,
-    rtol: float = 0.0002
-) -> None:
-    """Compare stage normalization factors to computed values."""
-    logger = getLogger(__name__)
-    for stage in response.response_stages:
-        try:
-            normalization_factor = stage.normalization_factor
-        except AttributeError:
-            continue
-        stage_gain = stage2zpk(stage).freqresp(
-            2*np.pi*stage.normalization_frequency)[1][0]
-        adjustment = np.abs(stage_gain)/abs(stage.stage_gain)
-        if np.isnan(adjustment):
-            logger.error('Failed to calculate normalization factor adjustment')
-        else:
-            stage.normalization_factor *= adjustment
-        if np.isclose(stage.normalization_factor,
-                      normalization_factor, rtol=rtol):
-            continue
-        logger.warning(
-            'Stage %d normalization factor %.6g in file differs from '
-            'recalculated value %.6g by more than %g%%.',
-            stage.stage_sequence_number, normalization_factor,
-            stage.normalization_factor, 100*rtol)
 
 
 def compute_decim_delay(
@@ -957,120 +902,6 @@ def inventory_stations(
     for network in inventory:
         for station in network:
             yield network, station
-
-
-def inventory2df(inventory: Inventory) -> pd.DataFrame:
-    """Summarize obspy.Inventory in pandas.DataFrame."""
-    def _get(key: str, item: Any) -> Optional[Any]:
-        try:
-            return attrgetter(key)(item)
-        except AttributeError:
-            return None
-
-    df = pd.DataFrame()
-    for key, column in NETWORK_KEYS:
-        df[column] = [
-            _get(key, network) for network, _, _ in inventory_items(inventory)]
-    for key, column in STATION_KEYS:
-        df[column] = [
-            _get(key, station) for _, station, _ in inventory_items(inventory)]
-    for key, column in CHANNEL_KEYS:
-        df[column] = [
-            _get(key, channel) for _, _, channel in inventory_items(inventory)]
-
-    for column in df.columns.values:
-        if column.endswith('date'):
-            df[column] = pd.to_datetime(df[column])
-
-    df.dropna(axis='columns', how='all', inplace=True)
-    df.set_index(NSLC, inplace=True)
-
-    return df
-
-
-def channels2df(inventory: Inventory) -> pd.DataFrame:
-    """
-    Create table of channels in inventory.
-
-    Returns table with index 'network', 'station', 'location', 'channel'
-    and columns 'start', 'end'.
-    """
-    # TODO: consider carefully merging contiguous time ranges
-    df = pd.DataFrame()
-    df['network'] = [network.code
-                     for network, _, _ in inventory_items(inventory)]
-    df['station'] = [station.code
-                     for _, station, _ in inventory_items(inventory)]
-    df['location'] = [channel.location_code
-                      for _, _, channel in inventory_items(inventory)]
-    df['channel'] = [channel.code
-                     for _, _, channel in inventory_items(inventory)]
-
-    df['start'] = pd.to_datetime([
-        channel.start_date.datetime if channel.start_date else pd.NaT
-        for _, _, channel in inventory_items(inventory)])  # type: ignore
-    df['end'] = pd.to_datetime([
-        channel.end_date.datetime if channel.end_date else pd.NaT
-        for _, _, channel in inventory_items(inventory)])  # type: ignore
-
-    df['latitude'] = [station.latitude
-                      for _, station, _ in inventory_items(inventory)]
-    df['longitude'] = [station.longitude
-                       for _, station, _ in inventory_items(inventory)]
-    df['elevation_km'] = [channel.elevation * 1e-3
-                          for _, _, channel in inventory_items(inventory)]
-    df['depth_km'] = [channel.depth * 1e-3
-                      for _, _, channel in inventory_items(inventory)]
-    df['name'] = [station.site.name
-                  for _, station, _ in inventory_items(inventory)]
-
-    if df.duplicated(NSLCSE).any():
-        getLogger(__name__).warning(
-            'Keeping last of duplicate keys: %s',
-            df.loc[df.duplicated(NSLCSE, keep=False)])
-        df.drop_duplicates(NSLCSE, keep='last', inplace=True)
-    df.set_index(NSLCSE, verify_integrity=True, inplace=True)
-    df.sort_index(inplace=True)
-
-    return df
-
-
-def stations2df(inventory: Inventory) -> pd.DataFrame:
-    """
-    Create table of stations in inventory.
-
-    Returns table with index 'network', 'station', 'location', 'channel'
-    and columns 'start', 'end'.
-    """
-    # TODO: consider carefully merging contiguous time ranges
-    df = pd.DataFrame()
-    df['network'] = [network.code
-                     for network, _ in inventory_stations(inventory)]
-    df['station'] = [station.code
-                     for _, station in inventory_stations(inventory)]
-
-    df['start'] = pd.to_datetime([
-        station.start_date.datetime if station.start_date else pd.NaT
-        for _, station in inventory_stations(inventory)])  # type: ignore
-    df['start'] = df['start'].dt.date
-    df['end'] = pd.to_datetime([
-        station.end_date.datetime if station.end_date else pd.NaT
-        for _, station in inventory_stations(inventory)])  # type: ignore
-    df['end'] = df['end'].dt.date
-
-    df['latitude'] = [station.latitude
-                      for _, station in inventory_stations(inventory)]
-    df['longitude'] = [station.longitude
-                       for _, station in inventory_stations(inventory)]
-    df['elevation_km'] = [station.elevation * 1e-3
-                          for _, station in inventory_stations(inventory)]
-    df['name'] = [station.site.name
-                  for _, station in inventory_stations(inventory)]
-
-    df.set_index(NSLCSE[:2] + NSLCSE[-2:], verify_integrity=True, inplace=True)
-    df.sort_index(inplace=True)
-
-    return df
 
 
 def read_sql(
