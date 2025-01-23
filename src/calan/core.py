@@ -41,7 +41,6 @@ NSLCSE = NSLC + ['start', 'end']
 GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
 
 
-
 def fdsn_error_message(ex: Exception) -> str:
     """Clean up certain obspy.clients.fdsn exception messages."""
     lines = ex.args[0].split('\n')
