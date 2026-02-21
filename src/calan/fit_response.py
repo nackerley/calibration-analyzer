@@ -291,7 +291,7 @@ def fit_response(
             x_initial, **model_parameters)
         logger.info('Termination: %s', message)
         logger.info('Cost reduced from %.2g to %.2g in %d iterations.',
-                    e_fits[0], e_fits[-1], len(e_fits))
+                    e_fits[0][0], e_fits[-1][0], len(e_fits))
         x_fit = x_fits[-1]
     else:
         captured_stdout = StringIO()
