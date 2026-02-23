@@ -1582,10 +1582,10 @@ class CalibrationAnalyzer():
         tf_estimate = tf_estimate[:, keep]
         variance = variance[:, keep]
         f = f[keep]
-        if not all(keep):
+        if not keep.all():
             self.logger.info(
                 'Discarding %d/%d points with variance > %g',
-                (~keep).sum(), len(keep), variance_threshhold)
+                (~keep).sum(), keep.shape[0], variance_threshhold)
 
         if len(f) < 1:
             raise RuntimeError('No data to fit.')
