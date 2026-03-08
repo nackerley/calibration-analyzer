@@ -933,8 +933,8 @@ def channel_table(inv: Inventory) -> pd.DataFrame:
         'EndTime': [chn.end_date for _, _, chn in inventory_items(inv)],
     }
 
-    return pd.DataFrame(
-        data, index=['Network', 'Station', 'Location', 'Channel'])
+    return pd.DataFrame(data).set_index(
+        ['Network', 'Station', 'Location', 'Channel'])
 
 
 def station_table(inv: Inventory) -> pd.DataFrame:
@@ -951,8 +951,7 @@ def station_table(inv: Inventory) -> pd.DataFrame:
         'EndTime': [sta.end_date for _, sta in inventory_stations(inv)],
     }
 
-    return pd.DataFrame(
-        data, index=['Network', 'Station'])
+    return pd.DataFrame(data).set_index(['Network', 'Station'])
 
 
 def read_sql(
