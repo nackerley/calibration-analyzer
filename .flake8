@@ -1,2 +1,2 @@
 [flake8]
-exclude = deprecated_tools,examples,dumpsta.py,venv,build
+exclude = deprecated_tools,examples,dumpsta.py,venv,.venv,build
