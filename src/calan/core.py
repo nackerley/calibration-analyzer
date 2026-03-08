@@ -918,7 +918,7 @@ def channel_table(inv: Inventory) -> pd.DataFrame:
         'Azimuth': [chn.azimuth for _, _, chn in inventory_items(inv)],
         'Dip': [chn.dip for _, _, chn in inventory_items(inv)],
         'SensorDescription': [
-            chn.sensor.type for _, _, chn in inventory_items(inv)],
+            chn.sensor.description for _, _, chn in inventory_items(inv)],
         'Scale': [
             chn.response.instrument_sensitivity.value
             for _, _, chn in inventory_items(inv)],
@@ -933,8 +933,7 @@ def channel_table(inv: Inventory) -> pd.DataFrame:
         'EndTime': [chn.end_date for _, _, chn in inventory_items(inv)],
     }
 
-    return pd.DataFrame(data).set_index(
-        ['Network', 'Station', 'Location', 'Channel'])
+    return pd.DataFrame(data)
 
 
 def station_table(inv: Inventory) -> pd.DataFrame:
@@ -951,7 +950,7 @@ def station_table(inv: Inventory) -> pd.DataFrame:
         'EndTime': [sta.end_date for _, sta in inventory_stations(inv)],
     }
 
-    return pd.DataFrame(data).set_index(['Network', 'Station'])
+    return pd.DataFrame(data)
 
 
 def read_sql(
