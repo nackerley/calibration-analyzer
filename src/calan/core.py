@@ -904,6 +904,58 @@ def inventory_stations(
             yield network, station
 
 
+def channel_table(inv: Inventory) -> pd.DataFrame:
+    """Convert inventory to dataframe."""
+
+    data = {
+        'Network': [net.code for net, _, _ in inventory_items(inv)],
+        'Station': [sta.code for _, sta, _ in inventory_items(inv)],
+        'Location': [chn.location_code for _, _, chn in inventory_items(inv)],
+        'Channel': [chn.code for _, _, chn in inventory_items(inv)],
+        'Latitude': [chn.latitude for _, _, chn in inventory_items(inv)],
+        'Longitude': [chn.longitude for _, _, chn in inventory_items(inv)],
+        'Elevation': [chn.elevation for _, _, chn in inventory_items(inv)],
+        'Depth': [chn.depth for _, _, chn in inventory_items(inv)],
+        'Azimuth': [chn.azimuth for _, _, chn in inventory_items(inv)],
+        'Dip': [chn.dip for _, _, chn in inventory_items(inv)],
+        'SensorDescription': [
+            chn.sensor.type for _, _, chn in inventory_items(inv)],
+        'Scale': [
+            chn.response.instrument_sensitivity.value
+            for _, _, chn in inventory_items(inv)],
+        'ScaleFreq': [
+            chn.response.instrument_sensitivity.frequency
+            for _, _, chn in inventory_items(inv)],
+        'ScaleUnits': [
+            chn.response.instrument_sensitivity.input_units
+            for _, _, chn in inventory_items(inv)],
+        'SampleRate': [chn.sample_rate for _, _, chn in inventory_items(inv)],
+        'StartTime': [chn.start_date for _, _, chn in inventory_items(inv)],
+        'EndTime': [chn.end_date for _, _, chn in inventory_items(inv)],
+    }
+
+    return pd.DataFrame(
+        data, index=['Network', 'Station', 'Location', 'Channel'])
+
+
+def station_table(inv: Inventory) -> pd.DataFrame:
+    """Convert inventory to dataframe."""
+
+    data = {
+        'Network': [net.code for net, _ in inventory_stations(inv)],
+        'Station': [sta.code for _, sta in inventory_stations(inv)],
+        'Latitude': [sta.latitude for _, sta in inventory_stations(inv)],
+        'Longitude': [sta.longitude for _, sta in inventory_stations(inv)],
+        'Elevation': [sta.elevation for _, sta in inventory_stations(inv)],
+        'SiteName': [sta.site.name for _, sta in inventory_stations(inv)],
+        'StartTime': [sta.start_date for _, sta in inventory_stations(inv)],
+        'EndTime': [sta.end_date for _, sta in inventory_stations(inv)],
+    }
+
+    return pd.DataFrame(
+        data, index=['Network', 'Station'])
+
+
 def read_sql(
     file_name: str,
     parse_dates: Sequence[str] = ('start', 'end'),
