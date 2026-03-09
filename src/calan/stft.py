@@ -7,7 +7,6 @@ Bendat, J. S., & Piersol, A. G. (2010). Random Data: Analysis and measurement
 procedures (4th ed.). Wiley.
 """
 from pathlib import Path
-from typing import Optional
 from logging import getLogger
 
 import numpy as np
@@ -23,7 +22,7 @@ LOG_FILE_NAME = Path(__file__).stem + '.log'
 def num_windows_welch(
     len_signal: int,
     len_fft: int,
-    len_overlap: Optional[int] = None,
+    len_overlap: int | None = None,
 ) -> int:
     """Return number of windows resulting from Welch's method."""
     if len_overlap is None:
@@ -34,8 +33,8 @@ def num_windows_welch(
 
 def len_fft_welch(
     len_signal: int,
-    num_windows: Optional[float] = None,
-    fraction_overlap: Optional[float] = None
+    num_windows: float | None = None,
+    fraction_overlap: float | None = None
 ) -> int:
     """Recommend FFT length to achieve number of windows by Welch's method."""
     if num_windows is None:
@@ -51,7 +50,7 @@ def window_times_welch(
     len_signal: int,
     len_fft: int,
     f_sample: float,
-    len_overlap: Optional[int] = None,
+    len_overlap: int | None = None,
 ) -> np.ndarray:
     """
     Array of times of centers of windows resulting from Welch's method.

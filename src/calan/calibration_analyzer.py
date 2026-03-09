@@ -47,7 +47,7 @@ from operator import mul
 from functools import reduce
 from math import log10, floor, ceil
 from tempfile import gettempdir
-from typing import List, Literal, Optional, Sequence, Tuple, Union, get_args
+from typing import Literal, get_args
 
 from scipy import special
 from scipy.signal import lti, BadCoefficients, ZerosPolesGain
@@ -321,22 +321,22 @@ def feature_str(values: ArrayLike, sig_dig: int = 3) -> str:
 def calibration_analyzer(
     pattern: str = DEFAULT_OUTPUT_PATTERN,
     num_windows: float = DEFAULT_NUM_WINDOWS,
-    len_fft: Optional[int] = None,
+    len_fft: int | None = None,
     window: str = DEFAULT_WINDOW,
     response_pattern: str = DEFAULT_RESPONSE_PATTERN,
     calibration_signal_file: str = DEFAULT_CAL_SIGNAL_FILE,
     calibration_response_file: str = DEFAULT_CAL_RESPONSE_FILE,
     delay_start: float = DEFAULT_DELAY_START,
-    discard_s: Tuple[float, float] = DEFAULT_DISCARD,
+    discard_s: tuple[float, float] = DEFAULT_DISCARD,
     ims_instrument_type: str = '',
-    test_band_hz: Tuple[float, float] = TEST_BAND_HZ,
-    test_limits: Tuple[float, float] = (MAX_AMPLITUDE_PERCENT,
+    test_band_hz: tuple[float, float] = TEST_BAND_HZ,
+    test_limits: tuple[float, float] = (MAX_AMPLITUDE_PERCENT,
                                         MAX_PHASE_DEGREES),
-    orientation_map: Tuple[str, str] = DEFAULT_ORIENTATION_MAP,
+    orientation_map: tuple[str, str] = DEFAULT_ORIENTATION_MAP,
     plot: str = '',
     fit: int = DEFAULT_FIT_STAGES,
-    calper: Optional[float] = None,
-    out_of_band: Tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
+    calper: float | None = None,
+    out_of_band: tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
     dpi: float = DEFAULT_DPI,
 ) -> str:
     """Do arbitrary-signal calibration analysis."""
@@ -443,8 +443,8 @@ class TimingGainFit():
     def __init__(
         self,
         confidence: float = 0.95,
-        timing: Optional[sm.WLS] = None,
-        gain: Optional[sm.WLS] = None,
+        timing: sm.WLS | None = None,
+        gain: sm.WLS | None = None,
     ) -> None:
         """Construct object."""
         self.confidence = confidence
@@ -494,7 +494,7 @@ class CalibrationInfo():
     def __init__(self) -> None:
         """Construct empty object."""
         self.waveform_file: str = ''
-        self.response_file: Sequence[str] = []
+        self.response_file: list[str] = []
         self.calibration_signal_file: str = ''
         self.calibration_response_file: str = ''
         self.delay_start: float = 0
@@ -504,8 +504,8 @@ class CalibrationInfo():
         self.spec_max_freq_hz: float = np.nan
         self.spec_max_amp_pct: float = np.nan
         self.spec_max_phase_deg: float = np.nan
-        self.gain_in_spec: Sequence[bool] = ()
-        self.phase_in_spec: Sequence[bool] = ()
+        self.gain_in_spec: list[bool] = []
+        self.phase_in_spec: list[bool] = []
         self.calper: float = np.nan
 
     def __str__(self) -> str:
@@ -524,7 +524,7 @@ class CalibrationResponses():
         self.sensor = ZerosPolesGain([], [], 1)
         self.cal = ZerosPolesGain([], [], 1)
         self.system = ZerosPolesGain([], [], 1)
-        self.fits: Sequence[ZerosPolesGain] = []
+        self.fits: list[ZerosPolesGain] = []
 
     def __str__(self) -> str:
         """Human-readable representation."""
@@ -844,7 +844,7 @@ class CalibrationAnalyzer():
 
     def check_stream(
         self,
-        discard_s: Tuple[float, float] = DEFAULT_DISCARD,
+        discard_s: tuple[float, float] = DEFAULT_DISCARD,
     ) -> None:
         """
         Check for: clipping, gaps, misaligned start & end.
@@ -900,14 +900,14 @@ class CalibrationAnalyzer():
     def trace_stages(
         self,
         trace: Trace,
-    ) -> Tuple[List[ResponseStage], List[ResponseStage]]:
+    ) -> tuple[list[ResponseStage], list[ResponseStage]]:
         """Retrieve response stages and split into sensor and datalogger."""
         return self.split_stages(trace.stats.response.response_stages)
 
     def split_stages(
         self,
-        stages: Sequence[ResponseStage],
-    ) -> Tuple[List[ResponseStage], List[ResponseStage]]:
+        stages: list[ResponseStage],
+    ) -> tuple[list[ResponseStage], list[ResponseStage]]:
         """
         Associate stages with sensor and datalogger.
 
@@ -939,7 +939,7 @@ class CalibrationAnalyzer():
         """Compute sensitivity at given frequency."""
         return np.abs(system.freqresp(w=2*np.pi*f)[1][0])
 
-    def set_calper(self, calper: Optional[float] = None) -> None:
+    def set_calper(self, calper: float | None = None) -> None:
         """Set calibration period/normalization frequency."""
         if calper:
             self.info.calper = calper
@@ -1053,7 +1053,7 @@ class CalibrationAnalyzer():
         self.lti.system = lti_multiply(self.lti.cal, self.lti.sensor)
         self.logger.debug('System: %s', self.lti.system)
 
-    def map_orientations(self, mapping: Tuple[str, str]) -> None:
+    def map_orientations(self, mapping: tuple[str, str]) -> None:
         """Account for differences between outputs and internal mechanics."""
         for trace in self.stream:
             for output, internal in zip(*mapping):
@@ -1063,7 +1063,7 @@ class CalibrationAnalyzer():
     def tf_nominal(
         self,
         model: Literal['sensor', 'cal', 'system'],
-        f: Optional[ArrayLike] = None,
+        f: ArrayLike | None = None,
     ) -> np.ndarray:
         """Return nominal transfer function evaluated at frequencies."""
         if f is None:
@@ -1108,7 +1108,7 @@ class CalibrationAnalyzer():
 
     def compute(
         self,
-        len_fft: Optional[int] = None,
+        len_fft: int | None = None,
         num_windows: float = 30,
         fraction_overlap: float = 0.5,
         window: str = DEFAULT_WINDOW
@@ -1267,7 +1267,7 @@ class CalibrationAnalyzer():
 
     def test(
         self,
-        test_band_hz: Tuple[float, float] = TEST_BAND_HZ,
+        test_band_hz: tuple[float, float] = TEST_BAND_HZ,
         max_amplitude_percent: float = MAX_AMPLITUDE_PERCENT,
         max_phase_degrees: float = MAX_PHASE_DEGREES,
     ) -> None:
@@ -1299,8 +1299,8 @@ class CalibrationAnalyzer():
                     self.info.spec_max_amp_pct/100)
         out_phase = (np.abs(np.angle(tf_deviation, deg=True)) >
                      self.info.spec_max_phase_deg)
-        self.info.gain_in_spec = ~np.any(out_gain & in_band, axis=1)
-        self.info.phase_in_spec = ~np.any(out_phase & in_band, axis=1)
+        self.info.gain_in_spec = list(~np.any(out_gain & in_band, axis=1))
+        self.info.phase_in_spec = list(~np.any(out_phase & in_band, axis=1))
 
         for label, passes in zip(
                 ['Amplitude', 'Phase'],
@@ -1318,7 +1318,7 @@ class CalibrationAnalyzer():
         self,
         ims_instrument_type: str,
         n: int = 1,
-        mapping: Tuple[str, str] = DEFAULT_ORIENTATION_MAP,
+        mapping: tuple[str, str] = DEFAULT_ORIENTATION_MAP,
     ) -> None:
         """
         Write IMS2.0 CALIBRATE_RESULT message with CAL2 and PAZ2 or FAP2.
@@ -1469,7 +1469,7 @@ class CalibrationAnalyzer():
 
     def fit(
         self,
-        out_of_band: Tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
+        out_of_band: tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
     ) -> None:
         """Least-squares estimation of poles and zeros."""
         f = self.stft.f
@@ -1617,7 +1617,7 @@ class CalibrationAnalyzer():
     def _save_image(
         self,
         fig: Figure,
-        option_list: Optional[Union[str, Sequence[str]]] = None,
+        option_list: str | list[str] | None = None,
     ) -> None:
         """Save a figure with an automatically descriptive file name."""
         if not self.savefig or not self.dpi:
@@ -1676,7 +1676,7 @@ class CalibrationAnalyzer():
     def plot_response(
         self,
         model: Literal['sensor', 'cal', 'system'] = 'system',
-        f_limits: Optional[Tuple[float, float]] = None,
+        f_limits: tuple[float, float] | None = None,
     ) -> None:
         """Plot nominal transfer function between frequency limits."""
         if f_limits:
@@ -1986,7 +1986,7 @@ class CalibrationAnalyzer():
         self._save_image(fig, option_list)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Run analysis and return system exit code."""
     if argv is None:
         argv = sys.argv

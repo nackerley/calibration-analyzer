@@ -36,13 +36,12 @@ from pathlib import Path
 from math import log10
 from io import StringIO
 from contextlib import redirect_stdout
-from typing import Optional, Sequence, Tuple
 from logging import getLogger
 from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from scipy.signal import lti, ZerosPolesGain, TransferFunction
 from scipy.optimize import least_squares
 
@@ -53,7 +52,7 @@ from calan.core import (
 np.random.seed(seed=42)
 
 
-def extract_coefficients(system: lti) -> Tuple[np.ndarray, int, int, int]:
+def extract_coefficients(system: lti) -> tuple[NDArray, int, int, int]:
     """
     Extract coefficient vector from transfer function.
 
@@ -100,7 +99,7 @@ def extract_coefficients(system: lti) -> Tuple[np.ndarray, int, int, int]:
     return x, p, n, m
 
 
-def precompute_omega(f: ArrayLike, m: int) -> np.ndarray:
+def precompute_omega(f: ArrayLike, m: int) -> NDArray:
     """Precompute required powers of angular frequencies."""
     f = np.array(f)
     omega = np.ones((f.shape[0], m + 1), dtype=complex)
@@ -113,7 +112,7 @@ def precompute_omega(f: ArrayLike, m: int) -> np.ndarray:
 def _get_views(
     x: ArrayLike, omega: ArrayLike,
     m: int, n: int, p: int,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[NDArray, NDArray, NDArray, NDArray, NDArray]:
     """Get subsets of matrices needed for computations."""
     x = np.array(x)
     omega = np.array(omega)
@@ -128,7 +127,7 @@ def _get_views(
 def model(
     x: ArrayLike, omega: ArrayLike,
     m: int, n: int, p: int,
-) -> np.ndarray:
+) -> NDArray:
     """Compute fitted transfer function model as function of frequency."""
     x_a, x_b, omega_a, omega_b, omega_m = _get_views(x, omega, m, n, p)
 
@@ -140,7 +139,7 @@ def model(
 def residuals(
     x: ArrayLike, omega: ArrayLike, h_meas: ArrayLike, weights: ArrayLike,
     m: int, n: int, p: int,
-) -> np.ndarray:
+) -> NDArray:
     """Compute weighted mean squared error over all frequencies."""
     x = np.array(x)
     omega = np.array(omega)
@@ -153,7 +152,7 @@ def residuals(
 def real_residuals(
     x: ArrayLike, omega: ArrayLike, h_meas: ArrayLike, weights: ArrayLike,
     m: int, n: int, p: int,
-) -> np.ndarray:
+) -> NDArray:
     """Convert residuals to vector of floats (wrapper for least_squares)."""
     return residuals(x, omega, h_meas, weights, m, n, p).view(float)
 
@@ -163,7 +162,7 @@ def jacobian(
     h_meas: ArrayLike,  # pylint: disable=unused-argument
     weights: ArrayLike,
     m: int, n: int, p: int,
-) -> np.ndarray:
+) -> NDArray:
     """Compute partial derivatives of residuals wrt coefficients."""
     x_a, x_b, omega_a, omega_b, omega_m = _get_views(x, omega, m, n, p)
 
@@ -182,7 +181,7 @@ def real_jacobian(
     h_meas: ArrayLike,  # pylint: disable=unused-argument
     weights: ArrayLike,
     m: int, n: int, p: int,
-) -> np.ndarray:
+) -> NDArray:
     """Convert Jacobian to vector of floats (wrapper for least_squares)."""
     result = jacobian(x, omega, h_meas, weights, m, n, p)
     return np.vstack((result.real, result.imag))
@@ -196,12 +195,12 @@ def fit_response(
     zpk_guess: ZerosPolesGain,
     f: ArrayLike,
     h_meas: ArrayLike,
-    var_meas: Optional[ArrayLike] = None,
+    var_meas: ArrayLike | None = None,
     zpk_fixed: ZerosPolesGain = ZerosPolesGain([], [], 1),
     ftol: float = 1e-10,
     gtol: float = 1e-06,
-    var_lims: Tuple[float, float] = (1e-4, 0.1),
-    weighting: Sequence[str] = ('variance', 'response', 'frequency'),
+    var_lims: tuple[float, float] = (1e-4, 0.1),
+    weighting: tuple[str, ...] = ('variance', 'response', 'frequency'),
     method: str = 'line_search',
     debug: bool = False,
 ) -> ZerosPolesGain:
@@ -321,7 +320,7 @@ def least_squares_line_search(
         g_tol: float = 1e-06,
         max_outer: int = 100,
         **kwargs: int,
-) -> Tuple[np.ndarray, np.ndarray, str]:
+) -> tuple[NDArray, NDArray, str]:
     """
     Least-squares minimization using line-search along Gauss-Newton gradient.
 
@@ -332,7 +331,7 @@ def least_squares_line_search(
     x_initial = np.array(x_initial)
     m = kwargs.get('m')
 
-    def _stabilize(x: ArrayLike, iteration: Tuple[int, int]) -> np.ndarray:
+    def _stabilize(x: ArrayLike, iteration: tuple[int, int]) -> NDArray:
         x = np.array(x)
         a_check = np.hstack((1, x[:m]))
         a_temp = apolystab(a_check)
@@ -418,7 +417,7 @@ def least_squares_line_search(
 
 def apolystab(
     polynomial: ArrayLike,
-) -> np.ndarray:
+) -> NDArray:
     """Return stabilized denominator polynomial of real analog filter."""
     polynomial = np.array(polynomial)
     if polynomial.ndim != 1:
@@ -435,7 +434,7 @@ def apolystab(
 def zpk_out_of_band(
     system: ZerosPolesGain,
     f: ArrayLike,
-    factor_lims: Tuple[float, float] = (5, 2),
+    factor_lims: tuple[float, float] = (5, 2),
     norm_freq_hz: float = 1,
     set_sensitivity: float = 1,
 ) -> ZerosPolesGain:
@@ -489,12 +488,12 @@ def zpk_out_of_band(
 
 
 def get_weights(
-    weighting: Sequence[str],
+    weighting: tuple[str, ...],
     f_meas: ArrayLike,
     var_meas: ArrayLike,
     h_initial: ArrayLike,
-    var_lims: Tuple[float, float]
-) -> np.ndarray:
+    var_lims: tuple[float, float]
+) -> NDArray:
     """Construct various kinds of weighting schemes."""
     var_meas = np.array(var_meas)
     unsupported = [item for item in weighting if item not in WEIGHTING_SCHEMES]
@@ -517,11 +516,11 @@ def get_weights(
 
 
 def _plot_possible_weights(
-    weighting: Sequence[str],
+    weighting: tuple[str, ...],
     f_meas: ArrayLike,
     var_meas: ArrayLike,
     h_initial: ArrayLike,
-    var_lims: Tuple[float, float]
+    var_lims: tuple[float, float]
 ) -> None:
     """Plot all possible weighting schemes. Same args as get_weights()."""
     fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
