@@ -4,11 +4,11 @@ from pathlib import Path
 from warnings import warn
 from struct import calcsize
 from logging import getLogger
-from typing import Callable, List, Optional, Sequence, Sized, Tuple
+from typing import Callable
 import matplotlib.pyplot as plt
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from calan.utilities import parse_duration, parse_voltage, pretty_bytes
 from calan.core import compute_decim_delay
@@ -21,7 +21,7 @@ SAMPLE_FORMAT = '<h'  # little-endian short (16-bit) integer
 def generate_piecewise_constant(
     durations: ArrayLike,
     voltages: ArrayLike,
-) -> Tuple[np.ndarray, str]:
+) -> tuple[NDArray[np.float64], str]:
     """Generate a piecewise constant calibration signal in volts."""
     logger = getLogger(__name__)
     durations = np.asarray(durations)
@@ -49,7 +49,7 @@ def expected_wav_size(duration: float) -> str:
 
 def parse_signal_file_name(
     file_name: str,
-) -> Tuple[str, float, float, float, float, float, float, float]:
+) -> tuple[str, float, float, float, float, float, float, float]:
     """
     Parse a calibration signal file name.
 
@@ -67,11 +67,11 @@ def parse_signal_file_name(
     duration_seconds = float(parse_duration(parts.pop(1)))
 
     extras = []
-    tokens: List[str] = ['pp', 'rms', 'mean', 'on', 'off', 'sps']
-    parsers: List[Callable] = [
+    tokens: list[str] = ['pp', 'rms', 'mean', 'on', 'off', 'sps']
+    parsers: list[Callable] = [
         parse_voltage, parse_voltage, parse_voltage, parse_duration,
         parse_duration, float]
-    defaults: List[float] = [0, 0, 0, 0, 0, CALIBRATION_SAMPLE_RATE]
+    defaults: list[float] = [0, 0, 0, 0, 0, CALIBRATION_SAMPLE_RATE]
     for token, parser, default in zip(tokens, parsers, defaults):
         index = next((i for i, part in enumerate(parts)
                       if token in part), None)
@@ -93,10 +93,10 @@ def parse_signal_file_name(
 
 def get_times(
     signal: ArrayLike,
-    b_stages: Optional[Sequence[Sized]] = None,
-    factors: Optional[Sequence[int]] = None,
+    b_stages: list[NDArray[np.float64]] | None = None,
+    factors: list[int] | None = None,
     discard_initial: bool = True,
-) -> np.ndarray:
+) -> NDArray:
     """Generate an array of times corresponding to a calibration signal."""
     signal = np.array(signal)
     i = np.arange(len(signal))
@@ -112,9 +112,9 @@ def get_times(
 
 def pad_for_decimation(
     signal: ArrayLike,
-    b_stages: Sequence[Sized],
-    factors: Sequence[int],
-) -> Tuple[np.ndarray, float]:
+    b_stages: list[NDArray[np.float64]],
+    factors: list[int],
+) -> tuple[NDArray, float]:
     """
     Pad a signal with zeros in preparation for decimation.
 
@@ -128,7 +128,7 @@ def pad_for_decimation(
     return signal_padded, t_start
 
 
-def sample_hold_digitize(signal: ArrayLike) -> np.ndarray:
+def sample_hold_digitize(signal: ArrayLike) -> NDArray:
     """Process signal as if sampled and held by DAC, then digitized by ADC."""
     signal = np.concatenate((np.zeros((1, )), signal, np.zeros((1, ))))
     signal = signal[:-1]/2 + signal[1:]/2
@@ -138,7 +138,7 @@ def sample_hold_digitize(signal: ArrayLike) -> np.ndarray:
 def plot_calibration(
     signal: ArrayLike,
     units: str = 'counts',
-    file_name: Optional[str] = None,
+    file_name: str | None = None,
     sample_rate: float = 100,
 ) -> None:
     """
@@ -164,8 +164,8 @@ def plot_calibration(
 def plot_calibration_decimated(
     sig_in: ArrayLike,
     sig_out: ArrayLike,
-    b_stages: Sequence[Sized],
-    factors: Sequence[int],
+    b_stages: list[NDArray[np.float64]],
+    factors: list[int],
     discard_initial: bool,
 ) -> None:
     """Compare timing of signals before/after decimation."""

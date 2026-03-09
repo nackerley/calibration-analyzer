@@ -5,7 +5,7 @@ from math import floor, log10
 from operator import mul
 from functools import reduce
 import argparse
-from typing import List, Literal, Optional, Sequence, Union
+from typing import Literal, Sequence
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -29,8 +29,8 @@ class MyArgumentParser(argparse.ArgumentParser):
 
 
 def string_list(
-    argument: Optional[Union[str, Sequence[str]]]
-) -> List[str]:
+    argument: str | Sequence[str] | None
+) -> list[str]:
     """Turn an argument which might be a string or a tuple into a list."""
     if argument is None:
         return []
@@ -79,7 +79,7 @@ def pretty_units(
     input_unit: str,
     units: Sequence[str],
     factors: Sequence[float],
-    fmt: Union[str, int],
+    fmt: str | int,
     thresh: float = 0.95,
 ) -> str:
     """
@@ -148,7 +148,7 @@ TIME_FACTORS = [52, 365.25/52, 24, 60, 60, 1e3, 1e3, 1e3]
 def pretty_duration(
     value: float,
     input_unit: str = 's',
-    fmt: Union[str, int] = 3,
+    fmt: str | int = 3,
     thresh: float = 0.95
 ) -> str:
     """Convert a duration to a string which includes units."""
@@ -174,7 +174,7 @@ BYTE_FACTORS = [1e3]*(len(BYTE_UNITS) - 1)
 def pretty_bytes(
     value: float,
     input_unit: str = 'B',
-    fmt: Union[str, int] = 3,
+    fmt: str | int = 3,
     style: Literal['binary', 'decimal'] = 'binary',
 ) -> str:
     """Convert a file size to a string which includes units."""
@@ -205,7 +205,7 @@ VOLTAGE_FACTORS = [1e3]*(len(VOLTAGE_UNITS) - 1)
 def pretty_voltage(
     value: float,
     input_unit: str = 'V',
-    fmt: Union[str, int] = 3,
+    fmt: str | int = 3,
 ) -> str:
     """Convert a voltage to a string which includes units."""
     return pretty_units(value, input_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS, fmt)
@@ -214,7 +214,7 @@ def pretty_voltage(
 def parse_voltage(
     string: str,
     output_unit: str = 'V',
-) -> Optional[float]:
+) -> float | None:
     """Convert a string to a voltage in specified units."""
     return parse_units(string, output_unit, VOLTAGE_UNITS, VOLTAGE_FACTORS)
 
@@ -326,7 +326,7 @@ def stdval(
     value: ArrayLike,
     num: int = 96,
     bump: float = 0,
-    preferred: Optional[ArrayLike] = None,
+    preferred: ArrayLike | None = None,
 ) -> np.ndarray:
     """
     Compute nearest values in a standard-value series.

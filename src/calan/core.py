@@ -8,15 +8,13 @@ from copy import deepcopy
 from datetime import datetime
 from logging import getLogger, Logger
 from logging.config import dictConfig
-
-from typing import \
-    Any, Dict, Iterator, List, Optional, Sequence, Sized, Tuple, Type, Union
-
+from typing import Iterator, Type
 from pathlib import Path
 
 import numpy as np
-from numpy.typing import ArrayLike, DTypeLike
+from numpy.typing import DTypeLike, NDArray
 import pandas as pd
+from pandas.api.typing import NaTType  # type: ignore
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 from matplotlib.figure import Figure
@@ -121,9 +119,9 @@ def inventory2dataless(inventory_xml: str) -> str:
     return inventory_dataless
 
 
-def sort_complex(array: np.ndarray) -> np.ndarray:
+def sort_complex(array: NDArray) -> NDArray:
     """Sort complex array by absolute value, then by imaginary part."""
-    return np.array(sorted(sorted(array, key=np.imag), key=np.abs))
+    return np.array(sorted(sorted(np.array(array), key=np.imag), key=np.abs))
 
 
 def sensitivity(system: lti, f: float = 1) -> float:
@@ -131,12 +129,12 @@ def sensitivity(system: lti, f: float = 1) -> float:
     return np.abs(system.freqresp(w=2*np.pi*f)[1][0])
 
 
-def gain_db(values: ArrayLike) -> np.ndarray:
+def gain_db(values: NDArray) -> NDArray:
     """Return transfer function gain in dB, given complex values."""
     return 20*np.log10(np.abs(values))
 
 
-def phase_deg(values: ArrayLike) -> np.ndarray:
+def phase_deg(values: NDArray) -> NDArray:
     """Return transfer function phase in degrees, given complex values."""
     return np.angle(np.array(values), deg=True)
 
@@ -253,7 +251,7 @@ def stage2zpk(stage: PolesZerosResponseStage) -> ZerosPolesGain:
 
 
 def zpk_cascade(
-    stages: Sequence[ResponseStage],
+    stages: list[ResponseStage],
     initial: ZerosPolesGain = ZerosPolesGain([], [], 1),
 ) -> ZerosPolesGain:
     """Cascade obspy response stages into a scipy ZerosPolesGain system."""
@@ -270,9 +268,9 @@ def zpk_cascade(
 
 
 def stage_units(
-    stages: Union[ResponseStage, Sequence[ResponseStage],
-                  InstrumentSensitivity, Sequence[InstrumentSensitivity]],
-) -> Dict[str, str]:
+    stages: ResponseStage | list[ResponseStage] |
+    InstrumentSensitivity | list[InstrumentSensitivity],
+) -> dict[str, str]:
     """Clean up and return a dictionary of relevant units."""
     if isinstance(stages, (ResponseStage, InstrumentSensitivity)):
         stages = [stages]
@@ -320,12 +318,12 @@ def lti_is_proper(system: lti) -> bool:
 
 
 def unwrap_mid(
-    phase_in: ArrayLike,
-    f_in: ArrayLike,
+    phase_in: NDArray[np.float64],
+    f_in: NDArray[np.float64],
     f_midband: float = 1,
     axis: int = -1,
     discont: float = np.pi,
-) -> np.ndarray:
+) -> NDArray[np.float64]:
     """
     Unwrap phase data in the range starting at midband.
 
@@ -356,7 +354,7 @@ def unwrap_mid(
     return np.concatenate((phase_below, phase_above), axis)
 
 
-def factor_names(stream: Stream) -> Tuple[str, List[str]]:
+def factor_names(stream: Stream) -> tuple[str, list[str]]:
     """
     Return a tuple with the factored names for the traces in a stream.
 
@@ -376,8 +374,8 @@ def factor_names(stream: Stream) -> Tuple[str, List[str]]:
 
 
 def compute_decim_delay(
-    b_stages: Sequence[Sized],
-    factors: Sequence[int],
+    b_stages: list[NDArray[np.float64]],
+    factors: list[int],
 ) -> int:
     """
     Determine total filter delay for multi-stage decimation.
@@ -408,13 +406,15 @@ def compute_decim_delay(
 
 # pylint: disable=too-many-arguments, too-many-locals
 def multi_decim(
-    sig_in: ArrayLike,
-    b_stages: Sequence[Sized],
-    factors: Sequence[int],
-    z_in: Union[float, Sequence[Sized]] = 0,
-    sig_leftover: ArrayLike = (),
+    sig_in: NDArray[np.float64],
+    b_stages: list[NDArray[np.float64]],
+    factors: list[int],
+    z_in: float | list[NDArray[np.float64]] = 0,
+    sig_leftover: NDArray[np.float64] = np.array(()),
     discard_initial: bool = True,
-) -> Tuple[np.ndarray, List[np.ndarray], np.ndarray]:
+) -> tuple[NDArray[np.float64],
+           list[NDArray[np.float64]],
+           NDArray[np.float64]]:
     """
     Apply cascaded FIR filter and decimation stages to a signal.
 
@@ -476,7 +476,7 @@ def multi_decim(
         return np.array([]), [np.array(z_stage) for z_stage in z_in], sig_in
 
     # initialize signals and pass unused signal through to output
-    sig_stages: List[np.ndarray] = [np.array([])]*(len(factors) + 1)
+    sig_stages: list[NDArray[np.float64]] = [np.array([])]*(len(factors) + 1)
     sig_stages[0] = sig_in[:len_input_required]
     sig_unused = sig_in[len_input_required:]
 
@@ -503,12 +503,12 @@ def multi_decim(
 
 
 def extract_decimation_coefficients(
-    stages: Sequence[ResponseStage]
-) -> Tuple[List[np.ndarray], List[int]]:
+    stages: list[ResponseStage]
+) -> tuple[list[NDArray[np.float64]], list[int]]:
     """Extract decimation factors, filter coefficients from list of stages."""
     logger = getLogger(__name__)
-    b_stages: List[np.ndarray] = []
-    factors: List[int] = []
+    b_stages: list[NDArray[np.float64]] = []
+    factors: list[int] = []
     for stage in stages:
         if stage.decimation_factor is not None and stage.decimation_factor > 1:
             if not factors:
@@ -546,8 +546,8 @@ def extract_decimation_coefficients(
 
 
 def truncnorm_shape(
-    mean: float, std: float, clip_b: float, clip_a: Optional[float] = None,
-) -> Tuple[float, float]:
+    mean: float, std: float, clip_b: float, clip_a: float | None = None,
+) -> tuple[float, float]:
     """
     Convert mean, standard deviation and clip levels to shape parameters.
 
@@ -564,8 +564,8 @@ def truncnorm_shape(
 
 def subplots_squeeze(
     fig: Figure,
-    hspace: Optional[float] = None,
-    wspace: Optional[float] = None,
+    hspace: float | None = None,
+    wspace: float | None = None,
 ) -> None:
     """
     Squeeze space ticks and ticklabels from between axes.
@@ -574,8 +574,8 @@ def subplots_squeeze(
     removing space between them and removing tick labels which would overlap.
     """
     def _get_row_col_start(
-        subplotspec: Optional[SubplotSpec]
-    ) -> Tuple[int, int]:
+        subplotspec: SubplotSpec | None
+    ) -> tuple[int, int]:
         if subplotspec is None:
             return (0, 0)
 
@@ -606,9 +606,9 @@ def _missing_samples(delta: float, sampling_rate: float) -> int:
 
 def is_complete(
     stream: Stream,
-    trace_ids: Optional[Sequence[str]] = None,
-    start: Union[datetime, str] = pd.Timestamp(0),
-    end: Union[datetime, str] = pd.Timestamp.now(),
+    trace_ids: list[str] | None = None,
+    start: datetime | str = pd.Timestamp(0),
+    end: datetime | str = pd.Timestamp.now(),
     tolerance: float = 0.5
 ) -> bool:
     """Lightweight test whether stream is complete."""
@@ -661,11 +661,11 @@ def is_complete(
 
 def gap_list(
     stream: Stream,
-    trace_ids: Optional[Sequence[str]] = None,
-    start: Union[datetime, UTCDateTime] = pd.Timestamp(0),
-    end: Union[datetime, UTCDateTime] = pd.Timestamp.now(),
+    trace_ids: list[str] | None = None,
+    start: datetime | UTCDateTime = pd.Timestamp(0),
+    end: datetime | UTCDateTime = pd.Timestamp.now(),
     tolerance: float = 0.5,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Construct a dataframe of gaps, including start & end gaps.
 
@@ -675,7 +675,7 @@ def gap_list(
     Returns aps_df, overlap_df.
     """
     if trace_ids is None:
-        trace_ids = ()
+        trace_ids = []
     if not isinstance(start, datetime):
         start = pd.to_datetime(start.datetime)
     if not isinstance(end, datetime):
@@ -780,9 +780,9 @@ def gap_list(
 
 
 def fraction_available(
-    trace_ids: Sequence[str],
-    start: Union[datetime, str],
-    end: Union[datetime, str],
+    trace_ids: list[str],
+    start: datetime | str,
+    end: datetime | str,
     gaps_df: pd.DataFrame,
 ) -> float:
     """Compute fraction of requested data which is available."""
@@ -800,7 +800,7 @@ def fraction_available(
 def log_availability(
     logger: Logger,
     gaps_df: pd.DataFrame,
-    trace_ids: Sequence[str],
+    trace_ids: list[str],
     start: datetime,
     end: datetime,
     column: str = 'duration',
@@ -887,7 +887,7 @@ def log_availability(
 
 def inventory_items(
     inventory: Inventory,
-) -> Iterator[Tuple[Network, Station, Channel]]:
+) -> Iterator[tuple[Network, Station, Channel]]:
     """Iterate through network, station, channel of an inventory."""
     for network in inventory:
         for station in network:
@@ -897,18 +897,75 @@ def inventory_items(
 
 def inventory_stations(
     inventory: Inventory,
-) -> Iterator[Tuple[Network, Station]]:
+) -> Iterator[tuple[Network, Station]]:
     """Iterate through network, station of an inventory."""
     for network in inventory:
         for station in network:
             yield network, station
 
 
+def safe_time(value: UTCDateTime | None) -> pd.Timestamp | NaTType:
+    """Convert obspy to pandas time."""
+    if isinstance(value, UTCDateTime):
+        return pd.Timestamp(value.datetime)
+    return pd.NaT
+
+
+def channel_table(inv: Inventory) -> pd.DataFrame:
+    """Convert inventory to dataframe."""
+    data = {
+        'Network': [net.code for net, _, _ in inventory_items(inv)],
+        'Station': [sta.code for _, sta, _ in inventory_items(inv)],
+        'Location': [chn.location_code for _, _, chn in inventory_items(inv)],
+        'Channel': [chn.code for _, _, chn in inventory_items(inv)],
+        'Latitude': [chn.latitude for _, _, chn in inventory_items(inv)],
+        'Longitude': [chn.longitude for _, _, chn in inventory_items(inv)],
+        'Elevation': [chn.elevation for _, _, chn in inventory_items(inv)],
+        'Depth': [chn.depth for _, _, chn in inventory_items(inv)],
+        'Azimuth': [chn.azimuth for _, _, chn in inventory_items(inv)],
+        'Dip': [chn.dip for _, _, chn in inventory_items(inv)],
+        'SensorDescription': [
+            chn.sensor.description for _, _, chn in inventory_items(inv)],
+        'Scale': [
+            chn.response.instrument_sensitivity.value
+            for _, _, chn in inventory_items(inv)],
+        'ScaleFreq': [
+            chn.response.instrument_sensitivity.frequency
+            for _, _, chn in inventory_items(inv)],
+        'ScaleUnits': [
+            chn.response.instrument_sensitivity.input_units
+            for _, _, chn in inventory_items(inv)],
+        'SampleRate': [chn.sample_rate for _, _, chn in inventory_items(inv)],
+        'StartTime': [
+            safe_time(chn.start_date) for _, _, chn in inventory_items(inv)],
+        'EndTime': [
+            safe_time(chn.end_date) for _, _, chn in inventory_items(inv)],
+    }
+    return pd.DataFrame(data)
+
+
+def station_table(inv: Inventory) -> pd.DataFrame:
+    """Convert inventory to dataframe."""
+    data = {
+        'Network': [net.code for net, _ in inventory_stations(inv)],
+        'Station': [sta.code for _, sta in inventory_stations(inv)],
+        'Latitude': [sta.latitude for _, sta in inventory_stations(inv)],
+        'Longitude': [sta.longitude for _, sta in inventory_stations(inv)],
+        'Elevation': [sta.elevation for _, sta in inventory_stations(inv)],
+        'SiteName': [sta.site.name for _, sta in inventory_stations(inv)],
+        'StartTime': [
+            safe_time(sta.start_date) for _, sta in inventory_stations(inv)],
+        'EndTime': [
+            safe_time(sta.end_date) for _, sta in inventory_stations(inv)],
+    }
+    return pd.DataFrame(data)
+
+
 def read_sql(
     file_name: str,
-    parse_dates: Sequence[str] = ('start', 'end'),
-    index: Sequence[Any] = (),
-    dtypes: Optional[Dict[str, DTypeLike]] = None,
+    parse_dates: tuple[str, ...] = ('start', 'end'),
+    index: list[str] | None = None,
+    dtypes: dict[str, DTypeLike] | None = None,
 ) -> pd.DataFrame:
     """
     Read pipe-delimited SQL query result.
@@ -946,7 +1003,7 @@ def read_sql(
         if column in df and dtype == str:
             df[column] = df[column].fillna('')
 
-    if index:
+    if index is not None:
         df.set_index(list(index), inplace=True, verify_integrity=True)
 
     return df
@@ -954,8 +1011,8 @@ def read_sql(
 
 # logging
 LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-LOG_SETTINGS: Dict[str, Union[int, Dict[str, Dict[
-        str, Union[str, bool, Sequence[str]]]]]] = {
+LOG_SETTINGS: dict[str, int | dict[
+    str, dict[str, str | bool | list[str]]]] = {
     'version': 1,  # schema
     'handlers': {
         'console': {
@@ -1032,8 +1089,8 @@ class LoggerWriter:
     def __init__(
         self,
         logger: Logger,
-        level: Union[int, str],
-        name: Optional[str] = None,
+        level: int | str,
+        name: str | None = None,
     ) -> None:
         """Construct object."""
         self.logger = logger
@@ -1054,8 +1111,8 @@ class LoggerWriter:
 
 
 def get_channel(
-    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
-    event: Optional[Event] = None,
+    obj: Pick | Arrival | Amplitude | StationMagnitude,
+    event: Event | None = None,
 ) -> str:
     """Return SEED string associated with ObsPy object."""
     waveform_id = get_waveform_id(obj, event)
@@ -1066,9 +1123,9 @@ def get_channel(
 
 
 def get_waveform_id(
-    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
-    event: Optional[Event] = None,
-) -> Optional[WaveformStreamID]:
+    obj: Pick | Arrival | Amplitude | StationMagnitude,
+    event: Event | None = None,
+) -> WaveformStreamID | None:
     """Return waveform_id associated with ObsPy object."""
     if obj is None:
         return None
@@ -1084,9 +1141,9 @@ def get_waveform_id(
 
 
 def get_pick(
-    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
-    event: Optional[Event] = None,
-) -> Optional[Pick]:
+    obj: Pick | Arrival | Amplitude | StationMagnitude,
+    event: Event | None = None,
+) -> Pick | None:
     """
     Look up Pick associated with object.
 
@@ -1122,9 +1179,9 @@ def get_pick(
 
 # pylint: disable=too-many-return-statements
 def get_amplitude(
-    obj: Union[Pick, Arrival, Amplitude, StationMagnitude],
-    event: Optional[Event] = None,
-) -> Optional[Amplitude]:
+    obj: Pick | Arrival | Amplitude | StationMagnitude,
+    event: Event | None = None,
+) -> Amplitude | None:
     """
     Look up Amplitude associated with object.
 
