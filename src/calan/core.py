@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import DTypeLike, NDArray
 import pandas as pd
+from pandas.api.typing import NaTType  # type: ignore
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 from matplotlib.figure import Figure
@@ -903,9 +904,15 @@ def inventory_stations(
             yield network, station
 
 
+def safe_time(value: UTCDateTime | None) -> pd.Timestamp | NaTType:
+    """Convert obspy to pandas time."""
+    if isinstance(value, UTCDateTime):
+        return pd.Timestamp(value.datetime)
+    return pd.NaT
+
+
 def channel_table(inv: Inventory) -> pd.DataFrame:
     """Convert inventory to dataframe."""
-
     data = {
         'Network': [net.code for net, _, _ in inventory_items(inv)],
         'Station': [sta.code for _, sta, _ in inventory_items(inv)],
@@ -929,16 +936,16 @@ def channel_table(inv: Inventory) -> pd.DataFrame:
             chn.response.instrument_sensitivity.input_units
             for _, _, chn in inventory_items(inv)],
         'SampleRate': [chn.sample_rate for _, _, chn in inventory_items(inv)],
-        'StartTime': [chn.start_date for _, _, chn in inventory_items(inv)],
-        'EndTime': [chn.end_date for _, _, chn in inventory_items(inv)],
+        'StartTime': [
+            safe_time(chn.start_date) for _, _, chn in inventory_items(inv)],
+        'EndTime': [
+            safe_time(chn.end_date) for _, _, chn in inventory_items(inv)],
     }
-
     return pd.DataFrame(data)
 
 
 def station_table(inv: Inventory) -> pd.DataFrame:
     """Convert inventory to dataframe."""
-
     data = {
         'Network': [net.code for net, _ in inventory_stations(inv)],
         'Station': [sta.code for _, sta in inventory_stations(inv)],
@@ -946,10 +953,11 @@ def station_table(inv: Inventory) -> pd.DataFrame:
         'Longitude': [sta.longitude for _, sta in inventory_stations(inv)],
         'Elevation': [sta.elevation for _, sta in inventory_stations(inv)],
         'SiteName': [sta.site.name for _, sta in inventory_stations(inv)],
-        'StartTime': [sta.start_date for _, sta in inventory_stations(inv)],
-        'EndTime': [sta.end_date for _, sta in inventory_stations(inv)],
+        'StartTime': [
+            safe_time(sta.start_date) for _, sta in inventory_stations(inv)],
+        'EndTime': [
+            safe_time(sta.end_date) for _, sta in inventory_stations(inv)],
     }
-
     return pd.DataFrame(data)
 
 
