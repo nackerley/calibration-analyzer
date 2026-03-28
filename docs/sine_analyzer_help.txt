@@ -1,0 +1,50 @@
+usage: sine_analyzer [-h] [-g PATTERN] [-l LEN_FFT] [-t TRIM_S] [-w WINDOW]
+                     [-i INPUT_LABEL] [-o OUTPUT_LABEL]
+                     [--summary-csv SUMMARY_CSV] [-s STATION_ID]
+                     [-z TIME_ZONE] [-p] [-d DPI] [-v]
+
+Analyzer for sinusoidal calibrations of seismometers.
+
+Temperature data can be appended with provision of a weather station ID.
+Use this inventory to look up the nearest wether station:
+ftp://client_climate@ftp.tor.ec.gc.ca/Pub/Get_More_Data_Plus_de_donnees/Station%20Inventory%20EN.csv
+
+Limitations
+-----------
+Currently only supports calibration of one channel at at time.
+
+Author: Nick Ackerley
+
+options:
+  -h, --help            show this help message and exit
+  -g PATTERN, --pattern PATTERN
+                        glob pattern matching calibration files (default:
+                        *.mseed)
+  -l LEN_FFT, --len-fft LEN_FFT
+                        length of FFT (default: 200)
+  -t TRIM_S, --trim-s TRIM_S
+                        time to trim off beginning and end of signal, in
+                        seconds (default: 5)
+  -w WINDOW, --window WINDOW
+                        window function to be used for Welch's method
+                        (default: hann)
+  -i INPUT_LABEL, --input-label INPUT_LABEL
+                        string to be found in input waveform file names
+                        (default: _Input)
+  -o OUTPUT_LABEL, --output-label OUTPUT_LABEL
+                        string to be found in output waveform file names
+                        (default: _Output)
+  --summary-csv SUMMARY_CSV
+                        by default a file name is generated from --pattern
+                        (default: )
+  -s STATION_ID, --station-id STATION_ID
+                        weather station id for temperature lookup (default:
+                        51058)
+  -z TIME_ZONE, --time-zone TIME_ZONE
+                        time zone of weather station (default:
+                        America/Yellowknife)
+  -p, --plot            generate diagnostic plots for each analysis (default:
+                        False)
+  -d DPI, --dpi DPI     resolution to use for plots in dots per inch (default:
+                        150)
+  -v, --version         show program's version number and exit
