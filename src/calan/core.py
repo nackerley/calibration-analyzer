@@ -1004,7 +1004,9 @@ def read_sql(
             df[column] = df[column].fillna('')
 
     if index is not None:
-        df.set_index(list(index), inplace=True, verify_integrity=True)
+        df.set_index(list(index), inplace=True)
+        if not df.index.is_unique:
+            raise ValueError(f"Index ({', '.join(index)}) has duplicate keys")
 
     return df
 
