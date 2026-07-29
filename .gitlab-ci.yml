@@ -1,0 +1,60 @@
+stages:
+  - Static Analysis
+  - Test
+
+# Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+image: python:3.12
+
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# https://pip.pypa.io/en/stable/topics/caching/
+cache:
+  paths:
+    - .cache/pip
+
+before_script:
+  - python --version
+  - pip install --upgrade pip
+  - pip --version
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+  - python -m pip install .[develop]
+
+flake8/mypy:
+  stage: Static Analysis
+  only:
+    - master
+    - merge_requests
+  script:
+    - flake8 --statistics
+    - mypy
+
+pylint/pydocstyle:
+  stage: Static Analysis
+  only:
+    - master
+    - merge_requests
+  allow_failure: true
+  script:
+    - pylint --fail-under=9 src
+    - pydocstyle
+
+pytest:
+  stage: Test
+  only:
+    - master
+    - merge_requests
+  script:
+    - pytest
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    expire_in: 4 weeks
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
