@@ -28,7 +28,7 @@ before_script:
 flake8/mypy:
   stage: Static Analysis
   only:
-    - master
+    - main
     - merge_requests
   script:
     - flake8 --statistics
@@ -37,7 +37,7 @@ flake8/mypy:
 pylint/pydocstyle:
   stage: Static Analysis
   only:
-    - master
+    - main
     - merge_requests
   allow_failure: true
   script:
@@ -47,7 +47,7 @@ pylint/pydocstyle:
 pytest:
   stage: Test
   only:
-    - master
+    - main
     - merge_requests
   script:
     - pytest
