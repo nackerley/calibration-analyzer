@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "calan"
+dynamic = ["version"]
+authors = [
+    {name = "Nick Ackerley", email = "nicholas.ackerley@nrcan-rncan.gc.ca"},
+]
+description = "Tools for relative (electrical) calibration of seismic instrumentation."
+readme = "README.md"
+requires-python = ">=3.8, <4"
+dependencies = [
+    "numpy",
+    "pandas",
+    "obspy",
+    "timezonefinder",
+    "statsmodels",
+    "setuptools<82",  # should be temporary: https://github.com/obspy/obspy/issues/3681
+    "urllib3",
+    "pytz",
+]
+
+[project.optional-dependencies]
+develop = [
+    "pylint",
+    "flake8",
+    "pydocstyle",
+    "mypy",
+    "types-python-dateutil",
+    "types-pytz",
+    "pandas-stubs<2.2",
+    "pytest",
+    "pytest-cov",
+    "pytest-env",
+]
+
+[project.scripts]
+sine_analyzer = "calan.sine_analyzer:main"
+calibration_analyzer = "calan.calibration_analyzer:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+files = "src"
+warn_unused_configs = true
+exclude = [
+    ".venv",
+    "examples",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "matplotlib",
+    "scipy.*",
+    "obspy.*",
+    "statsmodels.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "calan.calibration_analyzer",
+    "calan.fit_response",
+    "calan.stft",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pydocstyle]
+match_dir = "src"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+# omit coverage options to debug tests in VSCode
+# e.g. addopts = "--durations=0 --ignore=deprecated_tools"
+addopts = "--durations=0 --ignore=deprecated_tools --cov=src --cov-report term --cov-report xml:coverage.xml --cov-config=.coveragerc"
