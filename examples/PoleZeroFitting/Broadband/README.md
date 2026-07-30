@@ -10,12 +10,11 @@ steps may be skipped, and the remaining procedure is largely the same.
 
 ## Contents
 
-[Generation](#generation)
-[Upload](#upload)
-[Execution](#execution)
-[Analysis](#analysis)
+* [Generation](#generation)
+* [Upload](#upload)
+* [Execution](#execution)
+* [Analysis](#analysis)
 
-<a name="generation"></a>
 ## Generation
 
 Scripts for generating arbitrary calibration signals are generally obtained
@@ -27,9 +26,11 @@ The latest scripts which come with the Nanometrics Centaur are archived here:
 
 For example, to generate the recommended broadband calibration signal for a
 Trillium 120:
+
 ```bash
 bash create_seismometer_prb_calibration_signal --voltage=1 --duration=9600 --unit-width=10 --output=prb_1V_10ms_3h.lzma --lzma --meta
 ```
+
 Note:
 
 1. This produces an additional medatata file prefixed with
@@ -41,16 +42,17 @@ and read the data file.
 connected to a datalogger with full-scale voltage of 40 Vpp.
 For higher sensitivities or equivalently lower full-scale voltages, the amplitude must be reduced.
 
-<a name="upload"></a>
 ## Upload
 
 To copy all calibration files in a given directory to a Centaur:
+
 ```bash
 scp -p 22 {*,.[^.]*,..?*}.lzma calibration@192.168.XXX.YYY:/usr/share/nanometrics/calibration
 ```
 
-<a name="execution"></a>
 ## Execution
+
+<!-- markdownlint-disable MD033 -->
 
 Open the Centaur GUI and log in. Note that it is only switching between UVW
 and XYZ modes which requires elevated privileges, not calibration itself.
@@ -95,15 +97,15 @@ response metadata.
 
     <p><a href="Event.PNG"><img src="Event.PNG" alt="Downloading event" width="50%"/></a></p>
 
-<a name="analysis"></a>
 ## Analysis
 
 ### Documentation
 
-See [calibration_analyzer.txt](calibration_analyzer.txt) for a recent archived
+See [arbitrary_analyzer.txt](arbitrary_analyzer.txt) for a recent archived
 version of the documentation.
 
 For the most current documentation, run:
+
 ```bash
 calan --help
 ```
@@ -112,16 +114,19 @@ calan --help
 
 To analyze all files in a given folder (glob `pattern` default: `*.mseed`) and
 produce basic plots of the results, use:
+
 ```bash
 cd examples/SineCalibration
 calan
 ```
+
 This runs quickly, producing a summary table
-[calibration_analyzer.csv](calibration_analyzer.csv)
+[arbitrary_analyzer.csv](arbitrary_analyzer.csv)
 and a log file
-[calibration_analyzer.log](calibration_analyzer.log).
+[arbitrary_analyzer.log](arbitrary_analyzer.log).
 
 The files in this example folder were generated using:
+
 ```bash
 calan --write-ims --plot diagnostic
 ```

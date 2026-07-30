@@ -1,0 +1,120 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",
+        },
+        {
+            "name": "sine calibration",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/calan/sine_analyzer.py",
+            "console": "integratedTerminal",
+            "args": [],
+            "cwd": "${workspaceFolder}/examples/SineCalibration",
+        },
+        {
+            "name": "calan SP fit",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/calan/arbitrary_analyzer.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--response-pattern",
+                "XX.YKAT1.xml",
+                "--ims-instrument-type",
+                "S-13",
+                "--plot",
+                "basic",
+                "--fit",
+                "2",
+                "--out-of-band",
+                "5",
+                "2",
+                "--calibration-response-file",
+                "XX.YKAT1.xml"
+            ],
+            "cwd": "${workspaceFolder}/examples/PoleZeroFitting/ShortPeriod_IMS",
+        },
+        {
+            "name": "calan BB fit",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/calan/arbitrary_analyzer.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--ims-instrument-type",
+                "T120QA",
+                "--plot",
+                "all",
+                "--fit",
+                " 1",
+                "--orientation-map",
+                "ENZ",
+                "UVW",
+                "--calibration-response-file",
+                "Centaur_Trillium120Q_Calibration.xml"
+            ],
+            "cwd": "${workspaceFolder}/examples/PoleZeroFitting/Broadband",
+        },
+        {
+            "name": "calan BB IMS fit",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/calan/arbitrary_analyzer.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--ims-instrument-type",
+                "T120QA",
+                "--plot",
+                "basic",
+                "--fit",
+                "1",
+                "--calper",
+                "1",
+                "--orientation-map",
+                "ENZ",
+                "UVW",
+                "--calibration-signal-file",
+                "prb_0.1V_10ms_3h.lzma",
+                "--response-pattern",
+                "CN.INK..BH_20220613.xml"
+                // "--calibration-response-file", "Centaur_Trillium120Q_Calibration.xml"
+            ],
+            "cwd": "${workspaceFolder}/examples/PoleZeroFitting/Broadband_IMS",
+            "justMyCode": false,
+        },
+        {
+            "name": "CNSN fit",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/calan/arbitrary_analyzer.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--ims-instrument-type",
+                "T120QA",
+                "--plot",
+                "basic",
+                "--fit",
+                "1",
+                "--orientation-map",
+                "ENZ",
+                "UVW",
+                "--calibration-signal-file",
+                "prb_1V_10ms_3h.lzma",
+                "--response-pattern",
+                "*.xml"
+                // "--calibration-response-file", "Centaur_Trillium120Q_Calibration.xml"
+            ],
+            "cwd": "${env:HOME}/studies/calibration/pole_zero_fitting/A11/2022/",
+        },
+    ]
+}

@@ -1,18 +1,22 @@
-INFO     core.py:__main__:start_logger - sine_analyzer.log: calan v1.3.1+43.g3624b3a.dirty
+INFO     core.py:__main__:start_logger - sine_analyzer.log: calan v0.0.0
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Indoor_1_Output.mseed
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Indoor_1_Input.mseed
 INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+WARNING  sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Data is from time zone "America/Edmonton"; expected "America/Yellowknife".
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: 4.2°C
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Indoor_2_Output.mseed
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Indoor_2_Input.mseed
 INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+WARNING  sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Data is from time zone "America/Edmonton"; expected "America/Yellowknife".
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: -0.6°C
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Outdoor_1_Output.mseed
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Outdoor_1_Input.mseed
 INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+WARNING  sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Data is from time zone "America/Edmonton"; expected "America/Yellowknife".
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: 12.6°C
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Output: Outdoor_2_Output.mseed
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:load_waveforms - Input: Outdoor_2_Input.mseed
 INFO     stft.py:Stft:compute - 115 segments from 0.2 to 20 Hz
+WARNING  sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Data is from time zone "America/Edmonton"; expected "America/Yellowknife".
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:get_temperature - Temperature: 9.6°C
 INFO     sine_analyzer.py:SynchronousCalibrationAnalyzer:sine_analzyer - Summary: sine_analyzer.csv

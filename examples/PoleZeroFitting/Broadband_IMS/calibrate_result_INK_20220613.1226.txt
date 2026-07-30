@@ -2,7 +2,7 @@ begin IMS2.0
 msg_type COMMAND_RESPONSE
 msg_id CAL_2022_1_INK_cr
 ref_id CAL_2022_1_INK_cs
-time_stamp 2023/09/02 05:49
+time_stamp 2026/07/30 20:50
 
 sta_list INK
 chan_list BHE
