@@ -17,7 +17,6 @@ dependencies = [
     "obspy",
     "timezonefinder",
     "statsmodels",
-    "setuptools<82",  # should be temporary: https://github.com/obspy/obspy/issues/3681
     "urllib3",
     "pytz",
 ]
@@ -30,10 +29,9 @@ develop = [
     "mypy",
     "types-python-dateutil",
     "types-pytz",
-    "pandas-stubs<2.2",
+    "pandas-stubs",
     "pytest",
     "pytest-cov",
-    "pytest-env",
 ]
 
 [project.scripts]
@@ -46,10 +44,6 @@ where = ["src"]
 [tool.mypy]
 files = "src"
 warn_unused_configs = true
-exclude = [
-    ".venv",
-    "examples",
-]
 
 [[tool.mypy.overrides]]
 module = [
