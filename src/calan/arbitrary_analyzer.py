@@ -318,7 +318,7 @@ def feature_str(values: ArrayLike, sig_dig: int = 3) -> str:
     return ', '.join(strings)
 
 
-def calibration_analyzer(
+def arbitrary_analyzer(
     pattern: str = DEFAULT_OUTPUT_PATTERN,
     num_windows: float = DEFAULT_NUM_WINDOWS,
     len_fft: int | None = None,
@@ -1997,7 +1997,7 @@ def main(argv: list[str] | None = None) -> int:
     logger.info('Arguments: %s', ' '.join(argv[1:]))
 
     config = vars(args).copy()
-    result = calibration_analyzer(**config)
+    result = arbitrary_analyzer(**config)
 
     return len(result) == 0
 

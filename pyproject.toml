@@ -38,7 +38,7 @@ develop = [
 
 [project.scripts]
 sine_analyzer = "calan.sine_analyzer:main"
-calibration_analyzer = "calan.calibration_analyzer:main"
+arbitrary_analyzer = "calan.arbitrary_analyzer:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -62,7 +62,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "calan.calibration_analyzer",
+    "calan.arbitrary_analyzer",
     "calan.fit_response",
     "calan.stft",
 ]

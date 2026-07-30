@@ -1,13 +1,19 @@
+# Calibration Analyzer
+
 Tools for relative (electrical) calibration of seismic instrumentation.
 
-[TOC]
+* [Overview](#overview)
+* [Installation](#installation)
+  * [Basic](#basic)
+  * [Development](#development)
+* [Contact](#contact)
 
 ## Overview
 
-Tools work with both Guralp and Nanometrics digitizers and generate formats required by IDC:
+These tools work with both Guralp and Nanometrics digitizers, and generate formats required by IDC:
 
-* `calibration_analyzer`: broadband calibration analyzer (see [calibration_analyzer_help.txt](docs/calibration_analyzer_help.txt))
-* `sine_analyzer`: sine-wave calibration analyzer(see [sine_analyzer_help.txt](docs/sine_analyzer_help.txt))
+* `arbitrary_analyzer`: calibration analyzer for arbitrary input signals (see [arbitrary_analyzer_help.txt](docs/arbitrary_analyzer_help.txt))
+* `sine_analyzer`: calibration analyzer for sinusoidal input signals (see [sine_analyzer_help.txt](docs/sine_analyzer_help.txt))
 
 ## Installation
 

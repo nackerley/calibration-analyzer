@@ -1,5 +1,5 @@
 #!/bin/bash
-PROGRAMS="calibration_analyzer sine_analyzer"
+PROGRAMS="arbitrary_analyzer sine_analyzer"
 
 for program in $PROGRAMS; do
   echo "$program --help > ${program}_help.txt"
