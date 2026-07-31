@@ -30,10 +30,9 @@ import pytz
 from timezonefinder import TimezoneFinder  # https://www.iana.org/time-zones
 
 from obspy import read
-from obspy.clients.fdsn import Client
 
 from calan import PACKAGE_VERSION
-from calan.core import start_logger, CHIS_PUBLIC_FDSNWS
+from calan.core import start_logger
 from calan.utilities import MyArgumentParser, MyFormatter
 from calan.stft import Stft
 
@@ -42,7 +41,6 @@ LEN_FFT = 200
 LEN_OVERLAP = int(LEN_FFT/2)
 WINDOW = 'hann'
 TRIM_S = 5
-MIN_COHERENCE = 0.9
 
 # default inputs
 PATTERN = '*.mseed'
@@ -92,7 +90,6 @@ class SynchronousCalibrationAnalyzer():
         self.logger = getLogger(self.__class__.__name__)
         self.plot = plot
         self.dpi = dpi
-        self.client = Client(CHIS_PUBLIC_FDSNWS)
 
         # inputs
         self.output_file = None

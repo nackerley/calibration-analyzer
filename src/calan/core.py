@@ -1,52 +1,26 @@
 """A collection of utilities useful for station quality analysis."""
 # pylint: disable=too-many-lines
-import os
-import re
-import sys
 import logging
 from copy import deepcopy
-from datetime import datetime
 from logging import getLogger, Logger
 from logging.config import dictConfig
-from typing import Iterator, Type
+from typing import Type
 from pathlib import Path
 
 import numpy as np
-from numpy.typing import DTypeLike, NDArray
-import pandas as pd
-from pandas.api.typing import NaTType  # type: ignore
+from numpy.typing import NDArray
 import scipy.signal as sp
 from scipy.signal import lti, ZerosPolesGain, TransferFunction, StateSpace
 from matplotlib.figure import Figure
 from matplotlib.gridspec import SubplotSpec
 
-from obspy import read_inventory, UTCDateTime, Stream
+from obspy import Stream
 from obspy.core.inventory import (
-    Inventory, Network, Station, Channel,
     ResponseStage, InstrumentSensitivity, PolesZerosResponseStage,
     CoefficientsTypeResponseStage, FIRResponseStage)
-from obspy.core.event import \
-    Pick, Arrival, Amplitude, StationMagnitude, Event, WaveformStreamID
+from obspy.core.event import Pick, Arrival, Amplitude, StationMagnitude, Event
 
 from calan import PACKAGE_VERSION
-from calan.utilities import string_list
-
-CHIS_PUBLIC_FDSNWS = 'https://www.earthquakescanada.nrcan.gc.ca/'
-
-
-NSLC = ['network', 'station', 'location', 'channel']
-NSLCSE = NSLC + ['start', 'end']
-GAP_COLUMNS = ['starttime', 'endtime', 'duration', 'samples']
-
-
-def fdsn_error_message(ex: Exception) -> str:
-    """Clean up certain obspy.clients.fdsn exception messages."""
-    lines = ex.args[0].split('\n')
-    if 'No data available' in lines[0]:
-        msg = lines[0]
-    else:
-        msg = ' '.join(lines)
-    return msg
 
 
 STATIONXML_CONVERTER_FILE = 'stationxml-converter-1.0.9.jar'
@@ -55,68 +29,6 @@ STATIONXML_CONVERTER = Path(__file__).parent.joinpath(
 if not STATIONXML_CONVERTER.exists():
     print(f'WARNING: StationXML converter "{STATIONXML_CONVERTER_FILE}" '
           'not found. Cannot convert dataless2inventory ')
-
-
-def dataless2inventory(
-    inventory_dataless: str,
-    inventory_source: str = 'GSC',
-) -> Inventory:
-    """
-    Convert a dataless SEED to an ObsPy Inventory.
-
-    A StationXML file is produced in the same directory as the input file.
-
-    Note
-    ----
-    This should be deprecated; ObsPy does it natively.
-    """
-    inventory_xml = dataless2stationxml(inventory_dataless,
-                                        inventory_source=inventory_source)
-    return read_inventory(inventory_xml)
-
-
-def dataless2stationxml(
-    inventory_dataless: str,
-    inventory_source: str = 'GSC',
-) -> str:
-    """
-    Convert a dataless SEED to StationXML.
-
-    A StationXML file is produced in the same directory as the input file.
-
-    Note
-    ----
-    This should be deprecated; ObsPy does it natively.
-    """
-    logger = getLogger(__name__)
-    if not Path(inventory_dataless).is_file():
-        logger.warning('Dataless SEED file "%s" not found', inventory_dataless)
-
-    inventory_xml = inventory_dataless.replace('.dataless', '.xml')
-
-    if not Path(inventory_xml).is_file():
-        os.system(
-            f'java -jar {STATIONXML_CONVERTER} --xml --prettyprint --source '
-            f'{inventory_source} --output {inventory_xml} '
-            f'{inventory_dataless}')
-
-    return inventory_xml
-
-
-def inventory2dataless(inventory_xml: str) -> str:
-    """Convert StationXML inventory to dataless SEED."""
-    logger = getLogger(__name__)
-    if not Path(inventory_xml).is_file():
-        logger.warning('StationXML file "%s" not found', inventory_xml)
-
-    inventory_dataless = inventory_xml.replace('.xml', '.dataless')
-
-    if not Path(inventory_dataless).is_file():
-        os.system(
-            f'java -jar {STATIONXML_CONVERTER} --seed --output '
-            f'{inventory_dataless} {inventory_xml}')
-
-    return inventory_dataless
 
 
 def sort_complex(array: NDArray) -> NDArray:
@@ -301,11 +213,11 @@ def lti_convert(system: lti, to_type: Type) -> lti:
     """Convert system to specified type."""
     if isinstance(system, to_type):
         return system
-    if to_type == type(ZerosPolesGain):
+    if isinstance(to_type, ZerosPolesGain):
         return system.to_zpk()
-    if to_type == type(TransferFunction):
+    if isinstance(to_type, TransferFunction):
         return system.to_tf()
-    if to_type == type(StateSpace):
+    if isinstance(to_type, StateSpace):
         return system.to_ss()
 
 
@@ -545,23 +457,6 @@ def extract_decimation_coefficients(
     return b_stages, factors
 
 
-def truncnorm_shape(
-    mean: float, std: float, clip_b: float, clip_a: float | None = None,
-) -> tuple[float, float]:
-    """
-    Convert mean, standard deviation and clip levels to shape parameters.
-
-    See :class:`~scipy.stats.truncnorm'.
-
-    Returns shape parameters a, b.
-    """
-    if clip_a is None:
-        clip_a = -clip_b
-    shape_a, shape_b = (clip_a - mean) / std, (clip_b - mean) / std
-
-    return shape_a, shape_b
-
-
 def subplots_squeeze(
     fig: Figure,
     hspace: float | None = None,
@@ -598,417 +493,6 @@ def subplots_squeeze(
                 ax.yaxis.get_major_ticks()[-1].label.set_visible(False)
             if i < num_rows - 1:
                 ax.yaxis.get_major_ticks()[0].label.set_visible(False)
-
-
-def _missing_samples(delta: float, sampling_rate: float) -> int:
-    return np.rint(np.fabs(delta)*sampling_rate)
-
-
-def is_complete(
-    stream: Stream,
-    trace_ids: list[str] | None = None,
-    start: datetime | str = pd.Timestamp(0),
-    end: datetime | str = pd.Timestamp.now(),
-    tolerance: float = 0.5
-) -> bool:
-    """Lightweight test whether stream is complete."""
-    trace_ids = string_list(trace_ids)
-    if trace_ids is None:
-        trace_ids = sorted(list(set(trace.id for trace in stream)))
-
-    stream = stream.sort()
-    for trace_id in trace_ids:
-        traces = stream.select(id=trace_id).traces
-
-        # ensure that there is some data
-        if not traces:
-            return False
-
-        # check start
-        if (traces[0].stats.starttime > UTCDateTime(start) +
-                tolerance/traces[0].stats.sampling_rate):
-            return False
-
-        # check end
-        if (traces[-1].stats.endtime < UTCDateTime(end) -
-                tolerance/traces[-1].stats.sampling_rate):
-            return False
-
-        for i in range(len(traces) - 1):
-            # check that sample rate doesn't change
-            if traces[i].stats.delta != traces[i + 1].stats.delta:
-                return False
-
-            # compute gap (positive) or overlap (negative)
-            delta = (traces[i + 1].stats['starttime'].timestamp -
-                     traces[i].stats['endtime'].timestamp +
-                     traces[i].stats.delta)
-
-            # check that any overlap is not larger than trace coverage
-            if delta < 0:
-                temp = (traces[i + 1].stats['endtime'].timestamp -
-                        traces[i + 1].stats['starttime'].timestamp)
-                if (delta * -1) > temp:
-                    delta = -1 * temp
-
-            missing_samples = _missing_samples(
-                delta, traces[i].stats['sampling_rate'])
-            if missing_samples > 0:
-                return False
-
-    return True
-
-
-def gap_list(
-    stream: Stream,
-    trace_ids: list[str] | None = None,
-    start: datetime | UTCDateTime = pd.Timestamp(0),
-    end: datetime | UTCDateTime = pd.Timestamp.now(),
-    tolerance: float = 0.5,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Construct a dataframe of gaps, including start & end gaps.
-
-    If an empty stream is provided the returned value are empty dataframes
-    with the correct columns.
-
-    Returns aps_df, overlap_df.
-    """
-    if trace_ids is None:
-        trace_ids = []
-    if not isinstance(start, datetime):
-        start = pd.to_datetime(start.datetime)
-    if not isinstance(end, datetime):
-        end = pd.to_datetime(end.datetime)
-
-    if stream:
-        gaps_df = pd.DataFrame(stream.get_gaps(),
-                               columns=NSLC + GAP_COLUMNS)
-
-        gaps_df.insert(
-            0, 'id', ['.'.join(items)
-                      for _, items in gaps_df[NSLC].iterrows()])
-        gaps_df['sampling_rate'] = np.round(gaps_df.samples/gaps_df.duration)
-        gaps_df.starttime = gaps_df.starttime.apply(
-            lambda item: pd.to_datetime(item.datetime))
-        gaps_df.endtime = gaps_df.endtime.apply(
-            lambda item: pd.to_datetime(item.datetime))
-    else:
-        gaps_df = pd.DataFrame(
-            columns=['id'] + NSLC + GAP_COLUMNS + ['sampling_rate'])
-
-    if not trace_ids:
-        trace_ids = sorted(set(trace.id for trace in stream))
-    if not trace_ids:
-        raise RuntimeError('Empty streams require trace_ids be specified.')
-
-    missing_data = []
-    for trace_id in trace_ids:
-        id_stream = stream.select(id=trace_id)
-        if not id_stream:
-            duration = (end - start).total_seconds()
-            missing_data.append((
-                trace_id,
-                trace_id.split('.')[0],
-                trace_id.split('.')[1],
-                trace_id.split('.')[2],
-                trace_id.split('.')[3],
-                start,
-                end,
-                duration,
-                -1,
-                np.nan
-            ))
-
-    for trace_id in trace_ids:
-        id_stream = stream.select(id=trace_id)
-        if not id_stream:
-            continue
-        id_stream.sort(keys=['starttime'])
-        trace = id_stream[0]
-        sampling_rate = trace.stats.sampling_rate
-        tol = pd.to_timedelta(tolerance/sampling_rate, 's')
-        trace_start = pd.to_datetime(trace.stats.starttime.datetime)
-        if trace_start > start + tol:
-            duration = (trace_start - start).total_seconds()
-            missing_data.append((
-                trace_id,
-                trace.stats.network,
-                trace.stats.station,
-                trace.stats.location,
-                trace.stats.channel,
-                start,
-                trace_start,
-                duration,
-                _missing_samples(duration, sampling_rate),
-                sampling_rate,
-            ))
-
-    for trace_id in trace_ids:
-        id_stream = stream.select(id=trace_id)
-        if not id_stream:
-            continue
-        id_stream.sort(keys=['endtime'])
-        trace = id_stream[-1]
-        sampling_rate = trace.stats.sampling_rate
-        tol = pd.to_timedelta(tolerance/sampling_rate, 's')
-        trace_end = pd.to_datetime(trace.stats.endtime.datetime)
-        if trace_end < end - tol:
-            duration = (end - trace_end).total_seconds()
-            missing_data.append((
-                trace_id,
-                trace.stats.network,
-                trace.stats.station,
-                trace.stats.location,
-                trace.stats.channel,
-                trace_end,
-                end,
-                duration,
-                _missing_samples(duration, sampling_rate),
-                sampling_rate,
-            ))
-
-    if missing_data:
-        gaps_df = pd.concat((
-            gaps_df,
-            pd.DataFrame(missing_data, columns=gaps_df.columns)))
-    gaps_df.sort_values(by=['starttime', 'endtime'],
-                        ascending=[True, False], inplace=True)
-    gaps_df.reset_index(inplace=True, drop=True)
-
-    return gaps_df[gaps_df.duration > 0], gaps_df[gaps_df.duration <= 0]
-
-
-def fraction_available(
-    trace_ids: list[str],
-    start: datetime | str,
-    end: datetime | str,
-    gaps_df: pd.DataFrame,
-) -> float:
-    """Compute fraction of requested data which is available."""
-    trace_ids = string_list(trace_ids)
-
-    expected_duration = len(trace_ids)*((UTCDateTime(end) -
-                                         UTCDateTime(start)))
-    gap_duration = gaps_df.loc[gaps_df.id.isin(trace_ids)].duration.sum()
-    if not expected_duration:
-        return np.nan
-
-    return 1 - gap_duration/expected_duration
-
-
-def log_availability(
-    logger: Logger,
-    gaps_df: pd.DataFrame,
-    trace_ids: list[str],
-    start: datetime,
-    end: datetime,
-    column: str = 'duration',
-) -> None:
-    """Summarize availability to a log file, given a gap listing."""
-    gaps_df = gaps_df.copy()
-    num_gaps = gaps_df.shape[0]
-    daylong = np.abs((UTCDateTime(end) - UTCDateTime(start)) - 24*60*60) < 3600
-
-    if num_gaps == 0:
-        return
-
-    assert column in ['duration', 'samples']
-    if column == 'duration':
-        gap_unit = 's'
-    else:
-        gap_unit = 'sample'
-
-    common_id = ''.join(chars[0] for chars in zip(*trace_ids)
-                        if len(set(chars)) == 1).strip('.')
-
-    percent_available = 100*fraction_available(trace_ids, start, end, gaps_df)
-    logger.info(
-        '%s was %.1f%% complete with %d gap(s), e.g.:',
-        common_id, percent_available, num_gaps)
-
-    gaps_df.loc[:, 'note'] = ''
-
-    # identify largest first and last gaps
-    gaps_df.sort_values(by=['endtime', 'starttime'],
-                        ascending=[False, True], inplace=True)
-    last = gaps_df.index[0]
-    gaps_df.sort_values(by=['starttime', 'endtime'],
-                        ascending=[True, False], inplace=True)
-    first = gaps_df.index[0]
-    if first == last:
-        gaps_df.at[first, 'note'] = 'first,last'
-    else:
-        gaps_df.at[first, 'note'] = 'first'
-        gaps_df.at[last, 'note'] = 'last'
-
-    # compute gap statistics
-    percentiles = [0.05, 0.5, 0.95]
-    keys = ['mode', '50%', 'max', 'min', '95%', '5%']
-    notes = ['mode', 'median', 'largest', 'smallest', '95th', '5th']
-    stats = gaps_df[column].describe(percentiles=percentiles)
-    stats['mode'] = gaps_df[column].mode()[0]
-
-    # eliminate redundant statistics
-    for key in keys:
-        if key in stats:
-            stats = stats[(stats != stats[key]).values |
-                          (stats.index == key)]
-
-    # label gaps
-    for key, note in zip(keys, notes):
-        if key in stats:
-            indices = gaps_df[column] == stats[key]
-            gaps_df.loc[indices, 'note'] = \
-                [','.join([item, note]) if item else note
-                 for item in gaps_df.loc[indices, 'note']]
-
-    # remove redundancies
-    gaps_df = gaps_df[gaps_df.note != '']
-    if gaps_df.at[first, 'note'] != 'first':
-        gaps_df = gaps_df[gaps_df.note !=
-                          gaps_df.at[first,
-                                     'note'].replace('first,', '')]
-    if gaps_df.at[last, 'note'] != 'last':
-        gaps_df = gaps_df[gaps_df.note !=
-                          gaps_df.at[last,
-                                     'note'].replace('last,', '')]
-    gaps_df = gaps_df.drop_duplicates(subset='note')
-
-    for _, gap in gaps_df.iterrows():
-        if daylong:
-            gap_start = str(gap.starttime.time())[:-3]
-        else:
-            gap_start = str(gap.starttime)[:-3]
-        logger.info(
-            f'{gap.id}: {gap_start} start of {gap[column]:3g} {gap_unit} gap '
-            f'({gap.note})')
-
-
-def inventory_items(
-    inventory: Inventory,
-) -> Iterator[tuple[Network, Station, Channel]]:
-    """Iterate through network, station, channel of an inventory."""
-    for network in inventory:
-        for station in network:
-            for channel in station:
-                yield network, station, channel
-
-
-def inventory_stations(
-    inventory: Inventory,
-) -> Iterator[tuple[Network, Station]]:
-    """Iterate through network, station of an inventory."""
-    for network in inventory:
-        for station in network:
-            yield network, station
-
-
-def safe_time(value: UTCDateTime | None) -> pd.Timestamp | NaTType:
-    """Convert obspy to pandas time."""
-    if isinstance(value, UTCDateTime):
-        return pd.Timestamp(value.datetime)
-    return pd.NaT
-
-
-def channel_table(inv: Inventory) -> pd.DataFrame:
-    """Convert inventory to dataframe."""
-    data = {
-        'Network': [net.code for net, _, _ in inventory_items(inv)],
-        'Station': [sta.code for _, sta, _ in inventory_items(inv)],
-        'Location': [chn.location_code for _, _, chn in inventory_items(inv)],
-        'Channel': [chn.code for _, _, chn in inventory_items(inv)],
-        'Latitude': [chn.latitude for _, _, chn in inventory_items(inv)],
-        'Longitude': [chn.longitude for _, _, chn in inventory_items(inv)],
-        'Elevation': [chn.elevation for _, _, chn in inventory_items(inv)],
-        'Depth': [chn.depth for _, _, chn in inventory_items(inv)],
-        'Azimuth': [chn.azimuth for _, _, chn in inventory_items(inv)],
-        'Dip': [chn.dip for _, _, chn in inventory_items(inv)],
-        'SensorDescription': [
-            chn.sensor.description for _, _, chn in inventory_items(inv)],
-        'Scale': [
-            chn.response.instrument_sensitivity.value
-            for _, _, chn in inventory_items(inv)],
-        'ScaleFreq': [
-            chn.response.instrument_sensitivity.frequency
-            for _, _, chn in inventory_items(inv)],
-        'ScaleUnits': [
-            chn.response.instrument_sensitivity.input_units
-            for _, _, chn in inventory_items(inv)],
-        'SampleRate': [chn.sample_rate for _, _, chn in inventory_items(inv)],
-        'StartTime': [
-            safe_time(chn.start_date) for _, _, chn in inventory_items(inv)],
-        'EndTime': [
-            safe_time(chn.end_date) for _, _, chn in inventory_items(inv)],
-    }
-    return pd.DataFrame(data)
-
-
-def station_table(inv: Inventory) -> pd.DataFrame:
-    """Convert inventory to dataframe."""
-    data = {
-        'Network': [net.code for net, _ in inventory_stations(inv)],
-        'Station': [sta.code for _, sta in inventory_stations(inv)],
-        'Latitude': [sta.latitude for _, sta in inventory_stations(inv)],
-        'Longitude': [sta.longitude for _, sta in inventory_stations(inv)],
-        'Elevation': [sta.elevation for _, sta in inventory_stations(inv)],
-        'SiteName': [sta.site.name for _, sta in inventory_stations(inv)],
-        'StartTime': [
-            safe_time(sta.start_date) for _, sta in inventory_stations(inv)],
-        'EndTime': [
-            safe_time(sta.end_date) for _, sta in inventory_stations(inv)],
-    }
-    return pd.DataFrame(data)
-
-
-def read_sql(
-    file_name: str,
-    parse_dates: tuple[str, ...] = ('start', 'end'),
-    index: list[str] | None = None,
-    dtypes: dict[str, DTypeLike] | None = None,
-) -> pd.DataFrame:
-    """
-    Read pipe-delimited SQL query result.
-
-    A non-pipe-delimited header is ignored.
-    """
-    if dtypes is None:
-        dtypes = {'count': int}
-
-    # determine structure of file
-    skiprows = []
-    found_header = False
-    with open(Path(file_name).expanduser(), encoding='UTF-8') as file:
-        for i, line in enumerate(file):
-            if '|' in line:
-                pipes = np.array([match.start()
-                                  for match in re.finditer(r'\|', line)])
-                colspecs = list(zip([0] + list(pipes + 1),
-                                    list(pipes) + [len(line)]))
-                found_header = True
-            else:
-                skiprows.append(i)
-            if set(line) == set('-+'):
-                break
-    if not found_header:
-        raise RuntimeError('No header line found.')
-
-    df = pd.read_fwf(
-        file_name, sep=r'\s+\|\s+', skiprows=skiprows, dtype=dtypes,
-        colspecs=colspecs)  # pylint: disable=possibly-used-before-assignment
-    for col in parse_dates:
-        df[col] = pd.to_datetime(df[col], errors='coerce')
-
-    for column, dtype in dtypes.items():
-        if column in df and dtype == str:
-            df[column] = df[column].fillna('')
-
-    if index is not None:
-        df.set_index(list(index), inplace=True)
-        if not df.index.is_unique:
-            raise ValueError(f"Index ({', '.join(index)}) has duplicate keys")
-
-    return df
 
 
 # logging
@@ -1077,69 +561,6 @@ def start_logger(
     logger.info('%s: %s', log_file_name, PACKAGE_VERSION)
 
     return logger
-
-
-class LoggerWriter:
-    """
-    Class for making a logger behave like a file.
-
-    A typical usage is to us a LoggerWriter as an argument to
-    contextlib.redirect_stdout() so that anything emitted to stdout
-    (within python) is logged at the specified level.
-    """
-
-    def __init__(
-        self,
-        logger: Logger,
-        level: int | str,
-        name: str | None = None,
-    ) -> None:
-        """Construct object."""
-        self.logger = logger
-        if isinstance(level, str):
-            level = int(getattr(logging, level.upper()))
-        self.level = level
-        self.name = name
-
-    def write(self, message: str) -> None:
-        """Simulate file object write method."""
-        if message != '\n':
-            if self.name:
-                message = self.name + ' - ' + message
-            self.logger.log(self.level, message)
-
-    def flush(self) -> None:
-        """Simulate file object write method."""
-
-
-def get_channel(
-    obj: Pick | Arrival | Amplitude | StationMagnitude,
-    event: Event | None = None,
-) -> str:
-    """Return SEED string associated with ObsPy object."""
-    waveform_id = get_waveform_id(obj, event)
-    if not isinstance(waveform_id, WaveformStreamID):
-        return ''
-
-    return waveform_id.get_seed_string()
-
-
-def get_waveform_id(
-    obj: Pick | Arrival | Amplitude | StationMagnitude,
-    event: Event | None = None,
-) -> WaveformStreamID | None:
-    """Return waveform_id associated with ObsPy object."""
-    if obj is None:
-        return None
-    if 'waveform_id' in obj and obj.waveform_id is not None:
-        return obj.waveform_id
-
-    pick = get_pick(obj, event)
-
-    if not pick:
-        return None
-
-    return pick.waveform_id
 
 
 def get_pick(
@@ -1223,46 +644,3 @@ def get_amplitude(
         return get_amplitude(get_pick(obj, event), event)
 
     return None
-
-
-class Tee(object):
-    """
-    Temporarily fork output to stdout and other files.
-
-    Based on: http://stackoverflow.com/questions/11325019/
-    """
-
-    def __init__(self, *files):
-        """Construct forker."""
-        self.files = files
-
-    def __del__(self):
-        """Close upon deletion."""
-        self.close()
-
-    def open(self):
-        """Redirect stdout."""
-        if not hasattr(sys, '_stdout'):
-            # Only do this once just in case stdout was already initialized
-            # @note Will fail if stdout for some reason changes
-            sys._stdout = sys.stdout  # pylint: disable=protected-access
-        sys.stdout = self
-        return self
-
-    def close(self):
-        """Restore normal operation."""
-        stdout = sys._stdout  # pylint: disable=protected-access
-        for file in self.files:
-            if file != stdout:
-                file.close()
-        sys.stdout = stdout
-
-    def write(self, obj):
-        """Write to teed files."""
-        for file in self.files:
-            file.write(obj)
-
-    def flush(self):
-        """Flush teed files."""
-        for file in self.files:
-            file.flush()
