@@ -22,7 +22,7 @@
             "cwd": "${workspaceFolder}/examples/SineCalibration",
         },
         {
-            "name": "calan SP fit",
+            "name": "arbitrary SP fit",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/calan/arbitrary_analyzer.py",
@@ -45,7 +45,7 @@
             "cwd": "${workspaceFolder}/examples/PoleZeroFitting/ShortPeriod_IMS",
         },
         {
-            "name": "calan BB fit",
+            "name": "arbitrary BB fit",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/calan/arbitrary_analyzer.py",
@@ -66,7 +66,7 @@
             "cwd": "${workspaceFolder}/examples/PoleZeroFitting/Broadband",
         },
         {
-            "name": "calan BB IMS fit",
+            "name": "arbitrary BB IMS fit",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/calan/arbitrary_analyzer.py",

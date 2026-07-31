@@ -56,7 +56,7 @@ To set up a development environment:
 
 ``` bash
 git clone https://github.com/nackerley/calibration-analyzer
-cd station-tools
+cd calibration-analyzer
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip

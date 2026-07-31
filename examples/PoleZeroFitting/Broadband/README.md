@@ -1,8 +1,9 @@
 # Arbitrary Calibration Example
 
 This example documents the full procedure for calibration of a seismometer
-using a Nanometrics Centaur digitizer and the `calan` software from the
-python package `station-tools`.
+using a Nanometrics Centaur digitizer and `arbitrary_analyzer` from the
+`calan` package.
+
 The procedure is simpler with other digitizers, e.g. Guralp, that generate
 calibration input signals themselves, and include them with downloaded
 calibration waveforms. For such digitizers, the signal generation and upload
@@ -107,7 +108,7 @@ version of the documentation.
 For the most current documentation, run:
 
 ```bash
-calan --help
+arbitrary_analyzer --help
 ```
 
 ### Typical Usage
@@ -128,7 +129,7 @@ and a log file
 The files in this example folder were generated using:
 
 ```bash
-calan --write-ims --plot diagnostic
+arbitrary_analyzer --write-ims --plot diagnostic
 ```
 
 To generate basic plots of the calibration result, use `--plot basic` flag, and
