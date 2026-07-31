@@ -82,6 +82,8 @@ def fft_frequencies(
             num_freqs = int((len_fft + 1)/2)
         else:
             num_freqs = int(len_fft/2 + 1)
+    else:
+        raise ValueError(f'Invalid "sides" parameter: {sides}')
 
     frequencies = fftpack.fftfreq(len_fft, 1/f_sample)[:num_freqs]
 

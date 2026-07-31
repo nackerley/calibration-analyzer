@@ -1255,7 +1255,7 @@ class CalibrationAnalyzer():
                 keys=['info', 'magnitude_db', 'phase_deg', 'variance_db'],
                 axis=1)
 
-        df.columns.names = ['type', 'subtype']
+        df.rename_axis(['type', 'subtype'], axis='columns')
 
         return df
 

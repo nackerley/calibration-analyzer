@@ -155,7 +155,6 @@ calibration response:
 
 <p><a href="transfer_function_nominal_cal_removed_estimate_errors_CN.TOTT2..HH_20200330.1704.png"><img src="transfer_function_nominal_cal_removed_estimate_errors_CN.TOTT2..HH_20200330.1704.png" alt="sensor transfer function estimate plot" width="50%"/></a></p>
 
-
 Note that pass/fail test limits and results are indicated in the legend.
 
 The `transfer_function_nominal_system_removed` plot shows most clearly how

@@ -56,9 +56,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "calan.arbitrary_analyzer",
-    "calan.fit_response",
-    "calan.stft",
+    "calan",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
