@@ -1,0 +1,2393 @@
+INFO     core.py:calan.arbitrary_analyzer:start_logger - arbitrary_analyzer.log: calan v0.0.0
+INFO     arbitrary_analyzer.py:calan.arbitrary_analyzer:main - Arguments: --response-pattern XX.YKAT1.xml --plot basic --fit 2 --out-of-band 5 2 --calibration-response-file XX.YKAT1.xml
+INFO     arbitrary_analyzer.py:calan.arbitrary_analyzer:arbitrary_analyzer - calan v0.0.0
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+05.00_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+05.00_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T14:15:21.000000Z - 2020-05-27T14:25:25.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T14:15:21.000000Z - 2020-05-27T14:25:24.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-05-27T14:25:24.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.1415.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.1415.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 37 to 11 in 3 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.294892-4.530418j,   -4.294892+4.530418j,
+       -411.869266+0.j      ]),
+np.float64(20192.227258215065),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.994 Hz (ζ = 0.688), 65.6 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 15914
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 1.8% ±0.1% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.083ms ±30us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200527.1415.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200527.1415.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.1415.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+10.56_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+10.56_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T17:10:55.000000Z - 2020-05-27T17:20:59.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T17:10:55.000000Z - 2020-05-27T17:20:58.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-05-27T17:20:58.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.1710.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.1710.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 35 to 8.9 in 3 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.274275-4.54543j,   -4.274275+4.54543j, -411.521124+0.j     ]),
+np.float64(20071.812972490152),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.993 Hz (ζ = 0.685), 65.5 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 15840
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 1.4% ±0.1% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.07ms ±20us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200527.1710.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200527.1710.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.1710.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+17.44_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T20:00:22.550000Z - 2020-05-27T20:10:26.550000Z | 40.0 Hz, 24161 samples
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2000.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2000.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 33 to 9.3 in 3 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.221796-4.561312j,   -4.221796+4.561312j,
+       -410.610152+0.j      ]),
+np.float64(19734.82545670723),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.989 Hz (ζ = 0.679), 65.4 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 15624
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 0.1% ±0.1% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 30us ±20us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200527.2000.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200527.2000.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2000.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+20.25_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+20.25_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-05-27T21:47:23.000000Z - 2020-05-27T21:57:27.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-05-27T21:47:23.000000Z - 2020-05-27T21:57:26.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-05-27T21:57:26.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200527.2147.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200527.2147.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 89 to 46 in 26 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([   -0.657102-6.147505j,    -0.657102+6.147505j,
+       -1039.595818+0.j      ]),
+np.float64(56890.05603508578),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.984 Hz (ζ = 0.106), 165 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 18882
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - Discarding 8/799 points with variance > 0.03
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 24.0% ±2.0% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -0.6ms ±0.1ms (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200527.2147.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200527.2147.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200527.2147.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+26.00_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+26.00_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-06-19T20:06:59.000000Z - 2020-06-19T20:17:03.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-06-19T20:06:59.000000Z - 2020-06-19T20:17:03.000000Z | 40.0 Hz, 24161 samples
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200619.2006.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200619.2006.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 37 to 11 in 3 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.171141-4.61721j,   -4.171141+4.61721j, -407.780457+0.j     ]),
+np.float64(19098.434960823306),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.990 Hz (ζ = 0.670), 64.9 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 15247
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -2.2% ±0.09% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 20us ±20us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200619.2006.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200619.2006.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200619.2006.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+28.62_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+28.62_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-06-22T21:26:42.000000Z - 2020-06-22T21:36:46.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-06-22T21:26:42.000000Z - 2020-06-22T21:36:45.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-06-22T21:36:45.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200622.2126.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200622.2126.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 38 to 9.1 in 3 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.124348-4.665652j,   -4.124348+4.665652j,
+       -409.186542+0.j      ]),
+np.float64(18955.601917299176),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.991 Hz (ζ = 0.662), 65.1 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 15102
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -3.06% ±0.08% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error -20us ±20us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200622.2126.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200622.2126.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200622.2126.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_+30.19_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-06-24T19:45:15.000000Z - 2020-06-24T19:55:19.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-06-24T19:45:15.000000Z - 2020-06-24T19:55:19.000000Z | 40.0 Hz, 24161 samples
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200624.1945.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200624.1945.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 37 to 9.3 in 3 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.137389-4.652172j,   -4.137389+4.652172j,
+       -408.66007 +0.j      ]),
+np.float64(19006.61310435095),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.991 Hz (ζ = 0.665), 65.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 15156
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error -2.79% ±0.09% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0us ±20us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200624.1945.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200624.1945.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200624.1945.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-15.69_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-15.69_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-24T17:46:45.000000Z - 2020-01-24T17:56:49.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-24T17:46:45.000000Z - 2020-01-24T17:56:47.975000Z | 40.0 Hz, 24120 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:01.025000 data missing, advancing end to 2020-01-24T17:56:47.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200124.1746.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200124.1746.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 66 to 10 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.447432-4.340029j,   -4.447432+4.340029j,
+       -416.042267+0.j      ]),
+np.float64(21463.77481589576),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.989 Hz (ζ = 0.716), 66.2 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 16668
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 6.49% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.21ms ±30us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200124.1746.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200124.1746.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200124.1746.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-20.06_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-20.06_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-21T22:01:42.000000Z - 2020-01-21T22:11:46.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-21T22:01:42.000000Z - 2020-01-21T22:11:45.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-01-21T22:11:45.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200121.2201.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200121.2201.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 73 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.487717-4.305218j,   -4.487717+4.305218j,
+       -416.300032+0.j      ]),
+np.float64(21724.85458085816),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.990 Hz (ζ = 0.722), 66.3 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 16843
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 7.56% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.24ms ±30us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200121.2201.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200121.2201.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200121.2201.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-21.31_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-21.31_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-21T17:02:50.000000Z - 2020-01-21T17:12:54.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-21T17:02:50.000000Z - 2020-01-21T17:12:53.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-01-21T17:12:53.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200121.1702.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200121.1702.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 73 to 10 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.48628-4.303648j,   -4.48628+4.303648j, -417.2868 +0.j      ]),
+np.float64(21812.326943247703),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.989 Hz (ζ = 0.722), 66.4 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 16871
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: PASS
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 7.68% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.24ms ±30us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200121.1702.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200121.1702.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200121.1702.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-25.69_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-25.69_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-20T15:48:32.550000Z - 2020-01-20T15:58:36.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-20T15:48:33.000000Z - 2020-01-20T15:58:36.550000Z | 40.0 Hz, 24143 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.450000 data missing, delaying start to 2020-01-20T15:48:33.000000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200120.1548.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200120.1548.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 89 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.513144-4.184902j,   -4.513144+4.184902j,
+       -419.026333+0.j      ]),
+np.float64(22117.829924011927),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.980 Hz (ζ = 0.733), 66.7 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17004
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 8.58% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.27ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200120.1548.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200120.1548.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200120.1548.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-28.81_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-28.81_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-07T22:47:24.000000Z - 2020-01-07T22:57:28.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-07T22:47:24.000000Z - 2020-01-07T22:57:27.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-01-07T22:57:27.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200107.2247.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200107.2247.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 96 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.529794-4.122902j,   -4.529794+4.122902j,
+       -419.568269+0.j      ]),
+np.float64(22271.546900542227),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.975 Hz (ζ = 0.740), 66.8 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17083
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 9.09% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.28ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200107.2247.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200107.2247.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200107.2247.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-31.00_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-31.00_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-15T22:32:07.450000Z - 2020-01-15T22:42:11.450000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-15T22:32:07.450000Z - 2020-01-15T22:42:11.450000Z | 40.0 Hz, 24161 samples
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200115.2232.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200115.2232.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 99 to 10 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.567363-4.110902j,   -4.567363+4.110902j,
+       -419.929656+0.j      ]),
+np.float64(22537.514302183743),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.978 Hz (ζ = 0.743), 66.8 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17260
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.2% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.31ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200115.2232.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200115.2232.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200115.2232.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-31.62_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-31.62_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-15T20:40:01.000000Z - 2020-01-15T20:50:05.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-15T20:40:01.000000Z - 2020-01-15T20:50:04.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-01-15T20:50:04.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200115.2040.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200115.2040.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.574052-4.104107j,   -4.574052+4.104107j,
+       -420.622939+0.j      ]),
+np.float64(22628.288958380897),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.978 Hz (ζ = 0.744), 66.9 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17298
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.4% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.32ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200115.2040.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200115.2040.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200115.2040.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-32.25_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-32.25_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-08T21:39:51.000000Z - 2020-01-08T21:49:55.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-08T21:39:51.000000Z - 2020-01-08T21:49:54.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-01-08T21:49:54.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200108.2139.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200108.2139.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.578698-4.095624j,   -4.578698+4.095624j,
+       -420.106109+0.j      ]),
+np.float64(22622.135338624277),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.978 Hz (ζ = 0.745), 66.9 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17311
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.5% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.31ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200108.2139.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200108.2139.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200108.2139.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-33.19_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-33.19_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-08T20:26:06.000000Z - 2020-01-08T20:36:10.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-08T20:26:06.000000Z - 2020-01-08T20:36:09.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-01-08T20:36:09.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200108.2026.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200108.2026.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.581075-4.101994j,   -4.581075+4.101994j,
+       -420.669242+0.j      ]),
+np.float64(22677.609663997937),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.979 Hz (ζ = 0.745), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17331
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.7% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.32ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200108.2026.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200108.2026.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200108.2026.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-33.5_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-33.5_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-15T18:36:18.000000Z - 2020-01-15T18:46:22.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-15T18:36:18.000000Z - 2020-01-15T18:46:22.000000Z | 40.0 Hz, 24161 samples
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200115.1836.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200115.1836.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 11 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.583226-4.103631j,   -4.583226+4.103631j,
+       -420.065272+0.j      ]),
+np.float64(22661.23072472659),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.979 Hz (ζ = 0.745), 66.9 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17343
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.7% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.33ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200115.1836.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200115.1836.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200115.1836.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-33.81_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-33.81_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-15T18:14:13.550000Z - 2020-01-15T18:24:17.550000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-15T18:14:14.000000Z - 2020-01-15T18:24:17.550000Z | 40.0 Hz, 24143 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.450000 data missing, delaying start to 2020-01-15T18:14:14.000000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200115.1814.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200115.1814.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 11 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.577162-4.110577j,   -4.577162+4.110577j,
+       -421.387098+0.j      ]),
+np.float64(22738.97798067413),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.979 Hz (ζ = 0.744), 67.1 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17352
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.8% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.33ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200115.1814.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200115.1814.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200115.1814.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-34.12_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-34.12_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-08T15:18:15.600000Z - 2020-01-08T15:28:19.600000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-08T15:18:16.000000Z - 2020-01-08T15:28:19.600000Z | 40.0 Hz, 24145 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.400000 data missing, delaying start to 2020-01-08T15:18:16.000000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200108.1518.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200108.1518.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.577471-4.107761j,   -4.577471+4.107761j,
+       -421.151272+0.j      ]),
+np.float64(22704.095526340992),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.979 Hz (ζ = 0.744), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17334
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.7% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.32ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200108.1518.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200108.1518.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200108.1518.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-34.44_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-34.44_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-08T17:45:03.000000Z - 2020-01-08T17:55:07.000000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-08T17:45:03.000000Z - 2020-01-08T17:55:06.975000Z | 40.0 Hz, 24160 samples
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 0 days 00:00:00.025000 data missing, advancing end to 2020-01-08T17:55:06.975000Z
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200108.1745.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200108.1745.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 11 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.585194-4.102719j,   -4.585194+4.102719j,
+       -419.987411+0.j      ]),
+np.float64(22659.692107014107),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.979 Hz (ζ = 0.745), 66.8 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17345
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 10.7% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.33ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200108.1745.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200108.1745.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200108.1745.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-35.69_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-35.69_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-09T16:08:29.450000Z - 2020-01-09T16:18:33.450000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-09T16:08:29.450000Z - 2020-01-09T16:18:33.450000Z | 40.0 Hz, 24161 samples
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200109.1608.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200109.1608.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.584375-4.114305j,   -4.584375+4.114305j,
+       -422.294716+0.j      ]),
+np.float64(22844.14363787855),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.980 Hz (ζ = 0.744), 67.2 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17393
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 11.0% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.33ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200109.1608.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200109.1608.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200109.1608.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-36.00_Output.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - PRB_-36.00_Input.mseed
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_stream - Read 0 days 00:10:04 at 40 sps
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Searching XX.YKAT1.xml for: XX.YKAT1..SHZ
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - XX.YKAT1.xml: XX.YKAT1..SHZ
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:check_response - Instrument sensitivity, 1.0946e+10 counts/(m/s), should be close to that of cascaded stages, 1.09266e+10 counts/(m/s), but is not used
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_response - First stage gain frequency 4 Hz => calper 0.25 s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_response - Channel Response
+	From m/s (velocity) to counts (Digital Counts)
+	Overall Sensitivity: 1.0946e+10 defined at 4.000 Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s to V, gain: 391.87
+		Stage 2: PolesZerosResponseStage from V to V, gain: 40
+		Stage 3: ResponseStage from V to V, gain: 2
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 349160
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_signal - Waveform data already includes calibration channel.
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - XX.YKAT1.xml
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:load_calibration_response - Channel Response
+	From m/s**2 (acceleration) to counts (Digital Counts)
+	Overall Sensitivity: 1.53188e+09 defined at UNKNOWN Hz
+	12 stages:
+		Stage 1: PolesZerosResponseStage from m/s**2 to A, gain: 25.3165
+		Stage 2: PolesZerosResponseStage from V to A, gain: 25.6558
+		Stage 3: ResponseStage from A to A, gain: 1
+		Stage 4: CoefficientsTypeResponseStage from V to counts, gain: 2.3585e+06
+		Stage 5: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 6: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 7: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 8: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 9: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 10: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 11: CoefficientsTypeResponseStage from counts to counts, gain: 1
+		Stage 12: CoefficientsTypeResponseStage from counts to counts, gain: 1
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:check_stream - 2 Trace(s) in Stream:
+XX.YKAT1..SHZ | 2020-01-10T15:29:32.450000Z - 2020-01-10T15:39:36.450000Z | 40.0 Hz, 24161 samples
+XX.YKAT1..SHC | 2020-01-10T15:29:32.450000Z - 2020-01-10T15:39:36.450000Z | 40.0 Hz, 24161 samples
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Sensor: ZerosPolesGainContinuous(
+array([0.+0.j, 0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(6519203.996275072),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Integrating calibration response 1 times, to get from m/s**2 to m/s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - Cal: ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0.]),
+array([0.003079]),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:setup_nominal_responses - System: ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_start_XX.YKAT1..SH_20200110.1529.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - check_end_XX.YKAT1..SH_20200110.1529.png
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (input): 2358500.0 counts/V
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:voltage - Digitizer sensitivities (output): 349160.0 counts/V
+INFO     stft.py:Stft:compute - 23 segments from 0.02 to 20 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:set_calper - Obtained calper from first sensor stage: {calper} s
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.+0.j]),
+array([  -3.9172-4.9127j,   -3.9172+4.9127j, -420.97  +0.j    ]),
+np.float64(20074.120043561485),
+dt: None
+)
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([], dtype=float64),
+array([0]),
+np.float64(25.132741228718345),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal poles: 1.00 Hz (ζ = 0.623), 67.0 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Nominal sensitivity [V/(m/s) at 4 Hz]: 15647
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fitting: Z
+INFO     fit_response.py:calan.fit_response:fit_response - Fixing 0 zeros and 1 poles at nominal values.
+INFO     fit_response.py:calan.fit_response:extract_coefficients - Fixing 2 zeros at zero.
+INFO     fit_response.py:calan.fit_response:fit_response - Fitting numerator/denominator degrees 2/3 at 799 frequencies.
+INFO     fit_response.py:calan.fit_response:fit_response - Method: line_search
+INFO     fit_response.py:calan.fit_response:fit_response - Termination: Minimum gradient reached.
+INFO     fit_response.py:calan.fit_response:fit_response - Cost reduced from 1e+02 to 12 in 4 iterations.
+DEBUG    arbitrary_analyzer.py:CalibrationAnalyzer:fit - ZerosPolesGainContinuous(
+array([0.]),
+array([  -4.580001-4.117607j,   -4.580001+4.117607j,
+       -422.354164+0.j      ]),
+np.float64(22833.679676079333),
+dt: None
+)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit zeros: 
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit poles: 0.980 Hz (ζ = 0.744), 67.2 Hz
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:fit - Fit sensitivity [V/(m/s) at 4 Hz]: 17385
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Amplitude: Z: FAIL
+WARNING  arbitrary_analyzer.py:CalibrationAnalyzer:test - Phase: Z: FAIL
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - gain error 11.0% ±0.2% (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing error 0.33ms ±40us (95% conf.)
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200110.1529.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200110.1529.png
+INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200110.1529.png
+INFO     arbitrary_analyzer.py:calan.arbitrary_analyzer:arbitrary_analyzer - Summary: arbitrary_analyzer_mseed.csv
