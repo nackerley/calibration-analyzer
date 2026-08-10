@@ -2390,4 +2390,4 @@ INFO     arbitrary_analyzer.py:CalibrationAnalyzer:estimate_errors - timing erro
 INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_system_removed_XX.YKAT1..SH_20200110.1529.png
 INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - transfer_function_nominal_cal_removed_XX.YKAT1..SH_20200110.1529.png
 INFO     arbitrary_analyzer.py:CalibrationAnalyzer:_save_image - variance_XX.YKAT1..SH_20200110.1529.png
-INFO     arbitrary_analyzer.py:calan.arbitrary_analyzer:arbitrary_analyzer - Summary: arbitrary_analyzer_mseed.csv
+INFO     arbitrary_analyzer.py:calan.arbitrary_analyzer:arbitrary_analyzer - Summary: arbitrary_analyzer_fit2.csv

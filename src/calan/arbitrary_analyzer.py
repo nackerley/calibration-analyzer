@@ -37,7 +37,7 @@ nicholas.ackerley@nrcan-rncan.gc.ca
 import os
 import sys
 import lzma
-import logging.config
+import logging
 import warnings
 from pathlib import Path
 from io import StringIO
@@ -343,11 +343,9 @@ def arbitrary_analyzer(
     logger = logging.getLogger(__name__)
     logger.info(PACKAGE_VERSION)
 
-    pattern_slug = ''.join(char for char in Path(pattern).suffix
-                           if char.isalnum())
     output_parts = [Path(__file__).stem]
-    if pattern_slug:
-        output_parts += pattern_slug.split('_')
+    if fit:
+        output_parts += {f'fit{fit}'}
     summary_csv = '_'.join(output_parts) + '.csv'
 
     if len(ims_instrument_type) > 6:
@@ -871,6 +869,7 @@ class CalibrationAnalyzer():
             self.info.end = first_end - discard_s[1]
 
         if self.stream.slice(self.info.start, self.info.end).get_gaps():
+            # pylint: disable=abstract-class-instantiated
             with StringIO() as buffer, redirect_stdout(buffer):
                 self.stream.print_gaps()
                 self.logger.warning(buffer.getvalue())
