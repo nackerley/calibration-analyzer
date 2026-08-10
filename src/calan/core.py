@@ -545,11 +545,6 @@ def start_logger(
     """
     assert log_console_level in LOG_LEVELS
 
-    try:
-        Path(log_file_name).unlink()
-    except OSError:
-        pass
-
     LOG_SETTINGS['handlers']['console'].update(  # type: ignore
         {'level': log_console_level})
     LOG_SETTINGS['handlers']['file'].update(  # type: ignore
