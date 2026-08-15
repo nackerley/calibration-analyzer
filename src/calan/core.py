@@ -5,7 +5,6 @@ from copy import deepcopy
 from logging import getLogger, Logger
 from logging.config import dictConfig
 from typing import Type
-from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
@@ -21,14 +20,6 @@ from obspy.core.inventory import (
 from obspy.core.event import Pick, Arrival, Amplitude, StationMagnitude, Event
 
 from calan import PACKAGE_VERSION
-
-
-STATIONXML_CONVERTER_FILE = 'stationxml-converter-1.0.9.jar'
-STATIONXML_CONVERTER = Path(__file__).parent.joinpath(
-    'jar', STATIONXML_CONVERTER_FILE)
-if not STATIONXML_CONVERTER.exists():
-    print(f'WARNING: StationXML converter "{STATIONXML_CONVERTER_FILE}" '
-          'not found. Cannot convert dataless2inventory ')
 
 
 def sort_complex(array: NDArray) -> NDArray:
