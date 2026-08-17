@@ -23,6 +23,7 @@ dependencies = [
 
 [project.optional-dependencies]
 develop = [
+    "seaborn",
     "pylint",
     "flake8",
     "pydocstyle",
@@ -60,6 +61,15 @@ module = [
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "matplotlib",
+    "scipy.*",
+    "obspy.*",
+    "seaborn.*",
+]
+ignore_missing_imports = true
 
 [tool.pydocstyle]
 match_dir = "src"

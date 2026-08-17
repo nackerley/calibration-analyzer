@@ -2,12 +2,11 @@
 """
 Generate a histogram demonstrating repeatability of calibration results.
 
-n.b. parent directory must be added to PYTHONPATH
-
 Created on Mon Nov 25 16:47:03 2019
 
 @author: nackerle
 """
+# mypy: ignore-errors
 import os
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -15,17 +14,18 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from shared import get_logger, _nice_bins, _annotate, STATS_FMT
-from manufacturer.manufacturer_data import MANUFACTURER_PLUS_FILE
+from calan.core import start_logger
+from ..shared import _nice_bins, _annotate, STATS_FMT
+from ..manufacturer.manufacturer_data import MANUFACTURER_PLUS_FILE
 
 # %% constants
 NEW_FILE = 'sine_analyzer_Indoor.csv'
 OLD_FILE = 'indoor-outdoor_ncalib.csv'
 
 # %% setup
-logger = get_logger(__name__,
-                    os.path.basename(os.path.splitext(__file__)[0]) + '.log')
-logger.info('Loading: ' + MANUFACTURER_PLUS_FILE)
+logger = start_logger(
+    __name__, os.path.basename(os.path.splitext(__file__)[0]) + '.log', 'INFO')
+logger.info('Loading: %s', MANUFACTURER_PLUS_FILE)
 mfg_df = pd.read_csv(MANUFACTURER_PLUS_FILE, index_col=0)
 nominal = mfg_df.loc['nominal']
 
@@ -79,7 +79,7 @@ _annotate(axes[1], STATS_FMT % stats.norm.fit(df['gain_deviation']),
           'upper right')
 sns.despine(fig)
 output_png = 'indoor_gaussian_fits.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=150, bbox_inches='tight')
 
 # %% joint plots
@@ -90,7 +90,7 @@ g.ax_joint.collections[0].set_alpha(0)
 g.set_axis_labels('deviation [%] (new)', 'deviation [%] (old)')
 
 output_png = 'joint_plot_1.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 g.fig.savefig(output_png, dpi=150, bbox_inches='tight')
 
 g = sns.jointplot(x='gain_deviation', y='ncalib_deviation', data=df,
@@ -99,5 +99,5 @@ g = sns.jointplot(x='gain_deviation', y='ncalib_deviation', data=df,
 g.set_axis_labels('deviation [%] (new)', 'deviation [%] (old)')
 
 output_png = 'joint_plot_2.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 g.fig.savefig(output_png, dpi=150, bbox_inches='tight')

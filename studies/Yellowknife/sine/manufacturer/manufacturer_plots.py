@@ -4,6 +4,7 @@ Created on Wed Feb 19 12:17:06 2020
 
 @author: nackerle
 """
+# mypy: ignore-errors
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,8 +13,9 @@ import pandas as pd
 import seaborn as sns
 from obspy import read_inventory, UTCDateTime
 
-from shared import get_logger
-from manufacturer_data import MANUFACTURER_PLUS_FILE, OLD_XML, NEW_XML, NCALPER
+from calan.core import start_logger
+from ..manufacturer.manufacturer_data import \
+    MANUFACTURER_PLUS_FILE, OLD_XML, NEW_XML, NCALPER
 
 # %% constants
 BASE_NAME = os.path.basename(os.path.splitext(__file__)[0])
@@ -57,8 +59,8 @@ def plot_inventory(inventory):
 
 
 # %% setup
-logger = get_logger(__name__, BASE_NAME + '.log')
-logger.info('Loading: ' + MANUFACTURER_PLUS_FILE)
+logger = start_logger(__name__, BASE_NAME + '.log', 'INFO')
+logger.info('Loading: %s', MANUFACTURER_PLUS_FILE)
 mfg_df = pd.read_csv(MANUFACTURER_PLUS_FILE, index_col=0)
 
 # %% summarize calibration data
@@ -85,7 +87,7 @@ axes[1].axhline(mfg_df.at['nominal', 'Kg'],
 
 sns.despine(fig)
 output_png = BASE_NAME + '.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=300, bbox_inches='tight')
 
 # %% plot responses
@@ -93,10 +95,10 @@ old_inventory = read_inventory(OLD_XML)
 new_inventory = read_inventory(NEW_XML)
 fig = plot_inventory(old_inventory)
 output_png = 'response_existing.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=300, bbox_inches='tight')
 
 fig = plot_inventory(new_inventory)
 output_png = 'response_new.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=300, bbox_inches='tight')

@@ -2,12 +2,11 @@
 """
 Generate a histogram demonstrating repeatability of calibration results.
 
-n.b. parent directory must be added to PYTHONPATH
-
 Created on Mon Nov 25 16:47:03 2019
 
 @author: nackerle
 """
+# mypy: ignore-errors
 import os
 from scipy import stats
 import statsmodels.api as sm
@@ -16,13 +15,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from shared import get_logger, ROOM_TEMPERATURE_DEGC, STATS_FMT, _annotate
-from manufacturer.manufacturer_data import MANUFACTURER_PLUS_FILE
+from calan.core import start_logger
+from ..shared import ROOM_TEMPERATURE_DEGC, STATS_FMT, _annotate
+from ..manufacturer.manufacturer_data import MANUFACTURER_PLUS_FILE
 
 
 # %% setup
-logger = get_logger(__name__,
-                    os.path.basename(os.path.splitext(__file__)[0]) + '.log')
+logger = start_logger(
+    __name__, os.path.basename(os.path.splitext(__file__)[0]) + '.log', 'INFO')
 pd.plotting.register_matplotlib_converters()
 
 # %% constants
@@ -34,14 +34,16 @@ PROBE_COLORS = {position: color for position, color in
 TEST_ID = 'TEST1'
 
 # %% setup
-logger.info('Loading: ' + MANUFACTURER_PLUS_FILE)
+logger.info('Loading: %s', MANUFACTURER_PLUS_FILE)
 mfg_df = pd.read_csv(MANUFACTURER_PLUS_FILE, index_col=0)
 nominal = mfg_df.loc['nominal']
 
-logger.info('Nominal calibration temperature coefficient: %.3g%%/°C' %
-            (100*nominal.kappa_c))
-logger.info('Nominal ground motion temperature coefficient: %.3g%%/°C' %
-            (100*nominal.kappa_g))
+logger.info(
+    'Nominal calibration temperature coefficient: %.3g%%/°C',
+    100*nominal.kappa_c)
+logger.info(
+    'Nominal ground motion temperature coefficient: %.3g%%/°C',
+    100*nominal.kappa_g)
 
 # %% combine old and new results
 df_old = pd.read_csv(OLD_FILE, parse_dates=['start'], index_col='start')
@@ -65,9 +67,10 @@ df.sort_index(inplace=True)
 
 # %% load manufacturer's calibration data
 expected = mfg_df.loc[TEST_ID]
-logger.info(TEST_ID + '\n' + str(expected))
-logger.info('Expected %s ground motion temperature coefficient: %.3g%%/°C' %
-            (TEST_ID, 100*expected.kappa_c))
+logger.info('%s\n%s', TEST_ID, expected)
+logger.info(
+    'Expected %s ground motion temperature coefficient: %.3g%%/°C',
+    TEST_ID, 100*expected.kappa_c)
 
 # %% post-processing
 df['gain'] = 10**(df['gain [dB]']/20)
@@ -96,7 +99,7 @@ ax.legend()
 
 sns.despine(fig)
 output_png = 'temperatures.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=150, bbox_inches='tight')
 
 # %% plot gain vs. temperature
@@ -114,7 +117,7 @@ ax.legend()
 sns.despine(fig)
 
 output_png = 'temp_vs_gain.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=150, bbox_inches='tight')
 
 # %% fit gain vs. temperature
@@ -140,7 +143,7 @@ ax.legend(loc='upper right', title='probe position')
 sns.despine(fig)
 
 output_png = 'temp_vs_gain_fitted.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=150, bbox_inches='tight')
 
 
@@ -149,13 +152,16 @@ for position, fit in zip(PROBE_POSITIONS, fits):
     KAPPA_MEASURED = fit.params[1]/100
     GAIN_DEVIATION_ROOM = fit.params[1]*ROOM_TEMPERATURE_DEGC + fit.params[0]
     MFG_ROOM_TEMPERATURE_DEGC = -fit.params[0]/fit.params[1]
-    logger.info('Probe position: ' + position)
-    logger.info('Measured calibration temperature coefficient: %.3g%%/°C' %
-                (100*KAPPA_MEASURED))
-    logger.info("Gain deviation at %.3g°C: %.3g%%" %
-                (ROOM_TEMPERATURE_DEGC, GAIN_DEVIATION_ROOM))
-    logger.info("Apparent manufacturer's calibration temperature: %.1f°C" %
-                (MFG_ROOM_TEMPERATURE_DEGC))
+    logger.info('Probe position: %s', position)
+    logger.info(
+        'Measured calibration temperature coefficient: %.3g%%/°C',
+        100*KAPPA_MEASURED)
+    logger.info(
+        "Gain deviation at %.3g°C: %.3g%%",
+        ROOM_TEMPERATURE_DEGC, GAIN_DEVIATION_ROOM)
+    logger.info(
+        "Apparent manufacturer's calibration temperature: %.1f°C",
+        MFG_ROOM_TEMPERATURE_DEGC)
 
 df_long['delta_t'] = df_long['temperature [°C]'] - MFG_ROOM_TEMPERATURE_DEGC
 df_long['gain_room'] = df_long.gain*(1 - KAPPA_MEASURED*df_long.delta_t)
@@ -185,7 +191,7 @@ for i, (position, ax) in enumerate(zip(PROBE_POSITIONS, axes)):
 
 sns.despine(fig)
 output_png = 'outdoor_gaussian_fits.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=150, bbox_inches='tight')
 
 # %% assess temperature error
@@ -214,5 +220,5 @@ for i, (position, ax) in enumerate(zip(PROBE_POSITIONS, axes)):
 
 sns.despine(fig)
 output_png = 'outdoor_temperatures.png'
-logger.info('Saving: ' + output_png)
+logger.info('Saving: %s', output_png)
 fig.savefig(output_png, dpi=150, bbox_inches='tight')

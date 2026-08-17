@@ -4,33 +4,34 @@ Created on Wed Feb  5 10:19:39 2020
 
 @author: nackerle
 """
+# mypy: ignore-errors
 import os
-import sys
-import numpy as np
+from typing import Iterator
 from json import dumps
 from getpass import getuser
 from copy import deepcopy
-from scipy.signal import ZerosPolesGain
 
+import numpy as np
+from scipy.signal import ZerosPolesGain
 import pandas as pd
 
 from obspy import UTCDateTime, read_inventory
 from obspy.core.inventory import (
-    Inventory, Response, PolesZerosResponseStage, InstrumentSensitivity,
-    Comment, Person)
+    Channel, Inventory, Network, Response, PolesZerosResponseStage,
+    InstrumentSensitivity, Comment, Person, Station)
 from obspy.clients.fdsn import Client
 
-from station_tools.core import CHIS_FDSN_SERVERS
-from catalogue_tools.utilities import round_sig
-
-sys.path.append('..')
-from shared import (  # noqa: E402
-    get_logger, TCR_CU_OHM_DEGC, ALPHA_BR_ALNICO, inventory_items)
+from calan.utilities import round_sig  # type: ignore
+from calan.core import start_logger  # type: ignore
 
 # constants
 current_dir = os.path.dirname(os.path.abspath(__file__))
 MANUFACTURER_FILE = os.path.join(current_dir, 'CalibrationSheets.csv')
 MANUFACTURER_PLUS_FILE = os.path.splitext(MANUFACTURER_FILE)[0] + 'Derived.csv'
+CHIS_PUBLIC_FDSNWS = 'https://www.earthquakescanada.nrcan.gc.ca'
+
+TCR_CU_OHM_DEGC = 0.00393
+ALPHA_BR_ALNICO = -0.0002
 
 NETWORK = 'CN'
 STATION_PREFIX = 'YKA'
@@ -60,6 +61,16 @@ else:
     raise RuntimeError(f'Add email for user: {getuser()}')
 
 
+def inventory_items(
+    inv: Inventory,
+) -> Iterator[tuple[Network, Station, Channel]]:
+    """Iterate through network, station, channel of an inventory."""
+    for net in inv:
+        for sta in net:
+            for chan in sta:
+                yield net, sta, chan
+
+
 def stage_params(zeros, poles, gain, norm_freq, gain_freq):
     """
     Compute stage normalization factor and gain at normalization frequency.
@@ -74,16 +85,16 @@ def stage_params(zeros, poles, gain, norm_freq, gain_freq):
 if __name__ == '__main__':
 
     # FDSNWS for our responses
-    logger = get_logger(__name__, BASE_NAME + '.log')
-    logger.info('Client: ' + CHIS_FDSN_SERVERS[0])
-    client = Client(CHIS_FDSN_SERVERS[0])
+    logger = start_logger(__name__, BASE_NAME + '.log', 'INFO')
+    logger.info('Client: %s', CHIS_PUBLIC_FDSNWS)
+    client = Client(CHIS_PUBLIC_FDSNWS)
 
     # nominal response library
     nrl_datalogger_stages = read_inventory(NRL_URL.format(
         instconfig=DATALOGGER_ID))[0][0][0].response.response_stages
 
     # load data
-    logger.info('Loading: ' + MANUFACTURER_FILE)
+    logger.info('Loading: %s', MANUFACTURER_FILE)
     mfg_df = pd.read_csv(MANUFACTURER_FILE, index_col='station_code')
     nominal = mfg_df.loc['YKNOM']
     for column in mfg_df.columns:
@@ -120,12 +131,12 @@ if __name__ == '__main__':
         endafter=END,
         level='response')
 
-    logger.info('Saving: ' + OLD_XML)
+    logger.info('Saving: %s', OLD_XML)
     old_inventory.write(OLD_XML, format='StationXML')
 
     new_inventory = deepcopy(old_inventory)
-    mfg_df['NCALIB'] = np.NaN
-    mfg_df['gain_expected'] = np.NaN
+    mfg_df['NCALIB'] = np.nan
+    mfg_df['gain_expected'] = np.nan
     for station_code, mfg in mfg_df.iterrows():
 
         pole = (-2*np.pi*mfg.f0*(mfg.lambda0 - 1j*np.sqrt(1 - mfg.lambda0**2)))
@@ -298,7 +309,7 @@ if __name__ == '__main__':
                 authors=[AUTHOR])]
 
             station = new_inventory[0][0].copy()
-            station.code = station_code.upper()[:5]
+            station.code = str(station_code).upper()[:5]
             station.latitude = 0
             station.longitude = 0
             station.elevation = 0
@@ -317,15 +328,15 @@ if __name__ == '__main__':
                 source='Canadian Hazards Information Service')
             partial_xml = network.code + '.' + station.code + '.xml'
             inventory.write(partial_xml, format='StationXML')
-            logger.info('Writing: ' + partial_xml)
+            logger.info('Writing: %s', partial_xml)
             continue
 
-        logger.info('Updating: ' + station_code)
+        logger.info('Updating: %s', station_code)
         channel.response = response
 
-    logger.info('Saving: ' + NEW_XML)
+    logger.info('Saving: %s', NEW_XML)
     new_inventory.write(NEW_XML, format='StationXML')
 
     # write manufacturer's data plus derived information
-    logger.info('Saving: ' + MANUFACTURER_PLUS_FILE)
+    logger.info('Saving: %s', MANUFACTURER_PLUS_FILE)
     mfg_df.to_csv(MANUFACTURER_PLUS_FILE, float_format='%.6g')
