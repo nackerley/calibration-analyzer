@@ -14,7 +14,6 @@ Currently only supports calibration of one channel at at time.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# pylint: disable=consider-using-f-string
 import os
 import sys
 from pathlib import Path
@@ -127,7 +126,7 @@ class SynchronousCalibrationAnalyzer():
 
         if self.plot:
             start_png = Path(self.test_name).parent.joinpath(
-                'start_%s.png' % Path(self.test_name).name)
+                f'start_{Path(self.test_name).name}.png')
             self.logger.info('Check start: %s', start_png)
             fig = self.stream.plot(endtime=start + 1,
                                    handle=True, equal_scale=False)
@@ -140,7 +139,7 @@ class SynchronousCalibrationAnalyzer():
             fig.savefig(start_png, dpi=self.dpi)
 
             end_png = Path(self.test_name).parent.joinpath(
-                'end_%s.png' % Path(self.test_name).name)
+                f'end_{Path(self.test_name).name}.png')
             self.logger.info('Check end: %s', end_png)
             fig = self.stream.plot(starttime=end - 1,
                                    handle=True, equal_scale=False)
@@ -195,7 +194,7 @@ class SynchronousCalibrationAnalyzer():
             axes[0].semilogx(f, 10*np.log10(p_xx), label='input')
             axes[0].semilogx(f, 10*np.log10(p_yy), label='output')
             axes[0].annotate(
-                '%g Hz' % f[peak], (f[peak], 1.02),
+                f'{f[peak]:g} Hz', (f[peak], 1.02),
                 xycoords=axes[0].get_xaxis_transform(),
                 annotation_clip=False, va='bottom', ha='center')
 
@@ -206,7 +205,7 @@ class SynchronousCalibrationAnalyzer():
             axes[1].axhline(
                 gain_coherent_db, linestyle='--', color='black', linewidth=0.5)
             axes[1].annotate(
-                '%.2f dB' % gain_coherent_db, (1.02, gain_coherent_db),
+                f'{gain_coherent_db:.2f} dB', (1.02, gain_coherent_db),
                 xycoords=axes[1].get_yaxis_transform(),
                 annotation_clip=False, va='center', ha='left')
 
@@ -218,7 +217,7 @@ class SynchronousCalibrationAnalyzer():
                 self.phase_coherent,
                 linestyle='--', color='black', linewidth=0.5)
             axes[2].annotate(
-                '%.1f°' % self.phase_coherent, (1.02, self.phase_coherent),
+                f'{self.phase_coherent:.1f}°', (1.02, self.phase_coherent),
                 xycoords=axes[2].get_yaxis_transform(),
                 annotation_clip=False, va='center', ha='left')
 
@@ -237,8 +236,8 @@ class SynchronousCalibrationAnalyzer():
             fig.subplots_adjust()
 
             summary_png = Path(self.test_name).parent.joinpath(
-                'spectra_%g-%gHz_%s.png' % tuple(
-                    list(self.f_lim) + [Path(self.test_name).name]))
+                f'spectra_{self.f_lim[0]:g}-{self.f_lim[1]:g}Hz_'
+                f'{Path(self.test_name).name}.png')
 
             getLogger(__name__).info('Saving: %s', summary_png)
             fig.savefig(summary_png, dpi=self.dpi, bbox_inches='tight')
@@ -410,7 +409,7 @@ def sine_analzyer(pattern=PATTERN, len_fft=LEN_FFT, window=WINDOW,
     df['f_peak [Hz]'] = df['f_peak [Hz]'].astype(float)
     df['gain [dB]'] = df['gain [dB]'].astype(float).round(4)
     df['phase [°]'] = df['phase [°]'].astype(float).round(3)
-    df['normalized error'] = [float('%.1e' % item)
+    df['normalized error'] = [float(f'{item:.1e}')
                               for item in df['normalized error']]
     df['temperature [°C]'] = df['temperature [°C]'].astype(float)
 

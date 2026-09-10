@@ -167,7 +167,7 @@ def real_residuals(
 
 def jacobian(
     x: ArrayLike, omega: ArrayLike,
-    h_meas: ArrayLike,  # pylint: disable=unused-argument
+    h_meas: ArrayLike,
     weights: ArrayLike,
     m: int, n: int, p: int,
 ) -> NDArray:
@@ -186,7 +186,7 @@ def jacobian(
 
 def real_jacobian(
     x: ArrayLike, omega: ArrayLike,
-    h_meas: ArrayLike,  # pylint: disable=unused-argument
+    h_meas: ArrayLike,
     weights: ArrayLike,
     m: int, n: int, p: int,
 ) -> NDArray:

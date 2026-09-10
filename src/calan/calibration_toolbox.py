@@ -1,9 +1,8 @@
 """A collection of functions useful for seismograph calibration."""
-# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501  # pylint: disable
+# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# pylint: disable=consider-using-f-string
 from pathlib import Path
 from warnings import warn
 from struct import calcsize
@@ -31,8 +30,8 @@ def generate_piecewise_constant(
     durations = np.asarray(durations)
     voltages = np.asarray(voltages)
 
-    file_name = 'step_%s' % '_'.join(
-        ['%gV_%ss' % (voltage, duration)
+    file_name = 'step_' + '_'.join(
+        [f'{voltage:g}V_{duration}s'
          for voltage, duration in zip(voltages, durations)])
     file_size = expected_wav_size(durations.sum())
     logger.debug('Uncompressed output "%s.wav" will be %s.',
@@ -85,7 +84,7 @@ def parse_signal_file_name(
             extras.append(default)
 
     if parts:
-        warn('Not parsed: %s' % '_'.join(parts))
+        warn(f'Not parsed: {"_".join(parts)}')
 
     # pylint:disable=unbalanced-tuple-unpacking
     (pp_voltage, rms_voltage, mean_voltage, lead_in, lead_out,
@@ -158,7 +157,7 @@ def plot_calibration(
     _, ax = plt.subplots()
     ax.plot(t[::step], signal[::step], marker='x')
     ax.set_xlabel('Time [s]')
-    ax.set_ylabel('Signal [%s]' % units)
+    ax.set_ylabel(f'Signal [{units}]')
 
     if file_name is not None:
         file_name = Path(file_name).stem + '.png'

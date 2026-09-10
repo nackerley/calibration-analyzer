@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# pylint: disable=consider-using-f-string
 import sys
 from math import floor, log10
 from operator import mul
@@ -82,7 +81,7 @@ def pretty_units(
     input_unit_index = next((i for i, unit in enumerate(units)
                              if input_unit == unit), None)
     if input_unit_index is None:
-        raise ValueError('Input unit "%s" not supported' % input_unit)
+        raise ValueError(f'Input unit "{input_unit}" not supported')
 
     sign = np.sign(input_value)
     input_value = abs(input_value)
@@ -99,7 +98,7 @@ def pretty_units(
                 fmt = '%g'
             return fmt % (sign*value) + unit
 
-    return '%g' % value + input_unit
+    return f'{value}{input_unit}'
 
 
 def parse_units(
@@ -112,7 +111,7 @@ def parse_units(
     output_unit_index = next((i for i, unit in enumerate(units)
                               if output_unit == unit), None)
     if output_unit_index is None:
-        raise ValueError('Output unit "%s" not supported' % output_unit)
+        raise ValueError(f'Output unit "{output_unit}" not supported')
 
     input_unit = sorted([unit for unit in units if unit in string],
                         key=len)[-1]
@@ -362,7 +361,7 @@ def stdval(
         # determine how many digits of result to keep
         preferred = np.asarray(preferred, dtype=float)
         preferred = np.reshape(preferred, (1, preferred.size))
-        digits = len('%d' % preferred[0][0])
+        digits = len(f'{preferred[0][0]:d}')
 
         # compute multiplier for rounding
         multiplier = 10**np.floor(np.log10(value) - digits + 1)
