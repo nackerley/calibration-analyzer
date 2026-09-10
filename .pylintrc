@@ -31,3 +31,5 @@ good-names=i,
 # supports qualified module names, as well as Unix pattern matching.
 ignored-modules=scipy.special,scipy.signal
 
+[MESSAGES CONTROL]
+disable=line-too-long

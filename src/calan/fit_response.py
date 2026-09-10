@@ -30,8 +30,16 @@ variance, 2) response or 3) frequency (below all are shown):
 
 $$w = \frac{1}{\hat \sigma \times |\hat H| \times f} $$
 
-@nackerle
+## References
+
+Ackerley, N., & Gias, Z. (2026, in review). Modeling and experimental
+verification of the temperature dependence of short-period seismometer
+response, using pole-zero fitting, Seism. Res. Lett.
 """
+# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from pathlib import Path
 from math import log10
 from io import StringIO

@@ -9,9 +9,11 @@ ftp://client_climate@ftp.tor.ec.gc.ca/Pub/Get_More_Data_Plus_de_donnees/Station%
 Limitations
 -----------
 Currently only supports calibration of one channel at at time.
-
-Author: Nick Ackerley
 """
+# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # pylint: disable=consider-using-f-string
 import os
 import sys

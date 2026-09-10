@@ -1,4 +1,8 @@
 """A collection of functions useful for seismograph calibration."""
+# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501  # pylint: disable
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # pylint: disable=consider-using-f-string
 from pathlib import Path
 from warnings import warn

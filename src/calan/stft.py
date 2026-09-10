@@ -6,6 +6,10 @@ Short-term Fourier Transform.
 Bendat, J. S., & Piersol, A. G. (2010). Random Data: Analysis and measurement
 procedures (4th ed.). Wiley.
 """
+# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from pathlib import Path
 from logging import getLogger
 

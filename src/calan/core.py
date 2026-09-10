@@ -1,4 +1,8 @@
-"""A collection of utilities useful for station quality analysis."""
+"""A collection of utilities for transfer function fitting."""
+# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # pylint: disable=too-many-lines
 import logging
 from copy import deepcopy

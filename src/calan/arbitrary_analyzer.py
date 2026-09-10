@@ -5,8 +5,8 @@ Analyzer for broadband calibrations of seismometers using arbitrary signals.
 Calibration output waveforms, station metadata and calibration input response
 metadata must be provided.
 
-Notes
------
+## Notes
+
 1. Transfer function model terminology:
   * `sensor`: first stage from ground motion (m/s or m/s^2) to V
   * `cal`: all other stages, from V to ground motion, typically m/s^2
@@ -29,10 +29,16 @@ Notes
    poles and zeros, while the second gives the digitial-to-analog conversion
    sensitivity.
 
-Authors
--------
-nicholas.ackerley@nrcan-rncan.gc.ca
+## References
+
+Ackerley, N., & Gias, Z. (2026, in review). Modeling and experimental
+verification of the temperature dependence of short-period seismometer
+response, using pole-zero fitting, Seism. Res. Lett.
 """
+# SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # pylint: disable=too-many-lines
 import os
 import sys
