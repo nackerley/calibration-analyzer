@@ -11,7 +11,7 @@ usage: arbitrary_analyzer [-h] [-g PATTERN] [--num-windows NUM_WINDOWS]
                           [--out-of-band FACTOR_1 FACTOR_2]
                           [-p {none,basic,diagnostic,all}] [--width WIDTH]
                           [--fontsize FONTSIZE] [--dpi DPI]
-                          [--fmt {pdf,png,svg,eps}] [-v]
+                          [--fmt {PDF,PNG,SVG,EPS}] [-v]
 
 Analyzer for broadband calibrations of seismometers using arbitrary signals.
 
@@ -108,6 +108,6 @@ options:
                         (default: 8)
   --dpi DPI             resolution to use for plots in dots per inch (default:
                         150)
-  --fmt {pdf,png,svg,eps}
+  --fmt {PDF,PNG,SVG,EPS}
                         output file format for plots (default: png)
   -v, --version         show program's version number and exit

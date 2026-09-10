@@ -274,7 +274,7 @@ def _argparser() -> MyArgumentParser:
         '--dpi', default=DEFAULT_DPI, type=int,
         help='resolution to use for plots in dots per inch')
     parser.add_argument(
-        '--fmt', default=DEFAULT_FMT, choices=['pdf', 'png', 'svg', 'eps'],
+        '--fmt', default=DEFAULT_FMT, choices=['PDF', 'PNG', 'SVG', 'EPS'],
         help='output file format for plots')
     parser.add_argument(
         '-v', '--version', action='version',
