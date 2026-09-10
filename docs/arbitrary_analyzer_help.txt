@@ -9,15 +9,17 @@ usage: arbitrary_analyzer [-h] [-g PATTERN] [--num-windows NUM_WINDOWS]
                           [--ims-instrument-type IMS_INSTRUMENT_TYPE]
                           [--calper CALPER] [--fit N]
                           [--out-of-band FACTOR_1 FACTOR_2]
-                          [-p {none,basic,diagnostic,all}] [--dpi DPI] [-v]
+                          [-p {none,basic,diagnostic,all}] [--width WIDTH]
+                          [--fontsize FONTSIZE] [--dpi DPI]
+                          [--fmt {pdf,png,svg,eps}] [-v]
 
 Analyzer for broadband calibrations of seismometers using arbitrary signals.
 
 Calibration output waveforms, station metadata and calibration input response
 metadata must be provided.
 
-Notes
------
+## Notes
+
 1. Transfer function model terminology:
   * `sensor`: first stage from ground motion (m/s or m/s^2) to V
   * `cal`: all other stages, from V to ground motion, typically m/s^2
@@ -40,9 +42,12 @@ Notes
    poles and zeros, while the second gives the digitial-to-analog conversion
    sensitivity.
 
-Authors
--------
-nicholas.ackerley@nrcan-rncan.gc.ca
+## References
+
+Ackerley, N., & Gias, Z. (2026, in review). Modeling and experimental
+verification of the temperature dependence of short-period seismometer
+response, using pole-zero fitting, Seismol. Res. Lett.
+https://doi.org/10.1785/0220260110
 
 options:
   -h, --help            show this help message and exit
@@ -97,6 +102,12 @@ options:
                         generate basic (start & end check, transfer function
                         and variance) or diagnostic plots for each calibration
                         (default: none)
+  --width WIDTH         width of plots in inches, ignored for start/end check
+                        plots (default: 4.25)
+  --fontsize FONTSIZE   font size to be used in plots, in typographic points
+                        (default: 8)
   --dpi DPI             resolution to use for plots in dots per inch (default:
-                        120)
+                        150)
+  --fmt {pdf,png,svg,eps}
+                        output file format for plots (default: png)
   -v, --version         show program's version number and exit

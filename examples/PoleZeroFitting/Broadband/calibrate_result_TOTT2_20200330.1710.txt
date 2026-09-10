@@ -2,7 +2,7 @@ begin IMS2.0
 msg_type COMMAND_RESPONSE
 msg_id CAL_2020_1_TOTT2_cr
 ref_id CAL_2020_1_TOTT2_cs
-time_stamp 2026/07/30 20:45
+time_stamp 2026/09/10 20:42
 
 sta_list TOTT2
 chan_list HHE

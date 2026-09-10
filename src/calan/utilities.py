@@ -361,7 +361,7 @@ def stdval(
         # determine how many digits of result to keep
         preferred = np.asarray(preferred, dtype=float)
         preferred = np.reshape(preferred, (1, preferred.size))
-        digits = len(f'{preferred[0][0]:d}')
+        digits = len(f'{preferred[0][0]:.0f}')
 
         # compute multiplier for rounding
         multiplier = 10**np.floor(np.log10(value) - digits + 1)

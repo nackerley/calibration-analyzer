@@ -33,7 +33,8 @@ metadata must be provided.
 
 Ackerley, N., & Gias, Z. (2026, in review). Modeling and experimental
 verification of the temperature dependence of short-period seismometer
-response, using pole-zero fitting, Seism. Res. Lett.
+response, using pole-zero fitting, Seismol. Res. Lett.
+https://doi.org/10.1785/0220260110
 """
 # SPDX-FileCopyrightText: 2026 His Majesty the Κing in Right of Canada <copyright.droitdauteur@pch.gc.ca>  # noqa: E501
 #
@@ -88,7 +89,6 @@ from calan.fit_response import fit_response, zpk_out_of_band
 warnings.simplefilter('error', category=BadCoefficients)
 pd.plotting.register_matplotlib_converters()
 np.set_printoptions(suppress=True, precision=6)
-plt.rc('legend', fontsize='small')
 
 # defaults
 
@@ -101,7 +101,10 @@ DEFAULT_OUTPUT_PATTERN = '*.mseed'
 DEFAULT_RESPONSE_PATTERN = '*.resp'
 DEFAULT_CAL_SIGNAL_FILE = 'prb_1V_10ms_3h.lzma'
 DEFAULT_CAL_RESPONSE_FILE = 'Centaur_Trillium120Q_Calibration.xml'
-DEFAULT_DPI = 120
+DEFAULT_WIDTH = 4.25
+DEFAULT_FONTSIZE = 8
+DEFAULT_DPI = 150
+DEFAULT_FMT = 'png'
 DEFAULT_ORIENTATION_MAP = ('', '')
 
 # Centaur configuration
@@ -262,8 +265,17 @@ def _argparser() -> MyArgumentParser:
         help='generate basic (start & end check, transfer function and '
         'variance) or diagnostic plots for each calibration')
     parser.add_argument(
+        '--width', default=DEFAULT_WIDTH, type=float,
+        help='width of plots in inches, ignored for start/end check plots')
+    parser.add_argument(
+        '--fontsize', default=DEFAULT_FONTSIZE, type=float,
+        help='font size to be used in plots, in typographic points')
+    parser.add_argument(
         '--dpi', default=DEFAULT_DPI, type=int,
         help='resolution to use for plots in dots per inch')
+    parser.add_argument(
+        '--fmt', default=DEFAULT_FMT, choices=['pdf', 'png', 'svg', 'eps'],
+        help='output file format for plots')
     parser.add_argument(
         '-v', '--version', action='version',
         version=PACKAGE_VERSION)
@@ -343,7 +355,10 @@ def arbitrary_analyzer(
     fit: int = DEFAULT_FIT_STAGES,
     calper: float | None = None,
     out_of_band: tuple[float, float] = DEFAULT_OUT_OF_BAND_RANGE,
+    width: float = DEFAULT_WIDTH,
+    fontsize: float = DEFAULT_FONTSIZE,
     dpi: float = DEFAULT_DPI,
+    fmt: str = DEFAULT_FMT,
 ) -> str:
     """Do arbitrary-signal calibration analysis."""
     logger = logging.getLogger(__name__)
@@ -357,7 +372,8 @@ def arbitrary_analyzer(
     if len(ims_instrument_type) > 6:
         raise ValueError('IMS instrument type must be 6 or less characters.')
 
-    analyzer = CalibrationAnalyzer(savefig=plot != '', dpi=dpi)
+    analyzer = CalibrationAnalyzer(
+        savefig=plot != '', width=width, fontsize=fontsize, dpi=dpi, fmt=fmt)
 
     if Path(summary_csv).exists() and Path(summary_csv).is_file() and \
             not os.access(summary_csv, os.W_OK):
@@ -406,10 +422,10 @@ def arbitrary_analyzer(
         if plot_level >= PLOT_LEVEL['diagnostic']:
             analyzer.plot_response('sensor', f_limits=(1e-3, 1e2))
             analyzer.plot_transfer_function(remove='cal', errors='estimate')
-            analyzer.plot_transfer_function(remove='system', errors='estimate',
-                                            scale='linear')
-            analyzer.plot_transfer_function(remove='system', errors='correct',
-                                            scale='log')
+            analyzer.plot_transfer_function(
+                remove='system', errors='estimate', scale='linear')
+            analyzer.plot_transfer_function(
+                remove='system', errors='correct', scale='log')
         if plot_level == PLOT_LEVEL['all']:
             analyzer.plot_transfer_function(remove='', errors='')
             analyzer.plot_signal_to_noise()
@@ -548,15 +564,12 @@ class CalibrationAnalyzer():
     def __init__(
         self,
         savefig: bool = True,
+        width: float = DEFAULT_WIDTH,
         dpi: float = DEFAULT_DPI,
+        fmt: str = DEFAULT_FMT,
+        fontsize: float = DEFAULT_FONTSIZE,
     ) -> None:
-        """
-        Initialize calibration analyzer.
-
-        Arguments:
-        - `savefig`: Whether or not to save figures to PNG
-        - `dpi`: Resolution to use when rendering figures
-        """
+        """Initialize calibration analyzer."""
         self.logger = logging.getLogger(self.__class__.__name__)
         self.info = CalibrationInfo()
         self.stream = Stream()
@@ -565,7 +578,12 @@ class CalibrationAnalyzer():
         self.timing_gain_fit = TimingGainFit(confidence=0.95)
         self.zpk_fits = [OptimizeResult()]
         self.savefig = savefig
-        self.dpi = dpi
+        self.width = width
+        self.fmt = fmt
+
+        plt.rc('font', size=fontsize)
+        plt.rc('legend', fontsize=fontsize - 1)
+        plt.rc('savefig', dpi=dpi)
 
     def __del__(self) -> None:
         """Ensure log files are not held open."""
@@ -1625,7 +1643,7 @@ class CalibrationAnalyzer():
         option_list: str | list[str] | None = None,
     ) -> None:
         """Save a figure with an automatically descriptive file name."""
-        if not self.savefig or not self.dpi:
+        if not self.savefig:
             return
 
         if isinstance(option_list, str):
@@ -1649,10 +1667,9 @@ class CalibrationAnalyzer():
 
             file_parts += [common_name, start_string]
 
-        output_png = '_'.join(file_parts) + '.png'
-
-        self.logger.info(output_png)
-        fig.savefig(output_png, dpi=self.dpi, bbox_inches='tight')
+        output_file = '_'.join(file_parts) + '.' + self.fmt.lower()
+        self.logger.info(output_file)
+        fig.savefig(output_file, bbox_inches='tight')
 
     def plot_check(
         self,
@@ -1690,8 +1707,8 @@ class CalibrationAnalyzer():
             f = self.stft.f
         tf_nominal = self.tf_nominal(model, f=f)
 
-        width = plt.rcParams['figure.figsize'][0]
-        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
+        fig, axes = plt.subplots(
+            2, 1, sharex=True, figsize=(self.width, 4/3*self.width))
         axes[0].semilogx(f, gain_db(tf_nominal), label=model)
         axes[1].semilogx(f, phase_deg(tf_nominal), label=model)
         axes[0].axvline(self._sampling_rate()/2, linestyle='--', color='0.5',
@@ -1722,7 +1739,7 @@ class CalibrationAnalyzer():
         """Plot simulated calibration response in time domain."""
         simulated = self.simulate_response(trim=trim)
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(self.width, 3/4*self.width))
         if self.stream is not None:
             labels = factor_names(self.stream)[1]
             for output, label in zip(self.voltage('output', trim=trim),
@@ -1745,7 +1762,7 @@ class CalibrationAnalyzer():
         labels = factor_names(self.stream)[1]
         coherence_squared = self.stft.coherence_squared()
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(self.width, 3/4*self.width))
         for snr, label in zip(10*np.log10(1/(1 - coherence_squared)), labels):
             ax.semilogx(self.stft.f, snr, label=label)
         ax.set_xlabel('Frequency [Hz]')
@@ -1771,9 +1788,9 @@ class CalibrationAnalyzer():
              self.stft.p_yy/np.abs(tf_nominal)**2), axis=0))
         max_db = p_dbs.max()
 
-        width = plt.rcParams['figure.figsize'][0]
-        fig, axes = plt.subplots(len(labels), 1, sharex=True,
-                                 figsize=(width, len(labels)*width/3))
+        fig, axes = plt.subplots(
+            len(labels), 1, sharex=True,
+            figsize=(self.width, len(labels)*self.width/3))
         for p_db, ax, label in zip(p_dbs, axes, labels):
 
             image = ax.pcolormesh(t, f, p_db, vmin=max_db - 100, vmax=max_db)
@@ -1804,7 +1821,7 @@ class CalibrationAnalyzer():
 
         variances = self.stft.variance()
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(self.width, 3/4*self.width))
         for snr, label in zip(variances, labels):
             ax.semilogx(self.stft.f, snr, label=label)
         ax.set_xlabel('Frequency [Hz]')
@@ -1891,8 +1908,8 @@ class CalibrationAnalyzer():
         phase_nominal = phase_deg(tf_nominal)
         phase_spec = np.vstack((phase_estimate, phase_nominal))[:, spec]
 
-        width = plt.rcParams['figure.figsize'][0]
-        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(width, width))
+        fig, axes = plt.subplots(
+            2, 1, sharex=True, figsize=(self.width, 4/3*self.width))
 
         if self.lti.fits:
             gain_labels = channels

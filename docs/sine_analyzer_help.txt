@@ -13,8 +13,6 @@ Limitations
 -----------
 Currently only supports calibration of one channel at at time.
 
-Author: Nick Ackerley
-
 options:
   -h, --help            show this help message and exit
   -g PATTERN, --pattern PATTERN
