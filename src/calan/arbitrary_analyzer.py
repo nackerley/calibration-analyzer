@@ -1955,9 +1955,11 @@ class CalibrationAnalyzer():
                 for label, result in zip(channels, self.info.phase_in_spec)]
 
             for tf_fit, label in zip(tf_fits, gain_labels):
-                axes[0].plot(f, gain_db(tf_fit), label=label)
+                axes[0].plot(
+                    f, gain_db(tf_fit), label=label, ls='--')
             for tf_fit, label in zip(tf_fits, phase_labels):
-                axes[1].plot(f, phase_deg(tf_fit), label=label)
+                axes[1].plot(
+                    f, phase_deg(tf_fit), label=label, ls='--')
 
         max_mag_db = 20*np.log10((1 + self.info.spec_max_amp_pct/100))
         max_phase_deg = self.info.spec_max_phase_deg
