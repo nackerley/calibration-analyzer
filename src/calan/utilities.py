@@ -43,6 +43,7 @@ JOURNAL_STYLE: dict[Any, Any] = {
     'lines.linewidth': 1.0,
 }
 
+
 def round_sig(
     value: float,
     num_significant: int = 3,
