@@ -4,3 +4,8 @@ arbitrary_analyzer --plot basic --fit 2 --out-of-band 5 2 \
     --calibration-response-file XX.YKAT1.xml \
     --pattern ../temperature/PRB_-36.00_Output.mseed \
     --fmt EPS
+mv transfer_function_nominal_system_removed_XX.YKAT1..SH_20200110.1529.eps \
+    Figure5_right_fit_with_extra_pole.eps
+gs -dSAFER -dBATCH -dNOPAUSE -dEPSCrop -r300 -sDEVICE=pngalpha \
+    -sOutputFile=Figure5_right_fit_with_extra_pole.png \
+    Figure5_right_fit_with_extra_pole.eps
