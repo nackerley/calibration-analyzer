@@ -8,7 +8,7 @@ from math import floor, log10
 from operator import mul
 from functools import reduce
 import argparse
-from typing import Literal, Sequence
+from typing import Any, Literal, Sequence
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -30,6 +30,19 @@ class MyArgumentParser(argparse.ArgumentParser):
 
 
 #  formatting
+JOURNAL_STYLE: dict[Any, Any] = {
+    # 'figure.constrained_layout.use': True,
+    'font.size': 8,
+    'axes.labelsize': 8,
+    'xtick.labelsize': 7,
+    'ytick.labelsize': 7,
+    'legend.fontsize': 7,
+    'font.family': 'sans',
+    'ps.fonttype': 42,
+    'pdf.fonttype': 42,
+    'lines.linewidth': 1.0,
+}
+
 def round_sig(
     value: float,
     num_significant: int = 3,

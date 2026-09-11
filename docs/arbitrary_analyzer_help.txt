@@ -103,7 +103,8 @@ options:
                         and variance) or diagnostic plots for each calibration
                         (default: none)
   --width WIDTH         width of plots in inches, ignored for start/end check
-                        plots (default: 4.25)
+                        plots SRL: 1 column = 3.45", 1.5 columns = 5.2", 2
+                        columns = 7.15" (default: 3.45)
   --fontsize FONTSIZE   font size to be used in plots, in typographic points
                         (default: 8)
   --dpi DPI             resolution to use for plots in dots per inch (default:

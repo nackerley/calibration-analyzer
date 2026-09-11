@@ -1,16 +1,24 @@
 """Read raw calibration results and make summary plot."""
+import logging
 from pathlib import Path
-
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-plt.rcParams['axes.prop_cycle'] = plt.cycler(
-    color=['#777777', '#444444',  '#111111'],
-    linestyle=['-.', '--', '-'],
-)
-plt.rcParams['lines.linewidth'] = 1.0
+from calan.utilities import JOURNAL_STYLE  # type: ignore
+
+PLOT_WIDTH = 3.45
+OUTPUT_FORMAT = 'EPS'
+
+plt.rcParams.update(JOURNAL_STYLE)
+plt.rc(
+    'axes',
+    prop_cycle=plt.cycler(
+        color=['#252525', '#636363',  '#969696'],
+        linestyle=['-', '--', '-.']))
+plt.rc('savefig', dpi=300)
+logging.getLogger("fontTools").setLevel(logging.WARNING)
 
 INPUT_CSV = 'arbitrary_analyzer.csv'
 data = pd.read_csv(INPUT_CSV, index_col=[0, 1])
@@ -28,7 +36,7 @@ keep = list(data.columns[temps.isin([
     temps.max(),
     # temps[(temps - 15).abs().idxmin()],
     np.nan])])
-data = data.loc[:, keep]
+data = data.loc[:, keep].iloc[:, ::-1]
 
 magnitude_db = data.loc['magnitude_db'].astype(float)
 magnitude_db.index = pd.Index(magnitude_db.index.astype(float), name='f_hz')
@@ -37,7 +45,8 @@ phase_deg.index = pd.Index(phase_deg.index.astype(float), name='f_hz')
 variance_db = data.loc['variance_db'].astype(float)
 variance_db.index = pd.Index(variance_db.index.astype(float), name='f_hz')
 
-fig, axes = plt.subplots(3, 1, sharex=True, figsize=(6.5, 6.5))
+fig, axes = plt.subplots(
+    3, 1, sharex=True, figsize=(PLOT_WIDTH, 4/3*PLOT_WIDTH))
 fig.subplots_adjust(hspace=0)
 mag_ax, phase_ax, var_ax = axes
 
@@ -57,6 +66,6 @@ var_ax.set_xlim(variance_db.index.min(), variance_db.index.max())
 var_ax.get_legend().remove()
 var_ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
 
-output_png = Path(__file__).with_suffix('.png')
-print(f'Saving: {output_png}')
-fig.savefig(output_png, bbox_inches='tight')
+output_file = Path(__file__).with_suffix('.' + OUTPUT_FORMAT.lower())
+print(f'Saving: {output_file}')
+fig.savefig(output_file, bbox_inches='tight')

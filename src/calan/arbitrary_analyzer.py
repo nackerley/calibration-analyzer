@@ -78,7 +78,7 @@ from calan.core import (
     extract_decimation_coefficients, multi_decim,
     lti_multiply, lti_divide, zpk_cascade, stage_units)
 from calan.utilities import (
-    logspace, pretty_duration, round_sig, str_sig,
+    JOURNAL_STYLE, logspace, pretty_duration, round_sig, str_sig,
     MyArgumentParser, MyFormatter)
 from calan.stft import Stft, len_fft_welch, num_windows_welch
 from calan.calibration_toolbox import (
@@ -87,8 +87,11 @@ from calan.fit_response import fit_response, zpk_out_of_band
 
 # setup
 warnings.simplefilter('error', category=BadCoefficients)
+logging.getLogger('fontTools').setLevel(logging.WARNING)
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
 pd.plotting.register_matplotlib_converters()
 np.set_printoptions(suppress=True, precision=6)
+plt.rcParams.update(JOURNAL_STYLE)
 
 # defaults
 
@@ -101,7 +104,7 @@ DEFAULT_OUTPUT_PATTERN = '*.mseed'
 DEFAULT_RESPONSE_PATTERN = '*.resp'
 DEFAULT_CAL_SIGNAL_FILE = 'prb_1V_10ms_3h.lzma'
 DEFAULT_CAL_RESPONSE_FILE = 'Centaur_Trillium120Q_Calibration.xml'
-DEFAULT_WIDTH = 4.25
+DEFAULT_WIDTH = 3.45
 DEFAULT_FONTSIZE = 8
 DEFAULT_DPI = 150
 DEFAULT_FMT = 'png'
@@ -266,7 +269,8 @@ def _argparser() -> MyArgumentParser:
         'variance) or diagnostic plots for each calibration')
     parser.add_argument(
         '--width', default=DEFAULT_WIDTH, type=float,
-        help='width of plots in inches, ignored for start/end check plots')
+        help='width of plots in inches, ignored for start/end check plots\n'
+        'SRL: 1 column = 3.45", 1.5 columns = 5.2", 2 columns = 7.15"')
     parser.add_argument(
         '--fontsize', default=DEFAULT_FONTSIZE, type=float,
         help='font size to be used in plots, in typographic points')
@@ -581,9 +585,14 @@ class CalibrationAnalyzer():
         self.width = width
         self.fmt = fmt
 
-        plt.rc('font', size=fontsize)
-        plt.rc('legend', fontsize=fontsize - 1)
-        plt.rc('savefig', dpi=dpi)
+        plt.rcParams.update({
+            'font.size': fontsize,
+            'axes.labelsize': fontsize,
+            'xtick.labelsize': fontsize - 1,
+            'ytick.labelsize': fontsize - 1,
+            'legend.fontsize': fontsize - 1,
+            'savefig.dpi': dpi,
+        })
 
     def __del__(self) -> None:
         """Ensure log files are not held open."""
@@ -1968,16 +1977,18 @@ class CalibrationAnalyzer():
             self.info.start.strftime('%Y-%m-%d %H:%M')])
         axes[0].annotate(ids_start, (0.025, 0.95), xycoords='axes fraction',
                          ha='left', va='top')
-        axes[0].fill_between(f[spec],
-                             gain_nominal[spec] - max_mag_db,
-                             gain_nominal[spec] + max_mag_db,
-                             color='0.5', alpha=0.5,
-                             label=f'±{self.info.spec_max_amp_pct}%')
-        axes[1].fill_between(f[spec],
-                             phase_nominal[spec] - max_phase_deg,
-                             phase_nominal[spec] + max_phase_deg,
-                             color='0.5', alpha=0.5,
-                             label=f'±{self.info.spec_max_phase_deg}°')
+        axes[0].fill_between(
+            f[spec],
+            gain_nominal[spec] - max_mag_db,
+            gain_nominal[spec] + max_mag_db,
+            color='#cccccc', edgecolor='#969696',
+            label=f'±{self.info.spec_max_amp_pct}%')
+        axes[1].fill_between(
+            f[spec],
+            phase_nominal[spec] - max_phase_deg,
+            phase_nominal[spec] + max_phase_deg,
+            color='#cccccc', edgecolor='#969696',
+            label=f'±{self.info.spec_max_phase_deg}°')
 
         if remove == 'system':
             axes[0].set_ylabel('Gain wrt nominal [dB]')
