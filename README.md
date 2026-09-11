@@ -5,7 +5,7 @@ Tools for relative (electrical) calibration of seismic instrumentation.
 > [!IMPORTANT]
 > The primary development of this project takes place on a private GitLab server that is automatically push-mirrored to GitHub.
 
-A paper making use of the calibration analyzer for arbitrary input signals has been accepted (with minor revisions) for a [Seismological Research Letters (SRL) Focus Section on Measuring and Monitoring Seismic Instrumentation](https://www.seismosoc.org/publications/calls-papers/srl-call-for-papers-14/).
+An investigation of short-period seismometer temperature susceptibility making use of calibration analyzer for arbitrary input signals was initially presented at CTBTO SnT 2023: <https://conferences.ctbto.org/event/23/contributions/4925/>. A paper on the same subject has been accepted for publication in a [Seismological Research Letters (SRL) Focus Section on Measuring and Monitoring Seismic Instrumentation](https://www.seismosoc.org/publications/calls-papers/srl-call-for-papers-14/).
 
 * [Overview](#overview)
 * [Installation](#installation)
